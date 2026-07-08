@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok } from '@/lib/api-response'
-import { createSupabaseServer } from '@/lib/supabase/server'
+import { getSql } from '@/lib/db'
 import { sendTelegramMessage } from '@/lib/telegram/bot'
 import { askAI } from '@/lib/ai/openai'
 
@@ -30,14 +30,14 @@ export async function POST(req: NextRequest) {
   if (!chatId || !text) return ok({ ignored: true })
 
   try {
-    const db = createSupabaseServer()
-    const [{ data: byDay }, { data: byStatus }, { data: conversion }] = await Promise.all([
-      db.from('v_kpi_daily').select('*').limit(7),
-      db.from('v_kpi_status').select('*'),
-      db.from('v_kpi_conversion').select('*').maybeSingle(),
+    const sql = getSql()
+    const [byDay, byStatus, conversionRows] = await Promise.all([
+      sql`select * from v_kpi_daily limit 7`,
+      sql`select * from v_kpi_status`,
+      sql`select * from v_kpi_conversion limit 1`,
     ])
 
-    const context = JSON.stringify({ byDay, byStatus, conversion })
+    const context = JSON.stringify({ byDay, byStatus, conversion: conversionRows[0] ?? null })
     const reply = await askAI(SECRETARIA_PROMPT, `Pergunta: ${text}\n\nDados: ${context}`)
 
     await sendTelegramMessage(chatId, reply || 'Não consegui puxar essa informação agora.')

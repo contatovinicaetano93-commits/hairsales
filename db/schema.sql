@@ -1,5 +1,5 @@
 -- ROM · Onboarding & KPIs de contato
--- Rodar no SQL Editor do Supabase (projeto novo, dedicado ao ROM).
+-- Rodar no banco Neon (Postgres) dedicado ao ROM.
 
 create extension if not exists "pgcrypto";
 
@@ -41,11 +41,12 @@ create index if not exists contact_events_created_at_idx on contact_events (crea
 create index if not exists contact_events_error_idx on contact_events (created_at desc) where error is not null;
 
 -- KPIs agregados por dia e canal — o painel administrativo lê daqui.
+-- count(*) é bigint; o cast ::int garante que o driver retorne número (não string).
 create or replace view v_kpi_daily as
 select
   date_trunc('day', created_at) as day,
   channel,
-  count(*) as contacts_count
+  count(*)::int as contacts_count
 from contacts
 group by 1, 2
 order by 1 desc;
@@ -53,13 +54,16 @@ order by 1 desc;
 create or replace view v_kpi_status as
 select
   status,
-  count(*) as contacts_count
+  count(*)::int as contacts_count
 from contacts
 group by 1;
 
 create or replace view v_kpi_conversion as
 select
-  count(*) filter (where status = 'convertido')::float
-    / nullif(count(*), 0)::float as conversion_rate,
-  count(*) as total_contacts
+  coalesce(
+    count(*) filter (where status = 'convertido')::float
+      / nullif(count(*), 0)::float,
+    0
+  ) as conversion_rate,
+  count(*)::int as total_contacts
 from contacts;

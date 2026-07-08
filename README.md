@@ -5,8 +5,9 @@ WhatsApp (IA de primeiro atendimento), Telegram (secretária de consulta prátic
 pra equipe) e Avec (sync de agenda/clientes), e centraliza tudo num painel de
 KPIs.
 
-Stack: Next.js (App Router) + TypeScript + Tailwind + Supabase, API-first
-(front-end só fala com `/api/*`) — mesmo padrão do app-thaise.
+Stack: Next.js (App Router) + TypeScript + Tailwind + Neon (Postgres serverless),
+API-first (front-end só fala com `/api/*`). Acesso ao banco por SQL direto
+(`@neondatabase/serverless`).
 
 **Interface é web mobile-first** (não é app nativo): pensada pra abrir no
 navegador do celular da equipe. Container limitado à largura de celular,
@@ -20,7 +21,7 @@ navegação por *bottom tab bar* (Painel / Contatos), `theme-color` e
 - `src/app/api/webhooks/whatsapp` — recebe mensagem do provedor WhatsApp
   (Evolution API), responde com IA (primeiro atendimento guiado) e loga tudo.
 - `src/app/api/webhooks/telegram` — bot "secretária": equipe pergunta em
-  linguagem natural, a IA responde puxando os KPIs do Supabase.
+  linguagem natural, a IA responde puxando os KPIs do Neon.
 - `src/app/dashboard` — painel com contatos por dia, por canal, por status e
   taxa de conversão.
 - `src/app/contatos` — lista dos últimos contatos (todos os canais) e formulário
@@ -35,10 +36,9 @@ ou investigar depois.
 
 ## PENDENTE — você precisa fazer manualmente
 
-1. **Criar um projeto novo no Supabase** (não reaproveitar o do app-thaise —
-   dados de negócios diferentes). Copiar URL + service role key pro
-   `.env.local`.
-2. **Rodar `supabase/schema.sql`** no SQL Editor do projeto novo.
+1. **Criar um projeto Neon dedicado ao ROM** e copiar a `DATABASE_URL`
+   (connection string com `sslmode=require`) pro `.env.local`.
+2. **Rodar `db/schema.sql`** no SQL Editor do Neon (ou `psql`).
 3. **Confirmar com o suporte do Avec** se existe API/webhook público. Não
    achei documentação pública — sem isso, o endpoint `/api/webhooks/avec` fica
    pronto mas sem gatilho real.

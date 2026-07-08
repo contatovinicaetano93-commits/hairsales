@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, handleError } from '@/lib/api-response'
-import { createSupabaseServer } from '@/lib/supabase/server'
+import { getSql } from '@/lib/db'
 import { upsertContact, logEvent } from '@/lib/contacts'
 
 const schema = z.object({
@@ -12,13 +12,10 @@ const schema = z.object({
 
 export async function GET() {
   try {
-    const db = createSupabaseServer()
-    const { data, error } = await db
-      .from('contacts')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50)
-    if (error) throw new Error(error.message)
+    const sql = getSql()
+    const data = await sql`
+      select * from contacts order by created_at desc limit 50
+    `
     return ok(data)
   } catch (e) {
     return handleError(e)
