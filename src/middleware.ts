@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { isAuthorized } from '@/lib/auth'
+import { isAuthorized, isAuthEnabled } from '@/lib/auth'
 
 export function middleware(req: NextRequest) {
-  if (!process.env.ROM_ACCESS_TOKEN) return NextResponse.next()
+  if (!isAuthEnabled()) return NextResponse.next()
 
   const { pathname } = req.nextUrl
   const method = req.method

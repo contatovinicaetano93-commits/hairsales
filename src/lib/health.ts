@@ -36,7 +36,7 @@ export async function getHealthStatus() {
       webhook_secret: envOk('TELEGRAM_WEBHOOK_SECRET'),
     },
     cron: { configured: envOk('CRON_SECRET') },
-    auth: { enabled: isAuthEnabled() },
+    auth: { enabled: isAuthEnabled(), user: process.env.ROM_ADMIN_USER ? true : false },
     webhooks: {
       avec_secret: envOk('AVEC_WEBHOOK_SECRET'),
     },
