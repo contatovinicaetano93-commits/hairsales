@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, X, Phone, Search } from 'lucide-react'
+import Link from 'next/link'
+import { Plus, X, Phone, Search, ChevronRight } from 'lucide-react'
 import {
   Avatar,
   StatusPill,
@@ -167,7 +168,11 @@ export default function ContatosPage() {
 
         {!loading &&
           filtered.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-0">
+            <Link
+              key={c.id}
+              href={`/contatos/${c.id}`}
+              className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-0 active:bg-surface"
+            >
               <Avatar name={c.name || c.phone || '?'} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{c.name || c.phone || 'Sem nome'}</p>
@@ -187,7 +192,8 @@ export default function ContatosPage() {
                 </p>
               </div>
               <StatusPill status={c.status} />
-            </div>
+              <ChevronRight size={16} className="shrink-0 text-muted" />
+            </Link>
           ))}
       </div>
 

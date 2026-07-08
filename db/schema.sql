@@ -8,6 +8,7 @@ create table if not exists contacts (
   id uuid primary key default gen_random_uuid(),
   name text,
   phone text,
+  email text,
   channel text not null check (channel in ('whatsapp', 'telegram', 'avec', 'instagram', 'manual')),
   source text not null default 'manual',
   status text not null default 'novo' check (status in ('novo', 'em_atendimento', 'agendado', 'convertido', 'perdido')),
@@ -39,6 +40,25 @@ create table if not exists contact_events (
 create index if not exists contact_events_contact_idx on contact_events (contact_id);
 create index if not exists contact_events_created_at_idx on contact_events (created_at desc);
 create index if not exists contact_events_error_idx on contact_events (created_at desc) where error is not null;
+
+-- Serviços/recorrências de cada cliente — base do cross-sell e up-sell guiados.
+-- cadence_days = intervalo esperado; last_done_at = última vez realizado.
+-- O próximo vencimento é calculado em runtime (lib/recommendations.ts).
+create table if not exists client_services (
+  id uuid primary key default gen_random_uuid(),
+  contact_id uuid not null references contacts (id) on delete cascade,
+  name text not null,
+  category text not null default 'outro' check (category in ('corte', 'tratamento', 'coloracao', 'bem_estar', 'produto', 'outro')),
+  cadence_days int,
+  last_done_at timestamptz,
+  product text,
+  notes text,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists client_services_contact_idx on client_services (contact_id);
+create index if not exists client_services_active_idx on client_services (active) where active = true;
 
 -- KPIs agregados por dia e canal — o painel administrativo lê daqui.
 -- count(*) é bigint; o cast ::int garante que o driver retorne número (não string).

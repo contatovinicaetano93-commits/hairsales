@@ -5,15 +5,20 @@ type Channel = 'whatsapp' | 'telegram' | 'avec' | 'instagram' | 'manual'
 interface UpsertContactInput {
   phone?: string | null
   name?: string | null
+  email?: string | null
   channel: Channel
   source: string
   avecClientId?: string | null
 }
 
+export const CONTACT_STATUSES = ['novo', 'em_atendimento', 'agendado', 'convertido', 'perdido'] as const
+export type ContactStatus = (typeof CONTACT_STATUSES)[number]
+
 export interface ContactRow {
   id: string
   name: string | null
   phone: string | null
+  email: string | null
   channel: string
   source: string
   status: string
@@ -48,10 +53,11 @@ export async function upsertContact(input: UpsertContactInput): Promise<ContactR
   }
 
   const rows = (await sql`
-    insert into contacts (name, phone, channel, source, avec_client_id)
+    insert into contacts (name, phone, email, channel, source, avec_client_id)
     values (
       ${input.name ?? null},
       ${input.phone ?? null},
+      ${input.email ?? null},
       ${input.channel},
       ${input.source},
       ${input.avecClientId ?? null}
@@ -60,6 +66,37 @@ export async function upsertContact(input: UpsertContactInput): Promise<ContactR
   `) as ContactRow[]
 
   return rows[0]
+}
+
+export async function getContactById(id: string): Promise<ContactRow | null> {
+  const sql = getSql()
+  const rows = (await sql`select * from contacts where id = ${id} limit 1`) as ContactRow[]
+  return rows[0] ?? null
+}
+
+interface UpdateContactInput {
+  name?: string
+  email?: string
+  phone?: string
+  status?: ContactStatus
+  notes?: string
+}
+
+// Atualização parcial e guiada: só mexe nos campos enviados (coalesce mantém o resto).
+export async function updateContact(id: string, patch: UpdateContactInput): Promise<ContactRow | null> {
+  const sql = getSql()
+  const rows = (await sql`
+    update contacts set
+      name = coalesce(${patch.name ?? null}, name),
+      email = coalesce(${patch.email ?? null}, email),
+      phone = coalesce(${patch.phone ?? null}, phone),
+      status = coalesce(${patch.status ?? null}, status),
+      notes = coalesce(${patch.notes ?? null}, notes),
+      last_contact_at = now()
+    where id = ${id}
+    returning *
+  `) as ContactRow[]
+  return rows[0] ?? null
 }
 
 interface LogEventInput {
