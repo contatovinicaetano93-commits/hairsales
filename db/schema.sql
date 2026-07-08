@@ -51,6 +51,7 @@ create table if not exists client_services (
   category text not null default 'outro' check (category in ('corte', 'tratamento', 'coloracao', 'bem_estar', 'produto', 'outro')),
   cadence_days int,
   last_done_at timestamptz,
+  scheduled_at timestamptz,
   product text,
   notes text,
   active boolean not null default true,
@@ -59,6 +60,7 @@ create table if not exists client_services (
 
 create index if not exists client_services_contact_idx on client_services (contact_id);
 create index if not exists client_services_active_idx on client_services (active) where active = true;
+create index if not exists client_services_scheduled_idx on client_services (scheduled_at) where scheduled_at is not null;
 
 -- KPIs agregados por dia e canal — o painel administrativo lê daqui.
 -- count(*) é bigint; o cast ::int garante que o driver retorne número (não string).

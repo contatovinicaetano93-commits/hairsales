@@ -34,17 +34,23 @@ export async function GET() {
         const recommendations = computeRecommendations(enriched)
         const overdue = enriched.filter((s) => s.state === 'overdue').length
         const dueSoon = enriched.filter((s) => s.state === 'due_soon').length
+        const scheduledSoon = enriched.filter((s) => {
+          if (!s.scheduled_at) return false
+          const t = new Date(s.scheduled_at).getTime()
+          return t >= Date.now() && t - Date.now() <= 7 * 86_400_000
+        }).length
         return {
           contact_id: contactId,
           contact_name: services[0].contact_name,
           contact_status: services[0].contact_status,
           overdue,
           due_soon: dueSoon,
+          scheduled_soon: scheduledSoon,
           recommendations,
         }
       })
       .filter((i) => i.recommendations.length > 0)
-      .sort((a, b) => b.overdue - a.overdue || b.due_soon - a.due_soon)
+      .sort((a, b) => b.overdue - a.overdue || b.due_soon - a.due_soon || b.scheduled_soon - a.scheduled_soon)
 
     return ok(items)
   } catch (e) {

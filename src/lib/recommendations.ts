@@ -8,7 +8,7 @@ export interface EnrichedService extends ClientService {
   state: ServiceState
 }
 
-export type RecommendationType = 'overdue' | 'due_soon' | 'upsell' | 'crosssell'
+export type RecommendationType = 'overdue' | 'due_soon' | 'scheduled' | 'upsell' | 'crosssell'
 
 export interface Recommendation {
   type: RecommendationType
@@ -34,10 +34,38 @@ export function enrichServices(services: ClientService[]): EnrichedService[] {
   })
 }
 
+function fmtSchedule(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  if (d.toDateString() === today.toDateString()) {
+    return `hoje às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
 // Gera recomendações guiadas de ação (o que fazer AGORA com esse cliente).
 export function computeRecommendations(enriched: EnrichedService[]): Recommendation[] {
   const recs: Recommendation[] = []
   const has = (cat: string) => enriched.some((s) => s.category === cat)
+  const now = Date.now()
+
+  // 0) Agendamentos confirmados nos próximos 7 dias
+  for (const s of enriched) {
+    if (!s.scheduled_at) continue
+    const t = new Date(s.scheduled_at).getTime()
+    if (t < now) continue
+    const daysUntil = Math.round((t - now) / DAY)
+    if (daysUntil <= 7) {
+      recs.push({
+        type: 'scheduled',
+        title: `${s.name} agendado`,
+        detail:
+          daysUntil === 0
+            ? `${fmtSchedule(s.scheduled_at)} — confirme com o cliente e prepare a equipe.`
+            : `${fmtSchedule(s.scheduled_at)} — em ${daysUntil} dia(s).`,
+      })
+    }
+  }
 
   // 1) Recorrências atrasadas / vencendo (prioridade máxima)
   for (const s of enriched) {

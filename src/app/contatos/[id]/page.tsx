@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Wrench,
   UserPlus,
+  Calendar,
 } from 'lucide-react'
 import {
   StatusPill,
@@ -33,12 +34,13 @@ interface Service {
   cadence_days: number | null
   product: string | null
   notes: string | null
+  scheduled_at: string | null
   next_due_at: string | null
   days_until: number | null
   state: 'overdue' | 'due_soon' | 'ok' | 'no_cadence'
 }
 interface Recommendation {
-  type: 'overdue' | 'due_soon' | 'upsell' | 'crosssell'
+  type: 'overdue' | 'due_soon' | 'scheduled' | 'upsell' | 'crosssell'
   title: string
   detail: string
 }
@@ -81,8 +83,18 @@ const CATEGORY_LABEL: Record<string, string> = {
 const REC_TONE: Record<string, string> = {
   overdue: 'border-danger/40 bg-danger/10',
   due_soon: 'border-warning/40 bg-warning/10',
+  scheduled: 'border-sky-500/40 bg-sky-500/10',
   upsell: 'border-gold/40 bg-gold/10',
   crosssell: 'border-sky-500/40 bg-sky-500/10',
+}
+
+function fmtSchedule(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  if (d.toDateString() === today.toDateString()) {
+    return `Hoje, ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
 function ServiceStateBadge({ state, days }: { state: Service['state']; days: number | null }) {
@@ -131,6 +143,23 @@ function eventMeta(e: ContactEvent): { icon: React.ReactNode; title: string; det
   if (update) return { icon: <RefreshCw size={14} />, title: 'Cadastro atualizado', detail: Object.keys(update).join(', ') }
 
   if (asStr(p.service_added)) return { icon: <Wrench size={14} />, title: 'Serviço adicionado', detail: String(p.service_added) }
+  if (asStr(p.service_done)) return { icon: <Check size={14} />, title: 'Serviço realizado', detail: String(p.service_done) }
+  if (asStr(p.service_scheduled)) {
+    const when = asStr(p.scheduled_at)
+    return {
+      icon: <Calendar size={14} />,
+      title: 'Agendamento definido',
+      detail: `${p.service_scheduled}${when ? ` · ${fmtSchedule(when)}` : ''}`,
+    }
+  }
+  if (asStr(p.service_unscheduled)) return { icon: <Calendar size={14} />, title: 'Agendamento removido', detail: String(p.service_unscheduled) }
+  if (Array.isArray(p.conversion_auto_done) && p.conversion_auto_done.length > 0) {
+    return {
+      icon: <Check size={14} />,
+      title: 'Conversão — serviços registrados',
+      detail: (p.conversion_auto_done as string[]).join(', '),
+    }
+  }
   if (asStr(p.brief)) return { icon: <Sparkles size={14} />, title: 'Briefing gerado', detail: p.source === 'ai' ? 'via IA' : 'via regras' }
   if (asStr(p.text)) return { icon: <MessageSquare size={14} />, title: e.direction === 'in' ? 'Mensagem recebida' : 'Mensagem enviada', detail: String(p.text) }
   if (asStr(p.notes)) return { icon: <MessageSquare size={14} />, title: 'Observação', detail: String(p.notes) }
@@ -148,6 +177,7 @@ export default function ContactDetailPage() {
   const [brief, setBrief] = useState<{ text: string; source: string } | null>(null)
   const [briefLoading, setBriefLoading] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [scheduleFor, setScheduleFor] = useState<Service | null>(null)
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/contacts/${id}`, { cache: 'no-store' })
@@ -181,6 +211,15 @@ export default function ContactDetailPage() {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'done' }),
+    })
+    load()
+  }
+
+  async function unschedule(serviceId: string) {
+    await fetch(`/api/services/${serviceId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'unschedule' }),
     })
     load()
   }
@@ -328,16 +367,38 @@ export default function ContactDetailPage() {
                     {CATEGORY_LABEL[s.category] ?? s.category}
                     {s.product ? ` · ${s.product}` : ''}
                     {s.cadence_days ? ` · a cada ${s.cadence_days}d` : ''}
+                    {s.scheduled_at ? ` · ${fmtSchedule(s.scheduled_at)}` : ''}
                   </p>
                 </div>
                 <ServiceStateBadge state={s.state} days={s.days_until} />
               </div>
-              <button
-                onClick={() => markDone(s.id)}
-                className="mt-3 flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-foreground/90 active:bg-card"
-              >
-                <Check size={13} /> Marcar como feito hoje
-              </button>
+              {s.scheduled_at && (
+                <p className="mt-2 inline-flex items-center gap-1 rounded-lg bg-sky-500/10 px-2 py-1 text-[0.65rem] font-medium text-sky-300">
+                  <Calendar size={11} /> Agendado: {fmtSchedule(s.scheduled_at)}
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={() => markDone(s.id)}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-foreground/90 active:bg-card"
+                >
+                  <Check size={13} /> Feito hoje
+                </button>
+                <button
+                  onClick={() => setScheduleFor(s)}
+                  className="flex items-center gap-1.5 rounded-lg border border-gold/30 bg-gold/10 px-3 py-1.5 text-xs text-gold active:bg-gold/20"
+                >
+                  <Calendar size={13} /> {s.scheduled_at ? 'Reagendar' : 'Agendar'}
+                </button>
+                {s.scheduled_at && (
+                  <button
+                    onClick={() => unschedule(s.id)}
+                    className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted active:bg-card"
+                  >
+                    <X size={13} /> Limpar
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -386,7 +447,97 @@ export default function ContactDetailPage() {
           }}
         />
       )}
+
+      {scheduleFor && (
+        <ScheduleSheet
+          service={scheduleFor}
+          onClose={() => setScheduleFor(null)}
+          onScheduled={() => {
+            setScheduleFor(null)
+            load()
+          }}
+        />
+      )}
     </main>
+  )
+}
+
+function ScheduleSheet({
+  service,
+  onClose,
+  onScheduled,
+}: {
+  service: Service
+  onClose: () => void
+  onScheduled: () => void
+}) {
+  const defaultWhen = service.scheduled_at
+    ? new Date(service.scheduled_at).toISOString().slice(0, 16)
+    : (() => {
+        const d = new Date()
+        d.setDate(d.getDate() + 1)
+        d.setHours(10, 0, 0, 0)
+        return d.toISOString().slice(0, 16)
+      })()
+  const [when, setWhen] = useState(defaultWhen)
+  const [submitting, setSubmitting] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setErr(null)
+    try {
+      const res = await fetch(`/api/services/${service.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'schedule', scheduledAt: new Date(when).toISOString() }),
+      })
+      const json = await res.json()
+      if (!res.ok || json.error) {
+        setErr(json.error ?? 'Erro ao agendar')
+        return
+      }
+      onScheduled()
+    } catch (e) {
+      setErr(String(e))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
+      <div className="animate-fade-in absolute inset-0 bg-black/60" />
+      <div
+        className="animate-slide-up relative w-full max-w-md rounded-t-2xl border-t border-border bg-card-elevated p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold">Agendar {service.name}</h2>
+          <button type="button" onClick={onClose} aria-label="Fechar" className="text-muted active:text-foreground">
+            <X size={22} />
+          </button>
+        </div>
+        <form onSubmit={submit} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs uppercase tracking-wide text-muted">Data e hora</span>
+            <input
+              type="datetime-local"
+              value={when}
+              onChange={(e) => setWhen(e.target.value)}
+              required
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+            />
+          </label>
+          {err && <p className="text-sm text-danger">{err}</p>}
+          <PrimaryButton type="submit" disabled={submitting}>
+            {submitting ? 'Salvando…' : 'Confirmar agendamento'}
+          </PrimaryButton>
+        </form>
+      </div>
+    </div>
   )
 }
 

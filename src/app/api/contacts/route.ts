@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server'
-import { z } from 'zod'
 import { ok, handleError } from '@/lib/api-response'
-import { getSql } from '@/lib/db'
+import { listContactsWithSummary } from '@/lib/contact-summary'
 import { upsertContact, logEvent, updateContact } from '@/lib/contacts'
 import { addService } from '@/lib/services'
 import { SERVICE_CATEGORIES } from '@/lib/services'
+import { z } from 'zod'
 
 const serviceSchema = z.object({
   name: z.string().min(1),
@@ -22,13 +22,23 @@ const schema = z.object({
   services: z.array(serviceSchema).optional(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const sql = getSql()
-    const data = await sql`
-      select * from contacts order by created_at desc limit 50
-    `
-    return ok(data)
+    const { searchParams } = new URL(req.url)
+    const pendingOnly = searchParams.get('pending') === 'true'
+    const sort = searchParams.get('sort') ?? 'urgency'
+
+    let items = await listContactsWithSummary()
+
+    if (pendingOnly) {
+      items = items.filter((c) => c.pending_actions > 0)
+    }
+
+    if (sort === 'urgency') {
+      items.sort((a, b) => b.urgency_score - a.urgency_score || b.created_at.localeCompare(a.created_at))
+    }
+
+    return ok(items)
   } catch (e) {
     return handleError(e)
   }
@@ -47,7 +57,6 @@ export async function POST(req: NextRequest) {
       source: 'atendente',
     })
 
-    // e-mail/notas podem chegar mesmo quando o telefone já existia (upsert) — garante persistência.
     if (payload.email || payload.notes) {
       await updateContact(contact.id, { email: payload.email, notes: payload.notes })
     }

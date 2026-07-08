@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Area, AreaChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { ShieldCheck, RefreshCw, Layers, TrendingUp, Users, Sparkles, ChevronRight, AlertTriangle, Clock } from 'lucide-react'
+import { ShieldCheck, RefreshCw, Layers, TrendingUp, Users, Sparkles, ChevronRight, AlertTriangle, Clock, Calendar } from 'lucide-react'
 import {
   SectionCard,
   CountBadge,
@@ -12,6 +12,15 @@ import {
   StatusPill,
   CHANNEL_LABEL,
 } from '../_components/ui'
+
+interface ScheduleItem {
+  id: string
+  contact_id: string
+  contact_name: string | null
+  name: string
+  scheduled_at: string
+  category: string
+}
 
 interface ActionItem {
   contact_id: string
@@ -44,9 +53,19 @@ function aggregateByChannel(rows: KpiData['byDay']) {
   return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
 }
 
+function fmtSchedule(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  if (d.toDateString() === today.toDateString()) {
+    return `Hoje, ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  return d.toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
 export default function DashboardPage() {
   const [data, setData] = useState<KpiData | null>(null)
   const [actions, setActions] = useState<ActionItem[]>([])
+  const [schedule, setSchedule] = useState<ScheduleItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -64,6 +83,13 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((json) => {
         if (json.data) setActions(json.data)
+      })
+      .catch(() => {})
+
+    fetch('/api/schedule', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.data) setSchedule(json.data)
       })
       .catch(() => {})
   }, [])
@@ -113,6 +139,33 @@ export default function DashboardPage() {
         <MiniStat icon={<Users size={15} />} label="Novos aguardando" value={loading ? '—' : String(novos)} />
         <MiniStat icon={<Layers size={15} />} label="Canais ativos" value={loading ? '—' : String(activeChannels)} />
       </div>
+
+      {/* Próximos agendamentos */}
+      {schedule.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 text-sm font-medium">
+              <Calendar size={15} className="text-sky-300" /> Próximos agendamentos
+            </h2>
+            <CountBadge value={`${schedule.length}`} tone="gold" />
+          </div>
+          {schedule.slice(0, 5).map((s) => (
+            <Link
+              key={s.id}
+              href={`/contatos/${s.contact_id}`}
+              className="flex items-center gap-3 rounded-2xl border border-sky-500/25 bg-sky-500/5 p-4 active:bg-surface"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{s.contact_name ?? 'Cliente'}</p>
+                <p className="mt-0.5 truncate text-xs text-muted">
+                  <span className="text-sky-300">{s.name}</span> · {fmtSchedule(s.scheduled_at)}
+                </p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-muted" />
+            </Link>
+          ))}
+        </section>
+      )}
 
       {/* Ações recomendadas — guia o front no cross/up-sell */}
       {actions.length > 0 && (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, X, Phone, Search, ChevronRight } from 'lucide-react'
+import { Plus, X, Phone, Search, ChevronRight, AlertTriangle, Clock, Calendar } from 'lucide-react'
 import {
   Avatar,
   StatusPill,
@@ -18,6 +18,12 @@ interface Contact {
   channel: string
   status: string
   created_at: string
+  overdue: number
+  due_soon: number
+  scheduled_soon: number
+  pending_actions: number
+  urgency_score: number
+  top_action: string | null
 }
 
 function timeAgo(iso: string) {
@@ -37,13 +43,16 @@ export default function ContatosPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
+  const [pendingOnly, setPendingOnly] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [channelFilter, setChannelFilter] = useState<string>('all')
   const [query, setQuery] = useState('')
 
   async function load() {
     try {
-      const res = await fetch('/api/contacts', { cache: 'no-store' })
+      const params = new URLSearchParams({ sort: 'urgency' })
+      if (pendingOnly) params.set('pending', 'true')
+      const res = await fetch(`/api/contacts?${params}`, { cache: 'no-store' })
       const json = await res.json()
       if (json.error) setError(json.error)
       else setContacts(json.data ?? [])
@@ -55,7 +64,9 @@ export default function ContatosPage() {
   }
 
   useEffect(() => {
-    fetch('/api/contacts', { cache: 'no-store' })
+    const params = new URLSearchParams({ sort: 'urgency' })
+    if (pendingOnly) params.set('pending', 'true')
+    fetch(`/api/contacts?${params}`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
         if (json.error) setError(json.error)
@@ -63,7 +74,7 @@ export default function ContatosPage() {
       })
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false))
-  }, [])
+  }, [pendingOnly])
 
   const statusOptions = Array.from(new Set(contacts.map((c) => c.status)))
   const channelOptions = Array.from(new Set(contacts.map((c) => c.channel)))
@@ -96,6 +107,24 @@ export default function ContatosPage() {
         <Plus size={20} strokeWidth={2.4} />
         Novo contato
       </PrimaryButton>
+
+      {contacts.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setPendingOnly((v) => !v)}
+            aria-pressed={pendingOnly}
+            className={`flex items-center justify-center gap-2 rounded-2xl border py-2.5 text-sm font-medium transition-colors ${
+              pendingOnly
+                ? 'border-gold bg-gold/15 text-gold'
+                : 'border-border bg-card text-muted active:text-foreground'
+            }`}
+          >
+            <AlertTriangle size={15} />
+            {pendingOnly ? 'Mostrando só pendentes' : 'Só ações pendentes'}
+          </button>
+        </div>
+      )}
 
       {contacts.length > 0 && (
         <div className="relative">
@@ -180,6 +209,12 @@ export default function ContatosPage() {
                   <span>{CHANNEL_LABEL[c.channel] ?? c.channel}</span>
                   <span aria-hidden>·</span>
                   <span>{timeAgo(c.created_at)}</span>
+                  {c.top_action && (
+                    <>
+                      <span aria-hidden>·</span>
+                      <span className="truncate text-gold">{c.top_action}</span>
+                    </>
+                  )}
                   {c.phone && (
                     <>
                       <span aria-hidden>·</span>
@@ -191,7 +226,31 @@ export default function ContatosPage() {
                   )}
                 </p>
               </div>
-              <StatusPill status={c.status} />
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {(c.overdue > 0 || c.due_soon > 0 || c.scheduled_soon > 0) && (
+                  <div className="flex items-center gap-1">
+                    {c.overdue > 0 && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-danger/15 px-1.5 py-0.5 text-[0.6rem] font-semibold text-danger">
+                        <AlertTriangle size={10} />
+                        {c.overdue}
+                      </span>
+                    )}
+                    {c.due_soon > 0 && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/15 px-1.5 py-0.5 text-[0.6rem] font-semibold text-warning">
+                        <Clock size={10} />
+                        {c.due_soon}
+                      </span>
+                    )}
+                    {c.scheduled_soon > 0 && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[0.6rem] font-semibold text-sky-300">
+                        <Calendar size={10} />
+                        {c.scheduled_soon}
+                      </span>
+                    )}
+                  </div>
+                )}
+                <StatusPill status={c.status} />
+              </div>
               <ChevronRight size={16} className="shrink-0 text-muted" />
             </Link>
           ))}

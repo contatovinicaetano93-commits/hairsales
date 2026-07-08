@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { getContactById, updateContact, logEvent, listEvents, CONTACT_STATUSES } from '@/lib/contacts'
-import { listServices } from '@/lib/services'
+import { listServices, autoCompleteServicesOnConversion } from '@/lib/services'
 import { enrichServices, computeRecommendations } from '@/lib/recommendations'
 
 type Ctx = { params: Promise<{ id: string }> }
@@ -36,18 +36,29 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     const { id } = await ctx.params
     const patch = patchSchema.parse(await req.json())
 
+    const before = await getContactById(id)
+    if (!before) return err('Contato não encontrado', 404)
+
     const updated = await updateContact(id, patch)
     if (!updated) return err('Contato não encontrado', 404)
+
+    let autoDone: string[] = []
+    if (patch.status === 'convertido' && before.status !== 'convertido') {
+      autoDone = await autoCompleteServicesOnConversion(id)
+    }
 
     await logEvent({
       contactId: id,
       channel: 'manual',
       direction: 'in',
       handledBy: 'human',
-      payload: { update: patch },
+      payload: {
+        update: patch,
+        ...(autoDone.length > 0 ? { conversion_auto_done: autoDone } : {}),
+      },
     })
 
-    return ok(updated)
+    return ok({ ...updated, auto_completed_services: autoDone })
   } catch (e) {
     return handleError(e)
   }
