@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
-  email: z.string().email().optional(),
+  email: z.union([z.string().email(), z.literal('')]).optional(),
   phone: z.string().min(8).optional(),
   status: z.enum(CONTACT_STATUSES).optional(),
   notes: z.string().optional(),

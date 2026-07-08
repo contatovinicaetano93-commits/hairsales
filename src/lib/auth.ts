@@ -33,3 +33,10 @@ export function requireAuth(req: NextRequest) {
   }
   return { ok: true as const }
 }
+
+/** Evita open redirect no login — só paths internos relativos. */
+export function sanitizeRedirectPath(next: string | null | undefined, fallback = '/admin') {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return fallback
+  if (next.includes('://') || next.includes('\\')) return fallback
+  return next
+}

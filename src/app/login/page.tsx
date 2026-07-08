@@ -4,10 +4,12 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { PrimaryButton } from '../_components/ui'
 
+import { sanitizeRedirectPath } from '@/lib/auth'
+
 function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const next = params.get('next') ?? '/admin'
+  const next = sanitizeRedirectPath(params.get('next'))
   const [token, setToken] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)

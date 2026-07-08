@@ -18,10 +18,17 @@ function jidToPhone(jid: string): string | null {
   return normalizePhone(digits)
 }
 
+function isFromMe(data: Record<string, unknown>): boolean {
+  const key = data.key as Record<string, unknown> | undefined
+  return key?.fromMe === true || data.fromMe === true
+}
+
 // Aceita payload simples { from, text } ou webhooks Evolution API v1/v2.
 export function parseWhatsAppPayload(body: unknown): { from: string; text: string } | null {
   if (!body || typeof body !== 'object') return null
   const b = body as Record<string, unknown>
+
+  if (b.fromMe === true) return null
 
   if (typeof b.from === 'string' && typeof b.text === 'string') {
     const phone = normalizePhone(b.from) ?? b.from
@@ -30,6 +37,8 @@ export function parseWhatsAppPayload(body: unknown): { from: string; text: strin
 
   const data = (b.data ?? b.message ?? b) as Record<string, unknown>
   if (data && typeof data === 'object') {
+    if (isFromMe(data)) return null
+
     const key = data.key as Record<string, unknown> | undefined
     const jid = (key?.remoteJid ?? data.remoteJid ?? data.from) as string | undefined
     const msg = (data.message ?? data) as Record<string, unknown>

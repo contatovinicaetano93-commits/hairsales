@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
     const pendingOnly = searchParams.get('pending') === 'true'
     const sort = searchParams.get('sort') ?? 'urgency'
 
-    const limit = Math.min(Number(searchParams.get('limit') ?? 500), 500)
+    const rawLimit = Number(searchParams.get('limit') ?? 500)
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(1, rawLimit), 500) : 500
     let items = await listContactsWithSummary(limit)
 
     if (pendingOnly) {

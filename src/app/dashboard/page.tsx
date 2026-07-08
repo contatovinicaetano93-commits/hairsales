@@ -82,44 +82,60 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const warnings: string[] = []
+    let cancelled = false
 
-    fetch('/api/kpis', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) setError(json.error)
-        else setData(json.data)
-      })
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false))
+    async function loadDashboard() {
+      try {
+        const kpisRes = await fetch('/api/kpis', { cache: 'no-store' })
+        const kpisJson = await kpisRes.json()
+        if (cancelled) return
+        if (kpisJson.error) setError(kpisJson.error)
+        else setData(kpisJson.data)
 
-    fetch('/api/recommendations', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) warnings.push(`Recomendações: ${json.error}`)
-        else if (json.data) setActions(json.data)
-      })
-      .catch(() => warnings.push('Recomendações indisponíveis'))
+        const [recRes, schedRes, avecRes] = await Promise.all([
+          fetch('/api/recommendations', { cache: 'no-store' }),
+          fetch('/api/schedule', { cache: 'no-store' }),
+          fetch('/api/avec/sync', { cache: 'no-store' }),
+        ])
+        if (cancelled) return
 
-    fetch('/api/schedule', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) warnings.push(`Agenda: ${json.error}`)
-        else if (json.data) setSchedule(json.data)
-      })
-      .catch(() => warnings.push('Agenda indisponível'))
+        const warnings: string[] = []
 
-    fetch('/api/avec/sync', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.data) setAvec(json.data)
-      })
-      .catch(() => {})
+        try {
+          const recJson = await recRes.json()
+          if (recJson.error) warnings.push(`Recomendações: ${recJson.error}`)
+          else if (recJson.data) setActions(recJson.data)
+        } catch {
+          warnings.push('Recomendações indisponíveis')
+        }
 
-    const t = setTimeout(() => {
-      if (warnings.length) setWarn(warnings.join(' · '))
-    }, 800)
-    return () => clearTimeout(t)
+        try {
+          const schedJson = await schedRes.json()
+          if (schedJson.error) warnings.push(`Agenda: ${schedJson.error}`)
+          else if (schedJson.data) setSchedule(schedJson.data)
+        } catch {
+          warnings.push('Agenda indisponível')
+        }
+
+        try {
+          const avecJson = await avecRes.json()
+          if (avecJson.data) setAvec(avecJson.data)
+        } catch {
+          // opcional
+        }
+
+        if (warnings.length) setWarn(warnings.join(' · '))
+      } catch (e) {
+        if (!cancelled) setError(String(e))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadDashboard()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const totalContacts = data?.conversion?.total_contacts ?? 0
