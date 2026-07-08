@@ -1,4 +1,4 @@
-import { askAI } from '@/lib/ai/openai'
+import { askAI } from '@/lib/ai/client'
 import type { ContactRow } from '@/lib/contacts'
 import type { EnrichedService, Recommendation } from '@/lib/recommendations'
 

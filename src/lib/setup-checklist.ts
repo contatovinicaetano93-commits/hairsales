@@ -33,17 +33,18 @@ export const SETUP_ITEMS: SetupItem[] = [
     ],
   },
   {
-    id: 'openai',
-    label: 'OpenAI',
-    envVars: ['OPENAI_API_KEY'],
+    id: 'claude',
+    label: 'Claude (Anthropic)',
+    envVars: ['ANTHROPIC_API_KEY'],
     priority: 'quando_tiver',
     steps: [
-      'Crie conta em platform.openai.com',
-      'API Keys → Create new secret key',
-      'Vercel → OPENAI_API_KEY = sk-...',
+      'Crie conta em console.anthropic.com',
+      'API Keys → Create Key',
+      'Vercel → ANTHROPIC_API_KEY = sk-ant-...',
+      'Opcional: ANTHROPIC_MODEL = claude-3-5-haiku-latest (mais barato)',
       'Ativa: briefings IA, WhatsApp bot e Telegram secretária',
     ],
-    link: { href: 'https://platform.openai.com/api-keys', label: 'OpenAI API Keys' },
+    link: { href: 'https://console.anthropic.com/settings/keys', label: 'Anthropic API Keys' },
   },
   {
     id: 'avec',
@@ -105,7 +106,7 @@ export function isItemConfigured(
       return health.auth.enabled
     case 'cron':
       return health.cron.configured
-    case 'openai':
+    case 'claude':
       return health.openai.configured
     case 'avec':
       return health.avec.token

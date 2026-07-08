@@ -3,7 +3,7 @@ import { ok, err } from '@/lib/api-response'
 import { upsertContact, logEvent } from '@/lib/contacts'
 import { getWhatsAppAdapter } from '@/lib/whatsapp/adapter'
 import { parseWhatsAppPayload } from '@/lib/whatsapp/parse-payload'
-import { askAI } from '@/lib/ai/openai'
+import { askAI } from '@/lib/ai/client'
 
 const FIRST_CONTACT_PROMPT = `Você é a recepcionista virtual do salão ROM. Seja calorosa, direta e breve
 (máx. 3 frases). Objetivo: entender se a pessoa quer agendar um horário, tirar

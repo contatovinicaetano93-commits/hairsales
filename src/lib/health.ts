@@ -1,6 +1,7 @@
 import { getSql } from '@/lib/db'
 import { isAvecConfigured, isAvecMock, getAvecBaseUrl } from '@/lib/avec/client'
 import { isAuthEnabled } from '@/lib/auth'
+import { isAiConfigured } from '@/lib/ai/client'
 
 function envOk(name: string) {
   return Boolean(process.env[name]?.trim())
@@ -21,7 +22,7 @@ export async function getHealthStatus() {
   return {
     ok: database,
     database: { configured: envOk('DATABASE_URL'), connected: database, error: databaseError },
-    openai: { configured: envOk('OPENAI_API_KEY') },
+    openai: { configured: isAiConfigured(), provider: 'claude' as const },
     avec: {
       configured: isAvecConfigured(),
       mock: isAvecMock(),

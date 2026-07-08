@@ -40,18 +40,20 @@ ou investigar depois.
 1. **Criar um projeto Neon dedicado ao ROM** e copiar a `DATABASE_URL`
    (connection string com `sslmode=require`) pro `.env.local`.
 2. **Rodar `db/schema.sql`** no SQL Editor do Neon (ou `psql`).
-3. **Avec** — gerar `AVEC_API_TOKEN` no painel Avec. A URL padrão já é
+3. **Claude (Anthropic)** — `ANTHROPIC_API_KEY` em [console.anthropic.com](https://console.anthropic.com)
+   para briefings IA, WhatsApp e Telegram. Modelo padrão: `claude-sonnet-4-20250514`.
+4. **Avec** — gerar `AVEC_API_TOKEN` no painel Avec. A URL padrão já é
    `https://api.avec.beauty` ([documentação Postman](https://documenter.getpostman.com/view/12527228/2sA2xmUWJo)).
    Opcional: `CRON_SECRET` (sync automático 8h) e `AVEC_WEBHOOK_SECRET` (webhook push).
-4. **Decidir o provedor de WhatsApp**: Evolution API (rápido, roda em minutos,
+5. **Decidir o provedor de WhatsApp**: Evolution API (rápido, roda em minutos,
    mas usa número real em modo não-oficial) ou WhatsApp Cloud API oficial
    (mais lento pra configurar — verificação Meta Business — porém mais
    resiliente a longo prazo). O código já está pronto pros dois, só falta a
    decisão + credenciais.
-5. **Criar um bot Telegram dedicado ao ROM** via `@BotFather` (2 min, token na
+6. **Criar um bot Telegram dedicado ao ROM** via `@BotFather` (2 min, token na
    hora) e configurar o `setWebhook` apontando para
    `/api/webhooks/telegram` com um `secret_token`.
-6. Preencher `.env.local` com base no `.env.example`.
+7. Preencher `.env.local` com base no `.env.example`.
 
 ## Rodando local
 
