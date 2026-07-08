@@ -49,6 +49,7 @@ export default function ContatosPage() {
   const [query, setQuery] = useState('')
 
   async function load() {
+    setLoading(true)
     try {
       const params = new URLSearchParams({ sort: 'urgency' })
       if (pendingOnly) params.set('pending', 'true')
@@ -64,16 +65,8 @@ export default function ContatosPage() {
   }
 
   useEffect(() => {
-    const params = new URLSearchParams({ sort: 'urgency' })
-    if (pendingOnly) params.set('pending', 'true')
-    fetch(`/api/contacts?${params}`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) setError(json.error)
-        else setContacts(json.data ?? [])
-      })
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false))
+    void load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingOnly])
 
   const statusOptions = Array.from(new Set(contacts.map((c) => c.status)))
@@ -307,18 +300,42 @@ function NewContactSheet({ onClose, onCreated }: { onClose: () => void; onCreate
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
+  const [serviceName, setServiceName] = useState('')
+  const [serviceCategory, setServiceCategory] = useState('corte')
+  const [cadence, setCadence] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  const CATEGORY_LABEL: Record<string, string> = {
+    corte: 'Corte',
+    tratamento: 'Tratamento',
+    coloracao: 'Coloração',
+    bem_estar: 'Bem-estar',
+    produto: 'Produto',
+    outro: 'Outro',
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
     setFormError(null)
     try {
+      const services =
+        serviceName.trim().length > 0
+          ? [
+              {
+                name: serviceName.trim(),
+                category: serviceCategory,
+                cadenceDays: cadence ? Number(cadence) : undefined,
+              },
+            ]
+          : undefined
+
       const res = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, notes: notes || undefined }),
+        body: JSON.stringify({ name, phone, notes: notes || undefined, services }),
+        credentials: 'include',
       })
       const json = await res.json()
       if (!res.ok || json.error) {
@@ -380,6 +397,38 @@ function NewContactSheet({ onClose, onCreated }: { onClose: () => void; onCreate
               placeholder="Ex.: quer agendar coloração"
             />
           </Field>
+
+          <div className="rounded-xl border border-border bg-surface/50 p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted">Serviço inicial (opcional)</p>
+            <div className="flex flex-col gap-3">
+              <input
+                value={serviceName}
+                onChange={(e) => setServiceName(e.target.value)}
+                placeholder="Ex.: Corte feminino"
+                className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <select
+                  value={serviceCategory}
+                  onChange={(e) => setServiceCategory(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+                >
+                  {Object.entries(CATEGORY_LABEL).map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={cadence}
+                  onChange={(e) => setCadence(e.target.value)}
+                  type="number"
+                  placeholder="Cadência (dias)"
+                  className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+                />
+              </div>
+            </div>
+          </div>
 
           {formError && <p className="text-sm text-danger">{formError}</p>}
 

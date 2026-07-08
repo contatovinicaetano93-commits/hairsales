@@ -1,4 +1,5 @@
 import { getSql } from '@/lib/db'
+import { normalizePhone } from '@/lib/avec/normalize'
 
 type Channel = 'whatsapp' | 'telegram' | 'avec' | 'instagram' | 'manual'
 
@@ -35,6 +36,7 @@ export interface ContactRow {
 // com a mesma pessoa).
 export async function upsertContact(input: UpsertContactInput): Promise<ContactRow> {
   const sql = getSql()
+  const phone = input.phone ? normalizePhone(input.phone) ?? input.phone.trim() : null
 
   if (input.avecClientId) {
     const byAvec = (await sql`
@@ -47,7 +49,7 @@ export async function upsertContact(input: UpsertContactInput): Promise<ContactR
         set last_contact_at = now(),
             name = coalesce(${input.name ?? null}, name),
             email = coalesce(${input.email ?? null}, email),
-            phone = coalesce(${input.phone ?? null}, phone),
+            phone = coalesce(${phone ?? null}, phone),
             status = coalesce(${input.status ?? null}, status)
         where id = ${byAvec[0].id}
         returning *
@@ -56,9 +58,9 @@ export async function upsertContact(input: UpsertContactInput): Promise<ContactR
     }
   }
 
-  if (input.phone) {
+  if (phone) {
     const existing = (await sql`
-      select id from contacts where phone = ${input.phone} limit 1
+      select id from contacts where phone = ${phone} limit 1
     `) as { id: string }[]
 
     if (existing.length > 0) {
@@ -80,7 +82,7 @@ export async function upsertContact(input: UpsertContactInput): Promise<ContactR
     insert into contacts (name, phone, email, channel, source, avec_client_id, status)
     values (
       ${input.name ?? null},
-      ${input.phone ?? null},
+      ${phone ?? null},
       ${input.email ?? null},
       ${input.channel},
       ${input.source},
@@ -139,11 +141,12 @@ interface UpdateContactInput {
 // Atualização parcial e guiada: só mexe nos campos enviados (coalesce mantém o resto).
 export async function updateContact(id: string, patch: UpdateContactInput): Promise<ContactRow | null> {
   const sql = getSql()
+  const phone = patch.phone ? normalizePhone(patch.phone) ?? patch.phone.trim() : undefined
   const rows = (await sql`
     update contacts set
       name = coalesce(${patch.name ?? null}, name),
       email = coalesce(${patch.email ?? null}, email),
-      phone = coalesce(${patch.phone ?? null}, phone),
+      phone = coalesce(${phone ?? null}, phone),
       status = coalesce(${patch.status ?? null}, status),
       notes = coalesce(${patch.notes ?? null}, notes),
       last_contact_at = now()

@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
     const pendingOnly = searchParams.get('pending') === 'true'
     const sort = searchParams.get('sort') ?? 'urgency'
 
-    let items = await listContactsWithSummary()
+    const limit = Math.min(Number(searchParams.get('limit') ?? 500), 500)
+    let items = await listContactsWithSummary(limit)
 
     if (pendingOnly) {
       items = items.filter((c) => c.pending_actions > 0)

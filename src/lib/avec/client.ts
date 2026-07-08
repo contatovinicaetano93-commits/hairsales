@@ -1,5 +1,16 @@
-// Cliente HTTP da API de Relatórios Avec (doc.api.avec.beauty).
-// Autenticação: header Authorization com token gerado no painel Avec.
+// Cliente HTTP da API de Relatórios Avec.
+// Docs: https://documenter.getpostman.com/view/12527228/2sA2xmUWJo
+// Base oficial (collection Postman): https://api.avec.beauty
+// Auth: header Authorization = token puro (sem "Bearer").
+
+import { getMockReport } from '@/lib/avec/fixtures'
+
+export const AVEC_DEFAULT_API_URL = 'https://api.avec.beauty'
+
+export function isAvecMock() {
+  const v = process.env.AVEC_MOCK
+  return v === '1' || v === 'true'
+}
 
 export interface AvecReportParams {
   page?: number
@@ -12,16 +23,42 @@ export interface AvecReportParams {
 }
 
 function getConfig() {
-  const baseUrl = process.env.AVEC_API_URL?.replace(/\/$/, '')
+  const baseUrl = getAvecBaseUrl()
   const token = process.env.AVEC_API_TOKEN
-  if (!baseUrl || !token) {
-    throw new Error('AVEC_API_URL e AVEC_API_TOKEN são obrigatórios para sync com Avec')
+  if (!token) {
+    throw new Error('AVEC_API_TOKEN é obrigatório para sync com Avec')
   }
   return { baseUrl, token }
 }
 
+export function getAvecBaseUrl() {
+  return (process.env.AVEC_API_URL ?? AVEC_DEFAULT_API_URL).replace(/\/$/, '')
+}
+
 export function isAvecConfigured() {
-  return Boolean(process.env.AVEC_API_URL && process.env.AVEC_API_TOKEN)
+  return Boolean(process.env.AVEC_API_TOKEN) || isAvecMock()
+}
+
+export async function testAvecConnection() {
+  if (!isAvecConfigured()) {
+    return { ok: false as const, baseUrl: getAvecBaseUrl(), error: 'AVEC_API_TOKEN não configurado' }
+  }
+  if (isAvecMock()) {
+    const payload = await fetchAvecReport('0004', { page: 1, limit: 1 })
+    const rows = extractRows(payload)
+    return { ok: true as const, baseUrl: getAvecBaseUrl(), sample_rows: rows.length, mock: true as const }
+  }
+  try {
+    const payload = await fetchAvecReport('0004', { page: 1, limit: 1 })
+    const rows = extractRows(payload)
+    return { ok: true as const, baseUrl: getAvecBaseUrl(), sample_rows: rows.length }
+  } catch (e) {
+    return {
+      ok: false as const,
+      baseUrl: getAvecBaseUrl(),
+      error: e instanceof Error ? e.message : String(e),
+    }
+  }
 }
 
 // Formata datas no padrão dd/mm/yyyy usado pelos relatórios Avec.
@@ -66,6 +103,10 @@ export function extractRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export async function fetchAvecReport(reportId: string, params: AvecReportParams = {}) {
+  if (isAvecMock()) {
+    return getMockReport(reportId, params.page ?? 1)
+  }
+
   const { baseUrl, token } = getConfig()
   const qs = new URLSearchParams()
   qs.set('page', String(params.page ?? 1))

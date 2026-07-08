@@ -40,11 +40,9 @@ ou investigar depois.
 1. **Criar um projeto Neon dedicado ao ROM** e copiar a `DATABASE_URL`
    (connection string com `sslmode=require`) pro `.env.local`.
 2. **Rodar `db/schema.sql`** no SQL Editor do Neon (ou `psql`).
-3. **Avec** — pedir ao suporte o `AVEC_API_URL` (base da API de relatórios)
-   e gerar o token no painel da unidade. Preencher `AVEC_API_URL`,
-   `AVEC_API_TOKEN` e `CRON_SECRET` (protege o sync automático). Opcional:
-   `AVEC_WEBHOOK_SECRET` se configurarem webhook push para
-   `/api/webhooks/avec`.
+3. **Avec** — gerar `AVEC_API_TOKEN` no painel Avec. A URL padrão já é
+   `https://api.avec.beauty` ([documentação Postman](https://documenter.getpostman.com/view/12527228/2sA2xmUWJo)).
+   Opcional: `CRON_SECRET` (sync automático 8h) e `AVEC_WEBHOOK_SECRET` (webhook push).
 4. **Decidir o provedor de WhatsApp**: Evolution API (rápido, roda em minutos,
    mas usa número real em modo não-oficial) ou WhatsApp Cloud API oficial
    (mais lento pra configurar — verificação Meta Business — porém mais

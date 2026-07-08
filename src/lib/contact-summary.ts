@@ -55,7 +55,7 @@ function urgencyForContact(services: ClientService[]) {
 }
 
 // Lista contatos com resumo de urgência — base do filtro "só pendentes" e ordenação.
-export async function listContactsWithSummary(limit = 100): Promise<ContactListItem[]> {
+export async function listContactsWithSummary(limit = 500): Promise<ContactListItem[]> {
   const sql = getSql()
   const contacts = (await sql`
     select * from contacts order by created_at desc limit ${limit}

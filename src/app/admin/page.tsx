@@ -35,12 +35,27 @@ interface ScheduleRow {
 
 interface AvecStatus {
   configured: boolean
+  mock?: boolean
+  base_url?: string
+  docs?: string
+  connection?: { ok: boolean; sample_rows?: number; error?: string }
   last: {
     status: string
     created_at: string
     stats: Record<string, number>
     error: string | null
   } | null
+}
+
+interface HealthStatus {
+  ok: boolean
+  database: { configured: boolean; connected: boolean; error: string | null }
+  openai: { configured: boolean }
+  avec: { configured: boolean; mock: boolean; token: boolean }
+  whatsapp: { configured: boolean }
+  telegram: { configured: boolean; webhook_secret: boolean }
+  cron: { configured: boolean }
+  auth: { enabled: boolean }
 }
 
 type LoadState = 'loading' | 'ok' | 'error'
@@ -56,18 +71,23 @@ export default function AdminPage() {
   const [contacts, setContacts] = useState<ContactRow[]>([])
   const [schedule, setSchedule] = useState<ScheduleRow[]>([])
   const [avec, setAvec] = useState<AvecStatus | null>(null)
+  const [health, setHealth] = useState<HealthStatus | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [seeding, setSeeding] = useState(false)
+  const [seedMsg, setSeedMsg] = useState<string | null>(null)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
+  const [connMsg, setConnMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setState('loading')
     setError(null)
     try {
-      const [k, c, s, a] = await Promise.all([
+      const [k, c, s, a, h] = await Promise.all([
         fetch('/api/kpis', { cache: 'no-store' }).then((r) => r.json()),
         fetch('/api/contacts?sort=urgency', { cache: 'no-store' }).then((r) => r.json()),
         fetch('/api/schedule', { cache: 'no-store' }).then((r) => r.json()),
         fetch('/api/avec/sync', { cache: 'no-store' }).then((r) => r.json()),
+        fetch('/api/health', { cache: 'no-store' }).then((r) => r.json()),
       ])
 
       const errs: string[] = []
@@ -83,6 +103,9 @@ export default function AdminPage() {
       if (a.error) errs.push(`Avec: ${a.error}`)
       else setAvec(a.data)
 
+      if (h.error) errs.push(`Health: ${h.error}`)
+      else setHealth(h.data)
+
       if (errs.length) {
         setError(errs.join(' · '))
         setState('error')
@@ -96,55 +119,28 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      setState('loading')
-      setError(null)
-      try {
-        const [k, c, s, a] = await Promise.all([
-          fetch('/api/kpis', { cache: 'no-store' }).then((r) => r.json()),
-          fetch('/api/contacts?sort=urgency', { cache: 'no-store' }).then((r) => r.json()),
-          fetch('/api/schedule', { cache: 'no-store' }).then((r) => r.json()),
-          fetch('/api/avec/sync', { cache: 'no-store' }).then((r) => r.json()),
-        ])
-        if (cancelled) return
+    load()
+  }, [load])
 
-        const errs: string[] = []
-        if (k.error) errs.push(`KPIs: ${k.error}`)
-        else setKpis(k.data)
-
-        if (c.error) errs.push(`Contatos: ${c.error}`)
-        else setContacts(c.data ?? [])
-
-        if (s.error) errs.push(`Agendamentos: ${s.error}`)
-        else setSchedule(s.data ?? [])
-
-        if (a.error) errs.push(`Avec: ${a.error}`)
-        else setAvec(a.data)
-
-        if (errs.length) {
-          setError(errs.join(' · '))
-          setState('error')
-        } else {
-          setState('ok')
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError(String(e))
-          setState('error')
-        }
-      }
-    })()
-    return () => {
-      cancelled = true
+  async function testAvec() {
+    setConnMsg('Testando…')
+    try {
+      const res = await fetch('/api/avec/sync?test=1', { cache: 'no-store' })
+      const json = await res.json()
+      const c = json.data?.connection
+      if (c?.ok) setConnMsg(`OK — ${c.sample_rows ?? 0} linha(s) no relatório 0004`)
+      else setConnMsg(`Falhou: ${c?.error ?? json.error ?? 'erro desconhecido'}`)
+      if (json.data) setAvec(json.data)
+    } catch (e) {
+      setConnMsg(String(e))
     }
-  }, [])
+  }
 
   async function runAvecSync() {
     setSyncing(true)
     setSyncMsg(null)
     try {
-      const res = await fetch('/api/avec/sync', { method: 'POST', cache: 'no-store' })
+      const res = await fetch('/api/avec/sync', { method: 'POST', cache: 'no-store', credentials: 'include' })
       const json = await res.json()
       if (json.error) setSyncMsg(`Erro: ${json.error}`)
       else setSyncMsg(`Sync ${json.data?.status ?? 'ok'} — recarregando…`)
@@ -153,6 +149,22 @@ export default function AdminPage() {
       setSyncMsg(String(e))
     } finally {
       setSyncing(false)
+    }
+  }
+
+  async function runSeed() {
+    setSeeding(true)
+    setSeedMsg(null)
+    try {
+      const res = await fetch('/api/seed', { method: 'POST', credentials: 'include' })
+      const json = await res.json()
+      if (json.error) setSeedMsg(`Erro: ${json.error}`)
+      else setSeedMsg(json.data?.message ?? 'Seed concluído')
+      await load()
+    } catch (e) {
+      setSeedMsg(String(e))
+    } finally {
+      setSeeding(false)
     }
   }
 
@@ -182,6 +194,31 @@ export default function AdminPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <SectionCard title="Configuração" badge={<EndpointBadge path="/api/health" />}>
+          {health ? (
+            <div className="space-y-2 text-sm">
+              <HealthRow label="Banco de dados" ok={health.database.connected} detail={health.database.error ?? undefined} />
+              <HealthRow label="OpenAI" ok={health.openai.configured} />
+              <HealthRow label="Avec token" ok={health.avec.token} hint={health.avec.mock ? 'mock ativo' : undefined} />
+              <HealthRow label="WhatsApp (Evolution)" ok={health.whatsapp.configured} />
+              <HealthRow label="Telegram bot" ok={health.telegram.configured} />
+              <HealthRow label="CRON_SECRET" ok={health.cron.configured} />
+              <HealthRow label="Proteção /admin" ok={health.auth.enabled} hint={health.auth.enabled ? 'ativa' : 'livre'} />
+              <button
+                type="button"
+                onClick={runSeed}
+                disabled={seeding}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-gold/40 bg-gold/10 py-3 text-sm font-semibold text-gold disabled:opacity-60"
+              >
+                {seeding ? 'Criando demo…' : 'Popular dados de demonstração'}
+              </button>
+              {seedMsg && <p className="text-xs text-muted">{seedMsg}</p>}
+            </div>
+          ) : (
+            <Skeleton />
+          )}
+        </SectionCard>
+
         <SectionCard
           title="KPIs"
           badge={<EndpointBadge path="/api/kpis" />}
@@ -226,11 +263,25 @@ export default function AdminPage() {
         >
           {avec ? (
             <div className="space-y-3 text-sm">
+              <Row label="Base URL" value={avec.base_url ?? 'https://api.avec.beauty'} />
               <Row
-                label="Configurado"
-                value={avec.configured ? 'Sim' : 'Não — falta AVEC_API_URL + TOKEN'}
+                label="Token"
+                value={
+                  avec.mock
+                    ? 'Modo mock (AVEC_MOCK)'
+                    : avec.configured
+                      ? 'Configurado'
+                      : 'Não — adicione AVEC_API_TOKEN na Vercel'
+                }
                 highlight={avec.configured}
               />
+              {avec.docs && (
+                <p className="text-xs text-muted">
+                  <a href={avec.docs} target="_blank" rel="noreferrer" className="text-gold hover:underline">
+                    Documentação Postman Avec
+                  </a>
+                </p>
+              )}
               {avec.last ? (
                 <>
                   <Row label="Último status" value={avec.last.status} />
@@ -243,6 +294,14 @@ export default function AdminPage() {
               ) : (
                 <p className="text-xs text-muted">Nenhuma sincronização registrada ainda.</p>
               )}
+              <button
+                type="button"
+                onClick={testAvec}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-3 text-sm font-semibold text-foreground/90 lg:hover:bg-card"
+              >
+                Testar conexão (relatório 0004)
+              </button>
+              {connMsg && <p className="text-xs text-muted">{connMsg}</p>}
               <PrimaryButton type="button" onClick={runAvecSync} disabled={syncing || !avec.configured}>
                 {syncing ? 'Sincronizando…' : 'Rodar sync agora (POST)'}
               </PrimaryButton>
@@ -371,4 +430,17 @@ function Skeleton() {
 
 function Empty() {
   return <p className="py-4 text-center text-sm text-muted">Sem dados.</p>
+}
+
+function HealthRow({ label, ok, detail, hint }: { label: string; ok: boolean; detail?: string; hint?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1">
+      <span className="text-muted">{label}</span>
+      <span className={`text-xs font-semibold ${ok ? 'text-success' : 'text-warning'}`}>
+        {ok ? 'OK' : 'Pendente'}
+        {hint ? ` · ${hint}` : ''}
+      </span>
+      {detail && <span className="col-span-2 text-[0.65rem] text-danger">{detail}</span>}
+    </div>
+  )
 }

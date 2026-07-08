@@ -168,7 +168,7 @@ async function syncAttendances(stats: AvecSyncStats) {
 // Sync completo: clientes + agendamentos futuros + atendimentos recentes.
 export async function runAvecSync(): Promise<AvecSyncRun> {
   if (!isAvecConfigured()) {
-    throw new Error('Avec não configurado — defina AVEC_API_URL e AVEC_API_TOKEN')
+    throw new Error('Avec não configurado — defina AVEC_API_TOKEN')
   }
 
   const stats: AvecSyncStats = {

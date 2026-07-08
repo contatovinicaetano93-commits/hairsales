@@ -18,6 +18,7 @@ import {
   Wrench,
   UserPlus,
   Calendar,
+  Pencil,
 } from 'lucide-react'
 import {
   StatusPill,
@@ -177,7 +178,10 @@ export default function ContactDetailPage() {
   const [brief, setBrief] = useState<{ text: string; source: string } | null>(null)
   const [briefLoading, setBriefLoading] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const [scheduleFor, setScheduleFor] = useState<Service | null>(null)
+  const [mutationError, setMutationError] = useState<string | null>(null)
+  const [mutationOk, setMutationOk] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/contacts/${id}`, { cache: 'no-store' })
@@ -185,6 +189,29 @@ export default function ContactDetailPage() {
     if (json.error) setError(json.error)
     else setData(json.data)
   }, [id])
+
+  async function mutate(
+    url: string,
+    init: RequestInit,
+    okMessage?: string
+  ): Promise<boolean> {
+    setMutationError(null)
+    setMutationOk(null)
+    try {
+      const res = await fetch(url, { ...init, credentials: 'include' })
+      const json = await res.json()
+      if (!res.ok || json.error) {
+        setMutationError(json.error ?? 'Não foi possível salvar')
+        return false
+      }
+      if (okMessage) setMutationOk(okMessage)
+      await load()
+      return true
+    } catch (e) {
+      setMutationError(String(e))
+      return false
+    }
+  }
 
   useEffect(() => {
     fetch(`/api/contacts/${id}`, { cache: 'no-store' })
@@ -198,30 +225,27 @@ export default function ContactDetailPage() {
   }, [id])
 
   async function changeStatus(status: string) {
-    await fetch(`/api/contacts/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    load()
+    await mutate(
+      `/api/contacts/${id}`,
+      { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) },
+      'Status atualizado'
+    )
   }
 
   async function markDone(serviceId: string) {
-    await fetch(`/api/services/${serviceId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'done' }),
-    })
-    load()
+    await mutate(
+      `/api/services/${serviceId}`,
+      { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'done' }) },
+      'Serviço marcado como feito'
+    )
   }
 
   async function unschedule(serviceId: string) {
-    await fetch(`/api/services/${serviceId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'unschedule' }),
-    })
-    load()
+    await mutate(
+      `/api/services/${serviceId}`,
+      { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'unschedule' }) },
+      'Agendamento removido'
+    )
   }
 
   async function generateBrief() {
@@ -266,6 +290,16 @@ export default function ContactDetailPage() {
         <ChevronLeft size={18} /> Contatos
       </button>
 
+      {(mutationError || mutationOk) && (
+        <div
+          className={`rounded-2xl border px-4 py-3 text-sm ${
+            mutationError ? 'border-danger/40 bg-danger/10 text-danger' : 'border-success/40 bg-success/10 text-success'
+          }`}
+        >
+          {mutationError ?? mutationOk}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-8">
         <div className="flex flex-col gap-5 lg:col-span-5 lg:gap-6">
       {/* Perfil */}
@@ -275,7 +309,17 @@ export default function ContactDetailPage() {
             <h1 className="truncate text-xl font-semibold">{contact.name ?? 'Sem nome'}</h1>
             <p className="mt-0.5 text-xs text-muted">{CHANNEL_LABEL[contact.channel] ?? contact.channel}</p>
           </div>
-          <StatusPill status={contact.status} />
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="rounded-full border border-border p-2 text-muted active:bg-surface lg:hover:text-foreground"
+              aria-label="Editar contato"
+            >
+              <Pencil size={15} />
+            </button>
+            <StatusPill status={contact.status} />
+          </div>
         </div>
         <div className="mt-4 flex flex-col gap-2 text-sm">
           {contact.phone && (
@@ -461,6 +505,19 @@ export default function ContactDetailPage() {
           onScheduled={() => {
             setScheduleFor(null)
             load()
+            setMutationOk('Agendamento confirmado')
+          }}
+        />
+      )}
+
+      {editOpen && (
+        <EditContactSheet
+          contact={contact}
+          onClose={() => setEditOpen(false)}
+          onSaved={() => {
+            setEditOpen(false)
+            load()
+            setMutationOk('Cadastro atualizado')
           }}
         />
       )}
@@ -497,6 +554,7 @@ function ScheduleSheet({
       const res = await fetch(`/api/services/${service.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ action: 'schedule', scheduledAt: new Date(when).toISOString() }),
       })
       const json = await res.json()
@@ -571,6 +629,7 @@ function AddServiceSheet({
       const res = await fetch(`/api/contacts/${contactId}/services`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name,
           category,
@@ -656,6 +715,113 @@ function AddServiceSheet({
           {err && <p className="text-sm text-danger">{err}</p>}
           <PrimaryButton type="submit" disabled={submitting}>
             {submitting ? 'Salvando…' : 'Adicionar serviço'}
+          </PrimaryButton>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function EditContactSheet({
+  contact,
+  onClose,
+  onSaved,
+}: {
+  contact: Contact
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [name, setName] = useState(contact.name ?? '')
+  const [phone, setPhone] = useState(contact.phone ?? '')
+  const [email, setEmail] = useState(contact.email ?? '')
+  const [notes, setNotes] = useState(contact.notes ?? '')
+  const [submitting, setSubmitting] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setErr(null)
+    try {
+      const res = await fetch(`/api/contacts/${contact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name,
+          phone,
+          email: email || undefined,
+          notes,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || json.error) {
+        setErr(json.error ?? 'Erro ao salvar')
+        return
+      }
+      onSaved()
+    } catch (e) {
+      setErr(String(e))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center lg:items-center lg:p-6" onClick={onClose}>
+      <div className="animate-fade-in absolute inset-0 bg-black/60" />
+      <div
+        className="animate-slide-up relative w-full max-w-md rounded-t-2xl border-t border-border bg-card-elevated p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] lg:animate-rise lg:max-w-lg lg:rounded-2xl lg:border lg:pb-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold">Editar contato</h2>
+          <button type="button" onClick={onClose} aria-label="Fechar" className="text-muted active:text-foreground">
+            <X size={22} />
+          </button>
+        </div>
+        <form onSubmit={submit} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs uppercase tracking-wide text-muted">Nome</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs uppercase tracking-wide text-muted">Telefone</span>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              type="tel"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs uppercase tracking-wide text-muted">E-mail (opcional)</span>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs uppercase tracking-wide text-muted">Observações</span>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+            />
+          </label>
+          {err && <p className="text-sm text-danger">{err}</p>}
+          <PrimaryButton type="submit" disabled={submitting}>
+            {submitting ? 'Salvando…' : 'Salvar alterações'}
           </PrimaryButton>
         </form>
       </div>

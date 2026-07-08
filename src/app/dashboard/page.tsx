@@ -78,9 +78,12 @@ export default function DashboardPage() {
   const [schedule, setSchedule] = useState<ScheduleItem[]>([])
   const [avec, setAvec] = useState<AvecStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [warn, setWarn] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const warnings: string[] = []
+
     fetch('/api/kpis', { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
@@ -93,16 +96,18 @@ export default function DashboardPage() {
     fetch('/api/recommendations', { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
-        if (json.data) setActions(json.data)
+        if (json.error) warnings.push(`Recomendações: ${json.error}`)
+        else if (json.data) setActions(json.data)
       })
-      .catch(() => {})
+      .catch(() => warnings.push('Recomendações indisponíveis'))
 
     fetch('/api/schedule', { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
-        if (json.data) setSchedule(json.data)
+        if (json.error) warnings.push(`Agenda: ${json.error}`)
+        else if (json.data) setSchedule(json.data)
       })
-      .catch(() => {})
+      .catch(() => warnings.push('Agenda indisponível'))
 
     fetch('/api/avec/sync', { cache: 'no-store' })
       .then((r) => r.json())
@@ -110,6 +115,11 @@ export default function DashboardPage() {
         if (json.data) setAvec(json.data)
       })
       .catch(() => {})
+
+    const t = setTimeout(() => {
+      if (warnings.length) setWarn(warnings.join(' · '))
+    }, 800)
+    return () => clearTimeout(t)
   }, [])
 
   const totalContacts = data?.conversion?.total_contacts ?? 0
@@ -132,6 +142,12 @@ export default function DashboardPage() {
       {error && (
         <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted">
           Não foi possível carregar os dados ({error}). Confirme se o banco está configurado.
+        </div>
+      )}
+
+      {warn && !error && (
+        <div className="rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
+          {warn}
         </div>
       )}
 
@@ -227,6 +243,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-4 lg:gap-6">
+          {!loading && schedule.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-border bg-card/50 p-4 text-sm text-muted">
+              <p className="font-medium text-foreground/90">Nenhum agendamento próximo</p>
+              <p className="mt-1 text-xs">Abra um contato e use &quot;Agendar&quot; em um serviço para aparecer aqui.</p>
+            </div>
+          )}
+
           {schedule.length > 0 && (
             <section className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
@@ -251,6 +274,15 @@ export default function DashboardPage() {
                 </Link>
               ))}
             </section>
+          )}
+
+          {!loading && actions.length === 0 && !error && (
+            <div className="rounded-2xl border border-dashed border-border bg-card/50 p-4 text-sm text-muted">
+              <p className="font-medium text-foreground/90">Sem ações pendentes</p>
+              <p className="mt-1 text-xs">
+                Cadastre serviços com cadência nos contatos — recomendações de retorno e cross-sell aparecem aqui.
+              </p>
+            </div>
           )}
 
           {actions.length > 0 && (
@@ -316,7 +348,7 @@ export default function DashboardPage() {
                   !avec
                     ? 'Carregando…'
                     : !avec.configured
-                      ? 'Configure AVEC_API_URL + TOKEN'
+                      ? 'Configure AVEC_API_TOKEN'
                       : avec.last
                         ? `${avec.last.status === 'ok' ? 'OK' : avec.last.status} · ${new Date(avec.last.created_at).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`
                         : 'Nunca sincronizado — aguardando cron'

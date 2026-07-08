@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
-import { isAvecConfigured } from '@/lib/avec/client'
+import { isAvecConfigured, isAvecMock, getAvecBaseUrl, testAvecConnection } from '@/lib/avec/client'
 import { runAvecSync, getLastAvecSync } from '@/lib/avec/sync'
 
 function authorize(req: NextRequest) {
@@ -14,7 +14,7 @@ function authorize(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     if (!authorize(req)) return err('Não autorizado', 401)
-    if (!isAvecConfigured()) return err('Avec não configurado (AVEC_API_URL + AVEC_API_TOKEN)', 503)
+    if (!isAvecConfigured()) return err('Avec não configurado (AVEC_API_TOKEN)', 503)
 
     const run = await runAvecSync()
     return ok(run)
@@ -23,13 +23,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/avec/sync — status da última sincronização
-export async function GET() {
+// GET /api/avec/sync — status da última sincronização + teste de conexão
+export async function GET(req: NextRequest) {
   try {
+    const test = req.nextUrl.searchParams.get('test') === '1'
     const last = await getLastAvecSync()
     return ok({
       configured: isAvecConfigured(),
+      mock: isAvecMock(),
+      base_url: getAvecBaseUrl(),
+      docs: 'https://documenter.getpostman.com/view/12527228/2sA2xmUWJo',
       last,
+      ...(test ? { connection: await testAvecConnection() } : {}),
     })
   } catch (e) {
     return handleError(e)

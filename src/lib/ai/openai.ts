@@ -12,6 +12,10 @@ function getClient() {
 }
 
 export async function askAI(systemPrompt: string, userMessage: string): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    return 'Olá! Sou a recepcionista virtual do ROM Club. Posso ajudar com agendamento, valores ou tirar dúvidas sobre nossos serviços. O que você precisa?'
+  }
+
   const res = await getClient().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
