@@ -74,6 +74,27 @@ export async function getContactById(id: string): Promise<ContactRow | null> {
   return rows[0] ?? null
 }
 
+export interface ContactEventRow {
+  id: string
+  contact_id: string | null
+  channel: string
+  direction: 'in' | 'out'
+  handled_by: 'ai' | 'human' | 'system'
+  payload: Record<string, unknown>
+  error: string | null
+  created_at: string
+}
+
+export async function listEvents(contactId: string, limit = 50): Promise<ContactEventRow[]> {
+  const sql = getSql()
+  return (await sql`
+    select * from contact_events
+    where contact_id = ${contactId}
+    order by created_at desc
+    limit ${limit}
+  `) as ContactEventRow[]
+}
+
 interface UpdateContactInput {
   name?: string
   email?: string

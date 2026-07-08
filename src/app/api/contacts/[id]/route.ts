@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { getContactById, updateContact, logEvent, CONTACT_STATUSES } from '@/lib/contacts'
+import { getContactById, updateContact, logEvent, listEvents, CONTACT_STATUSES } from '@/lib/contacts'
 import { listServices } from '@/lib/services'
 import { enrichServices, computeRecommendations } from '@/lib/recommendations'
 
@@ -15,8 +15,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
     const services = enrichServices(await listServices(id))
     const recommendations = computeRecommendations(services)
+    const events = await listEvents(id)
 
-    return ok({ contact, services, recommendations })
+    return ok({ contact, services, recommendations, events })
   } catch (e) {
     return handleError(e)
   }

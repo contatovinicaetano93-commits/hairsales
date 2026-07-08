@@ -13,6 +13,10 @@ import {
   Clock,
   AlertTriangle,
   CircleCheck,
+  RefreshCw,
+  MessageSquare,
+  Wrench,
+  UserPlus,
 } from 'lucide-react'
 import {
   StatusPill,
@@ -47,10 +51,20 @@ interface Contact {
   status: string
   notes: string | null
 }
+interface ContactEvent {
+  id: string
+  channel: string
+  direction: 'in' | 'out'
+  handled_by: 'ai' | 'human' | 'system'
+  payload: Record<string, unknown>
+  error: string | null
+  created_at: string
+}
 interface Profile {
   contact: Contact
   services: Service[]
   recommendations: Recommendation[]
+  events: ContactEvent[]
 }
 
 const STATUS_FLOW = ['novo', 'em_atendimento', 'agendado', 'convertido', 'perdido']
@@ -91,6 +105,38 @@ function ServiceStateBadge({ state, days }: { state: Service['state']; days: num
       </span>
     )
   return <span className="rounded-full bg-border px-2 py-0.5 text-[0.65rem] font-semibold text-muted">Avulso</span>
+}
+
+const HANDLED_BY_LABEL: Record<string, string> = { ai: 'IA', human: 'Equipe', system: 'Sistema' }
+
+function relTime(iso: string) {
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+  if (min < 1) return 'agora'
+  if (min < 60) return `há ${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `há ${h}h`
+  const d = Math.floor(h / 24)
+  if (d < 30) return `há ${d}d`
+  return new Date(iso).toLocaleDateString('pt-BR')
+}
+
+function eventMeta(e: ContactEvent): { icon: React.ReactNode; title: string; detail: string; danger?: boolean } {
+  const p = e.payload ?? {}
+  const asStr = (v: unknown) => (typeof v === 'string' ? v : undefined)
+
+  if (e.error) return { icon: <AlertTriangle size={14} />, title: 'Erro registrado', detail: e.error, danger: true }
+
+  const update = p.update as Record<string, unknown> | undefined
+  if (update?.status) return { icon: <RefreshCw size={14} />, title: `Status → ${STATUS_LABEL[String(update.status)] ?? update.status}`, detail: '' }
+  if (update) return { icon: <RefreshCw size={14} />, title: 'Cadastro atualizado', detail: Object.keys(update).join(', ') }
+
+  if (asStr(p.service_added)) return { icon: <Wrench size={14} />, title: 'Serviço adicionado', detail: String(p.service_added) }
+  if (asStr(p.brief)) return { icon: <Sparkles size={14} />, title: 'Briefing gerado', detail: p.source === 'ai' ? 'via IA' : 'via regras' }
+  if (asStr(p.text)) return { icon: <MessageSquare size={14} />, title: e.direction === 'in' ? 'Mensagem recebida' : 'Mensagem enviada', detail: String(p.text) }
+  if (asStr(p.notes)) return { icon: <MessageSquare size={14} />, title: 'Observação', detail: String(p.notes) }
+  if ('services' in p) return { icon: <UserPlus size={14} />, title: 'Contato cadastrado', detail: '' }
+
+  return { icon: <MessageSquare size={14} />, title: `${e.channel} · ${e.direction === 'in' ? 'entrada' : 'saída'}`, detail: '' }
 }
 
 export default function ContactDetailPage() {
@@ -173,7 +219,7 @@ export default function ContactDetailPage() {
     )
   }
 
-  const { contact, services, recommendations } = data
+  const { contact, services, recommendations, events } = data
 
   return (
     <main className="flex flex-1 flex-col gap-5 px-5 py-6">
@@ -295,6 +341,39 @@ export default function ContactDetailPage() {
             </div>
           ))}
         </div>
+      </SectionCard>
+
+      {/* Histórico de atendimento (timeline) */}
+      <SectionCard title="Histórico de atendimento">
+        {events.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted">Nenhum evento registrado ainda.</p>
+        ) : (
+          <ol className="relative flex flex-col gap-4 pl-5">
+            <span className="absolute left-[7px] top-1 bottom-1 w-px bg-border" aria-hidden />
+            {events.map((e) => {
+              const meta = eventMeta(e)
+              return (
+                <li key={e.id} className="relative">
+                  <span
+                    className={`absolute -left-5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full border ${
+                      meta.danger ? 'border-danger/50 bg-danger/15 text-danger' : 'border-gold/40 bg-gold/10 text-gold'
+                    }`}
+                  >
+                    <span className="scale-[0.6]">{meta.icon}</span>
+                  </span>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className={`text-sm font-medium ${meta.danger ? 'text-danger' : ''}`}>{meta.title}</p>
+                    <span className="shrink-0 text-[0.65rem] text-muted">{relTime(e.created_at)}</span>
+                  </div>
+                  {meta.detail && <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted">{meta.detail}</p>}
+                  <span className="mt-1 inline-block text-[0.6rem] uppercase tracking-wide text-muted/70">
+                    {HANDLED_BY_LABEL[e.handled_by] ?? e.handled_by}
+                  </span>
+                </li>
+              )
+            })}
+          </ol>
+        )}
       </SectionCard>
 
       {addOpen && (
