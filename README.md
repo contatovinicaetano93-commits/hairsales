@@ -19,7 +19,7 @@ navegação por *bottom tab bar* (Painel / Contatos), `theme-color` e
 - `src/app/api/webhooks/avec` — webhook push (agendamento, atendimento, cliente).
 - `src/app/api/avec/sync` — sincronização com a API de Relatórios Avec
   (clientes `0004`, agendamentos `0051`, atendidos `0002`). Roda via cron
-  a cada 3h ou manualmente com `CRON_SECRET`.
+  1x/dia (8h) ou manualmente com `CRON_SECRET`.
 - `src/app/api/webhooks/whatsapp` — recebe mensagem do provedor WhatsApp
   (Evolution API), responde com IA (primeiro atendimento guiado) e loga tudo.
 - `src/app/api/webhooks/telegram` — bot "secretária": equipe pergunta em
