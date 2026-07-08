@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/kpis')
+    fetch('/api/kpis', { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
         if (json.error) setError(json.error)

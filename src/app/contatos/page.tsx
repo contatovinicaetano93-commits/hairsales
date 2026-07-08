@@ -42,7 +42,7 @@ export default function ContatosPage() {
 
   async function load() {
     try {
-      const res = await fetch('/api/contacts')
+      const res = await fetch('/api/contacts', { cache: 'no-store' })
       const json = await res.json()
       if (json.error) setError(json.error)
       else setContacts(json.data ?? [])
@@ -54,7 +54,7 @@ export default function ContatosPage() {
   }
 
   useEffect(() => {
-    fetch('/api/contacts')
+    fetch('/api/contacts', { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
         if (json.error) setError(json.error)
