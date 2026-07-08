@@ -14,7 +14,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex w-full max-w-md">
+      <div className="mx-auto flex w-full max-w-md md:max-w-xl lg:max-w-3xl xl:max-w-4xl">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`)
           return (

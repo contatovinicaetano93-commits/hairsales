@@ -44,9 +44,9 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {/* Container mobile-first: largura de celular, centralizado em telas maiores */}
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+      <body className="min-h-full flex flex-col bg-[#050403]">
+        {/* Mobile-first no celular; expande no desktop sem perder o layout */}
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:max-w-xl lg:max-w-3xl lg:min-h-screen lg:border-x lg:border-border/50 xl:max-w-4xl">
           <TopBar />
           {children}
         </div>
