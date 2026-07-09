@@ -1,4 +1,5 @@
 import type { DirectorReport, MonthKey, QuarterKey } from './types'
+import { labelMonth, labelQuarter } from './period'
 
 function esc(v: string | number | null | undefined) {
   const s = v == null ? '' : String(v)
@@ -6,7 +7,7 @@ function esc(v: string | number | null | undefined) {
   return s
 }
 
-/** Planilha estilo FATURAMENTOVITOR: profissional × mês (faturamento + ticket). */
+/** 0021 — série mês a mês (faturamento + ticket). */
 export function revenueCsv(report: DirectorReport, selectedMonth?: MonthKey) {
   const months = report.revenue_blocks[0]?.months.map((m) => m.month) ?? []
   const filtered = selectedMonth ? months.filter((m) => m === selectedMonth) : months
@@ -29,7 +30,78 @@ export function revenueCsv(report: DirectorReport, selectedMonth?: MonthKey) {
   return lines.join('\n')
 }
 
-/** Retorno 0011: profissional × trimestre + delta. */
+/** 0021 — comparativo mês A vs mês B. */
+export function revenueCompareCsv(report: DirectorReport) {
+  const a = report.period.selected_month
+  const b = report.period.compare_month
+  const header = [
+    'Profissional',
+    `Fat ${labelMonth(a)}`,
+    `Ticket ${labelMonth(a)}`,
+    `Fat ${labelMonth(b)}`,
+    `Ticket ${labelMonth(b)}`,
+    'Δ Fat (R$)',
+    'Δ Fat %',
+    'Δ Ticket (R$)',
+  ]
+  const lines = [header.map(esc).join(';')]
+
+  for (const block of report.revenue_blocks) {
+    const byMonth = new Map(block.months.map((m) => [m.month, m]))
+    const rowA = byMonth.get(a)
+    const rowB = byMonth.get(b)
+    const fatA = rowA?.revenue ?? 0
+    const fatB = rowB?.revenue ?? 0
+    const tickA = rowA?.ticket_avg ?? 0
+    const tickB = rowB?.ticket_avg ?? 0
+    const delta = fatA - fatB
+    const deltaPct = fatB > 0 ? ((delta / fatB) * 100).toFixed(1) : ''
+    lines.push(
+      [block.professional.name, fatA, tickA, fatB, tickB, delta, deltaPct, tickA - tickB]
+        .map(esc)
+        .join(';')
+    )
+  }
+  return lines.join('\n')
+}
+
+/** 0011 — comparativo trimestre A vs trimestre B. */
+export function returnCompareCsv(report: DirectorReport) {
+  const a = report.period.selected_quarter
+  const b = report.period.compare_quarter
+  const header = [
+    'Profissional',
+    `Taxa ${labelQuarter(a)} %`,
+    `Clientes ${labelQuarter(a)}`,
+    `Taxa ${labelQuarter(b)} %`,
+    `Clientes ${labelQuarter(b)}`,
+    'Δ p.p.',
+  ]
+  const lines = [header.map(esc).join(';')]
+
+  for (const block of report.return_blocks) {
+    const qa = block.quarters.find((q) => q.quarter === a)
+    const qb = block.quarters.find((q) => q.quarter === b)
+    const rateA = qa?.return_rate ?? 0
+    const rateB = qb?.return_rate ?? 0
+    const delta = Math.round((rateA - rateB) * 1000) / 10
+    lines.push(
+      [
+        block.professional.name,
+        (rateA * 100).toFixed(1),
+        qa?.clients_total ?? '',
+        (rateB * 100).toFixed(1),
+        qb?.clients_total ?? '',
+        delta,
+      ]
+        .map(esc)
+        .join(';')
+    )
+  }
+  return lines.join('\n')
+}
+
+/** 0011 — série trimestral completa. */
 export function returnCsv(report: DirectorReport, selectedQuarter?: QuarterKey) {
   const header = [
     'Profissional',
@@ -60,11 +132,7 @@ export function returnCsv(report: DirectorReport, selectedQuarter?: QuarterKey) 
   return lines.join('\n')
 }
 
-/**
- * Lista 0011 no formato Avec:
- * Cliente | E-mail | Telefone | Celular | Sexo | Data ultima comanda
- * (+ coluna Profissional para o pacote consolidado)
- */
+/** Lista 0011 no formato Avec. */
 export function reactivationCsv(report: DirectorReport) {
   const header = [
     'Profissional',

@@ -239,9 +239,9 @@ export default function AdminPage() {
       >
         <div>
           <p className="text-[0.65rem] uppercase tracking-[0.2em] text-gold">Diretoria</p>
-          <p className="mt-1 font-semibold">Relatório semanal (Avec 0011 + 0021)</p>
+          <p className="mt-1 font-semibold">Relatório semanal (2 etapas)</p>
           <p className="mt-0.5 text-xs text-muted">
-            Retorno por trimestre · faturamento e ticket médio · lista de reativação · terças 08:00
+            Etapa 1 · 0011 trimestre vs trimestre · Etapa 2 · 0021 mês vs mês · terças 08:00
           </p>
         </div>
         <ChevronRight size={20} className="shrink-0 text-gold" />

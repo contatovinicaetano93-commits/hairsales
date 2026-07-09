@@ -1,7 +1,7 @@
-import type { DirectorReport } from './types'
-import { reactivationCsv, returnCsv, revenueCsv } from './csv'
+import type { DirectorReport, DirectorReportStage } from './types'
+import { reactivationCsv, returnCompareCsv, revenueCompareCsv } from './csv'
 import { sendDirectorReportEmail, getDirectorReportRecipients } from './email'
-import { slugPeriod } from './period'
+import { slug0011, slug0021 } from './period'
 import { sendTelegramDocument, sendTelegramMessage } from '@/lib/telegram/bot'
 import { formatCurrency, formatPercent } from '@/lib/salon/format'
 
@@ -9,46 +9,64 @@ function managementChatId() {
   return process.env.TELEGRAM_STAFF_CHAT_IDS?.split(',')[0]?.trim() || null
 }
 
-export async function deliverDirectorReport(report: DirectorReport) {
-  const email = await sendDirectorReportEmail(report)
-  const slug = slugPeriod(report)
+export async function deliverDirectorReport(
+  report: DirectorReport,
+  stage: DirectorReportStage = 'all'
+) {
+  const email = await sendDirectorReportEmail(report, stage)
 
   let telegram: { ok: boolean; error?: string; chat?: string } | null = null
   const chat = managementChatId()
   if (chat && process.env.TELEGRAM_BOT_TOKEN) {
     try {
-      const caption = [
+      const lines = [
         `ROM Brasil · Relatório diretoria`,
-        `Período: ${report.period.label}`,
-        `Data ref.: ${report.period.reference_date}`,
-        `${report.summary.professionals} profissionais`,
-        `Retorno médio ${formatPercent(report.summary.avg_return_rate, 1)}`,
-        `Fat. mês ${formatCurrency(report.summary.total_revenue_selected_month)}`,
-        `Ticket ${formatCurrency(report.summary.avg_ticket_selected_month)}`,
+        stage === 'all' ? 'Etapas: 0011 + 0021' : `Etapa: ${stage}`,
+      ]
+      if (stage === '0011' || stage === 'all') {
+        lines.push(`0011: ${report.period.label_0011}`)
+        lines.push(`Retorno médio ${formatPercent(report.summary.avg_return_rate, 1)}`)
+      }
+      if (stage === '0021' || stage === 'all') {
+        lines.push(`0021: ${report.period.label_0021}`)
+        lines.push(`Fat. ${formatCurrency(report.summary.total_revenue_selected_month)}`)
+        lines.push(`Ticket ${formatCurrency(report.summary.avg_ticket_selected_month)}`)
+      }
+      lines.push(`Data ref.: ${report.period.reference_date}`)
+      lines.push(
         email.ok
           ? `E-mail OK → ${email.to.join(', ')}`
-          : `E-mail pendente: ${email.error}`,
-      ].join('\n')
+          : `E-mail pendente: ${email.error}`
+      )
 
-      await sendTelegramMessage(chat, caption)
-      await sendTelegramDocument(
-        chat,
-        `faturamento-ticket_${slug}.csv`,
-        '\uFEFF' + revenueCsv(report),
-        `0021 · ${report.period.selected_month}`
-      )
-      await sendTelegramDocument(
-        chat,
-        `retorno-trimestre_${slug}.csv`,
-        '\uFEFF' + returnCsv(report),
-        `0011 · ${report.period.selected_quarter} vs ${report.period.compare_quarter}`
-      )
-      await sendTelegramDocument(
-        chat,
-        `0011-lista-clientes_${slug}.csv`,
-        '\uFEFF' + reactivationCsv(report),
-        `0011 · lista · ref. ${report.period.reference_date}`
-      )
+      await sendTelegramMessage(chat, lines.join('\n'))
+
+      if (stage === '0011' || stage === 'all') {
+        const s = slug0011(report)
+        await sendTelegramDocument(
+          chat,
+          `0011-comparativo-trimestre_${s}.csv`,
+          '\uFEFF' + returnCompareCsv(report),
+          `Etapa 1 · 0011 · ${report.period.label_0011}`
+        )
+        await sendTelegramDocument(
+          chat,
+          `0011-lista-clientes_${s}.csv`,
+          '\uFEFF' + reactivationCsv(report),
+          `Etapa 1 · lista clientes · ref. ${report.period.reference_date}`
+        )
+      }
+
+      if (stage === '0021' || stage === 'all') {
+        const s = slug0021(report)
+        await sendTelegramDocument(
+          chat,
+          `0021-comparativo-mes_${s}.csv`,
+          '\uFEFF' + revenueCompareCsv(report),
+          `Etapa 2 · 0021 · ${report.period.label_0021}`
+        )
+      }
+
       telegram = { ok: true, chat }
     } catch (e) {
       telegram = { ok: false, chat, error: e instanceof Error ? e.message : String(e) }
@@ -60,5 +78,6 @@ export async function deliverDirectorReport(report: DirectorReport) {
     telegram,
     recipients: getDirectorReportRecipients(),
     period: report.period,
+    stage,
   }
 }

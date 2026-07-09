@@ -211,6 +211,10 @@ export function defaultSelectedMonth(): MonthKey {
   return '2026-03'
 }
 
+export function defaultCompareMonth(): MonthKey {
+  return '2026-02'
+}
+
 export function defaultSelectedQuarter(): QuarterKey {
   return '2026-Q1'
 }

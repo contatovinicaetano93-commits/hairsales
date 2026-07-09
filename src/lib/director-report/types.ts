@@ -52,12 +52,19 @@ export interface ProfessionalRevenueBlock {
   selected_month: MonthKey
 }
 
+export type DirectorReportStage = '0011' | '0021' | 'all'
+
 export interface DirectorReportPeriod {
   selected_month: MonthKey
+  compare_month: MonthKey
   selected_quarter: QuarterKey
   compare_quarter: QuarterKey
-  /** Rótulo legível: Fat Mar/2026 · Retorno 1º tri/2026 vs … */
+  /** Rótulo completo (ambas etapas) */
   label: string
+  /** Etapa 1 — 0011 */
+  label_0011: string
+  /** Etapa 2 — 0021 */
+  label_0021: string
   /** Data de referência (último dia do mês 0021), dd/mm/aaaa */
   reference_date: string
 }

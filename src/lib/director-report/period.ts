@@ -28,13 +28,22 @@ export function labelQuarter(quarter: QuarterKey): string {
   return `${q}º tri/${y}`
 }
 
-/** Ex.: "Fat Mar/2026 · Retorno 1º tri/2026 vs 1º tri/2025" */
-export function reportPeriodLabel(report: DirectorReport): string {
-  const { selected_month, selected_quarter, compare_quarter } = report.period
-  return `Fat ${labelMonth(selected_month)} · Retorno ${labelQuarter(selected_quarter)} vs ${labelQuarter(compare_quarter)}`
+export function label0011(report: DirectorReport): string {
+  const { selected_quarter, compare_quarter } = report.period
+  return `Retorno ${labelQuarter(selected_quarter)} vs ${labelQuarter(compare_quarter)}`
 }
 
-/** Data de referência do relatório (último dia do mês selecionado), pt-BR. */
+export function label0021(report: DirectorReport): string {
+  const { selected_month, compare_month } = report.period
+  return `Fat ${labelMonth(selected_month)} vs ${labelMonth(compare_month)}`
+}
+
+/** Ex.: "Etapa 1: Retorno … · Etapa 2: Fat …" */
+export function reportPeriodLabel(report: DirectorReport): string {
+  return `Etapa 1: ${label0011(report)} · Etapa 2: ${label0021(report)}`
+}
+
+/** Data de referência do relatório (último dia do mês selecionado 0021), pt-BR. */
 export function reportReferenceDate(report: DirectorReport): string {
   const [y, m] = report.period.selected_month.split('-').map(Number)
   if (!y || !m) {
@@ -46,11 +55,37 @@ export function reportReferenceDate(report: DirectorReport): string {
   return last.toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 }
 
+export function reportSubject0011(report: DirectorReport): string {
+  return `ROM Brasil · Etapa 1 · Relatório 0011 · ${label0011(report)} · ref. ${report.period.reference_date}`
+}
+
+export function reportSubject0021(report: DirectorReport): string {
+  return `ROM Brasil · Etapa 2 · Relatório 0021 · ${label0021(report)} · ref. ${report.period.reference_date}`
+}
+
+/** @deprecated use reportSubject0011 / reportSubject0021 */
 export function reportSubject(report: DirectorReport): string {
   return `ROM Brasil · Relatório diretoria · ${reportPeriodLabel(report)} · ref. ${reportReferenceDate(report)}`
 }
 
+export function slug0011(report: DirectorReport): string {
+  const { selected_quarter, compare_quarter } = report.period
+  return `0011_${selected_quarter}_vs_${compare_quarter}`.replace(/[^a-zA-Z0-9_-]/g, '_')
+}
+
+export function slug0021(report: DirectorReport): string {
+  const { selected_month, compare_month } = report.period
+  return `0021_${selected_month}_vs_${compare_month}`.replace(/[^a-zA-Z0-9_-]/g, '_')
+}
+
 export function slugPeriod(report: DirectorReport): string {
-  const { selected_month, selected_quarter, compare_quarter } = report.period
-  return `${selected_month}_${selected_quarter}_vs_${compare_quarter}`.replace(/[^a-zA-Z0-9_-]/g, '_')
+  return `${slug0011(report)}_${slug0021(report)}`
+}
+
+/** Mês anterior (YYYY-MM). */
+export function previousMonth(month: MonthKey): MonthKey {
+  const [y, m] = month.split('-').map(Number)
+  if (!y || !m) return month
+  if (m === 1) return `${y - 1}-12` as MonthKey
+  return `${y}-${String(m - 1).padStart(2, '0')}` as MonthKey
 }

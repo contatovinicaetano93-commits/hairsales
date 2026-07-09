@@ -2,16 +2,18 @@ import { isAvecConfigured, isAvecMock } from '@/lib/avec/client'
 import {
   buildMockReturnBlocks,
   buildMockRevenueBlocks,
+  defaultCompareMonth,
   defaultCompareQuarter,
   defaultSelectedMonth,
   defaultSelectedQuarter,
 } from './mock'
-import { reportPeriodLabel, reportReferenceDate } from './period'
+import { label0011, label0021, reportPeriodLabel, reportReferenceDate } from './period'
 import { listDirectorProfessionals } from './professionals'
 import type { DirectorReport, MonthKey, QuarterKey } from './types'
 
 export interface BuildDirectorReportOptions {
   selectedMonth?: MonthKey
+  compareMonth?: MonthKey
   selectedQuarter?: QuarterKey
   compareQuarter?: QuarterKey
   professionalId?: string
@@ -23,6 +25,7 @@ export async function buildDirectorReport(
   opts: BuildDirectorReportOptions = {}
 ): Promise<DirectorReport> {
   const selectedMonth = opts.selectedMonth ?? defaultSelectedMonth()
+  const compareMonth = opts.compareMonth ?? defaultCompareMonth()
   const selectedQuarter = opts.selectedQuarter ?? defaultSelectedQuarter()
   const compareQuarter = opts.compareQuarter ?? defaultCompareQuarter()
 
@@ -31,8 +34,6 @@ export async function buildDirectorReport(
     professionals = professionals.filter((p) => p.id === opts.professionalId)
   }
 
-  // Avec real entra quando token + parsers 0011/0021 estiverem validados.
-  // Até lá (e sem token), entrega mock fiel à planilha Vitor + equipe portfólio.
   const useMock = opts.forceMock || !isAvecConfigured() || isAvecMock()
 
   const return_blocks = buildMockReturnBlocks(professionals, selectedQuarter, compareQuarter)
@@ -45,23 +46,29 @@ export async function buildDirectorReport(
   const totalRev = selectedRevenue.reduce((s, r) => s + r.revenue, 0)
   const totalAtt = selectedRevenue.reduce((s, r) => s + r.attended, 0)
 
-  const returnRates = return_blocks.map((b) => {
-    const q = b.quarters.find((x) => x.quarter === selectedQuarter)
-    return q?.return_rate ?? null
-  }).filter((x): x is number => x != null)
+  const returnRates = return_blocks
+    .map((b) => {
+      const q = b.quarters.find((x) => x.quarter === selectedQuarter)
+      return q?.return_rate ?? null
+    })
+    .filter((x): x is number => x != null)
 
   const draft: DirectorReport = {
     generated_at: new Date().toISOString(),
     period: {
       selected_month: selectedMonth,
+      compare_month: compareMonth,
       selected_quarter: selectedQuarter,
       compare_quarter: compareQuarter,
       label: '',
+      label_0011: '',
+      label_0021: '',
       reference_date: '',
     },
-    source: useMock ? 'mock' : 'mock', // 'avec' quando sync real estiver ligado
+    source: useMock ? 'mock' : 'mock',
     avec_reports: { return: '0011', revenue: '0021' },
-    schedule_note: 'Envio automático: terças 08:00 (America/Sao_Paulo) — só admin operacional',
+    schedule_note:
+      'Envio em 2 etapas (terças 08:00 SP): 0011 trimestre vs trimestre · 0021 mês vs mês',
     return_blocks,
     revenue_blocks,
     summary: {
@@ -75,8 +82,10 @@ export async function buildDirectorReport(
     },
   }
 
-  draft.period.label = reportPeriodLabel(draft)
   draft.period.reference_date = reportReferenceDate(draft)
+  draft.period.label_0011 = label0011(draft)
+  draft.period.label_0021 = label0021(draft)
+  draft.period.label = reportPeriodLabel(draft)
 
   return draft
 }
