@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { X, Sparkles, Copy, Check, ChevronRight, Hand } from 'lucide-react'
+import { X, Sparkles, Copy, Check, ChevronRight, Hand, Scissors } from 'lucide-react'
 import { apiFetch } from '@/lib/api-client'
 import { LastVisitCard, type LastVisitData } from './LastVisitCard'
 
@@ -16,6 +16,7 @@ export function BriefSheet({ contactId, contactName, onClose }: BriefSheetProps)
   const [brief, setBrief] = useState<{ text: string; source: string } | null>(null)
   const [lastVisit, setLastVisit] = useState<LastVisitData | null>(null)
   const [manicurist, setManicurist] = useState<string | null>(null)
+  const [hairstylist, setHairstylist] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -37,6 +38,7 @@ export function BriefSheet({ contactId, contactName, onClose }: BriefSheetProps)
       }
       setLastVisit(json.data?.last_visit ?? null)
       setManicurist(profile.data?.contact?.preferred_manicurist ?? null)
+      setHairstylist(profile.data?.contact?.preferred_hairstylist ?? null)
       if (json.data?.brief) {
         setBrief({ text: json.data.brief, source: json.data.source })
       } else {
@@ -94,12 +96,21 @@ export function BriefSheet({ contactId, contactName, onClose }: BriefSheetProps)
 
           {!loading && (
             <div className="mb-4 space-y-3">
-              <div className="rounded-2xl border border-border bg-card px-4 py-3">
-                <p className="text-[0.65rem] uppercase tracking-wide text-muted">Manicure preferida</p>
-                <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
-                  <Hand size={14} className="text-gold" />
-                  {manicurist?.trim() || 'Ainda não informada'}
-                </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-card px-4 py-3">
+                  <p className="text-[0.65rem] uppercase tracking-wide text-muted">Manicure preferida</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
+                    <Hand size={14} className="text-gold" />
+                    {manicurist?.trim() || 'Ainda não informada'}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border bg-card px-4 py-3">
+                  <p className="text-[0.65rem] uppercase tracking-wide text-muted">Cabeleireiro preferido</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
+                    <Scissors size={14} className="text-gold" />
+                    {hairstylist?.trim() || 'Ainda não informado'}
+                  </p>
+                </div>
               </div>
               <LastVisitCard visit={lastVisit} />
             </div>

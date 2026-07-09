@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isHairService,
   isNailService,
   normalizeAppointmentRow,
   normalizeAttendanceRow,
@@ -69,5 +70,14 @@ describe('isNailService', () => {
     expect(isNailService('Pedicure spa')).toBe(true)
     expect(isNailService('Blindagem de unhas')).toBe(true)
     expect(isNailService('Corte feminino')).toBe(false)
+  })
+})
+
+describe('isHairService', () => {
+  it('reconhece corte e coloração, não unha', () => {
+    expect(isHairService('Corte feminino')).toBe(true)
+    expect(isHairService('Coloração completa')).toBe(true)
+    expect(isHairService('Escova modelada')).toBe(true)
+    expect(isHairService('Manicure completa')).toBe(false)
   })
 })

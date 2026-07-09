@@ -48,6 +48,7 @@ export interface ContactRow {
   avec_client_id: string | null
   notes: string | null
   preferred_manicurist: string | null
+  preferred_hairstylist: string | null
   first_contact_at: string
   last_contact_at: string
   created_at: string
@@ -169,6 +170,7 @@ interface UpdateContactInput {
   status?: ContactStatus
   notes?: string
   preferredManicurist?: string | null
+  preferredHairstylist?: string | null
 }
 
 // Atualização parcial e guiada: só mexe nos campos enviados (coalesce mantém o resto).
@@ -186,6 +188,10 @@ export async function updateContact(id: string, patch: UpdateContactInput): Prom
     patch.preferredManicurist === undefined
       ? null
       : patch.preferredManicurist?.trim() || null
+  const hairstylist =
+    patch.preferredHairstylist === undefined
+      ? null
+      : patch.preferredHairstylist?.trim() || null
 
   const rows = (await sql`
     update contacts set
@@ -197,6 +203,10 @@ export async function updateContact(id: string, patch: UpdateContactInput): Prom
       preferred_manicurist = case
         when ${patch.preferredManicurist !== undefined} then ${manicurist}
         else preferred_manicurist
+      end,
+      preferred_hairstylist = case
+        when ${patch.preferredHairstylist !== undefined} then ${hairstylist}
+        else preferred_hairstylist
       end,
       last_contact_at = now()
     where id = ${id}
@@ -216,6 +226,21 @@ export async function setPreferredManicurist(
   await sql`
     update contacts
     set preferred_manicurist = ${name}, last_contact_at = last_contact_at
+    where id = ${contactId}
+  `
+}
+
+/** Define cabeleireiro preferido (sync Avec / última visita de cabelo). */
+export async function setPreferredHairstylist(
+  contactId: string,
+  hairstylist: string
+): Promise<void> {
+  const name = hairstylist.trim()
+  if (!name) return
+  const sql = getSql()
+  await sql`
+    update contacts
+    set preferred_hairstylist = ${name}, last_contact_at = last_contact_at
     where id = ${contactId}
   `
 }

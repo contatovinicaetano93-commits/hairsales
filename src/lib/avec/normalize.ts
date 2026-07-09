@@ -229,6 +229,33 @@ export function isNailService(name: string | null | undefined): boolean {
   )
 }
 
+/** Serviço de cabelo — usado para preferência de cabeleireiro. */
+export function isHairService(name: string | null | undefined): boolean {
+  if (!name) return false
+  if (isNailService(name)) return false
+  const n = name.toLowerCase()
+  return (
+    n.includes('corte') ||
+    n.includes('cabeleir') ||
+    n.includes('color') ||
+    n.includes('mecha') ||
+    n.includes('tintura') ||
+    n.includes('luzes') ||
+    n.includes('balayage') ||
+    n.includes('escova') ||
+    n.includes('hidrat') ||
+    n.includes('nutri') ||
+    n.includes('progressiva') ||
+    n.includes('botox') ||
+    n.includes('selagem') ||
+    n.includes('penteado') ||
+    n.includes('finaliza') ||
+    n.includes('shampoo') ||
+    n.includes('barba') ||
+    n.includes('bigode')
+  )
+}
+
 // Mapeia nome de serviço Avec → categoria ROM (heurística simples).
 export function guessServiceCategory(name: string): 'corte' | 'tratamento' | 'coloracao' | 'bem_estar' | 'outro' {
   const n = name.toLowerCase()

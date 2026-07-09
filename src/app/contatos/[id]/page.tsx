@@ -21,6 +21,7 @@ import {
   Copy,
   Pencil,
   Hand,
+  Scissors,
 } from 'lucide-react'
 import {
   StatusPill,
@@ -63,6 +64,7 @@ interface Contact {
   status: string
   notes: string | null
   preferred_manicurist: string | null
+  preferred_hairstylist: string | null
 }
 interface ContactEvent {
   id: string
@@ -366,12 +368,21 @@ export default function ContactDetailPage() {
           )}
           {contact.notes && <p className="mt-1 text-xs leading-relaxed text-muted">{contact.notes}</p>}
         </div>
-        <div className="mt-4 rounded-xl border border-border bg-surface/80 px-3 py-2.5">
-          <p className="text-[0.65rem] uppercase tracking-wide text-muted">Manicure preferida</p>
-          <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
-            <Hand size={14} className="shrink-0 text-gold" />
-            {contact.preferred_manicurist?.trim() || 'Ainda não informada'}
-          </p>
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="rounded-xl border border-border bg-surface/80 px-3 py-2.5">
+            <p className="text-[0.65rem] uppercase tracking-wide text-muted">Manicure preferida</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
+              <Hand size={14} className="shrink-0 text-gold" />
+              {contact.preferred_manicurist?.trim() || 'Ainda não informada'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface/80 px-3 py-2.5">
+            <p className="text-[0.65rem] uppercase tracking-wide text-muted">Cabeleireiro preferido</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
+              <Scissors size={14} className="shrink-0 text-gold" />
+              {contact.preferred_hairstylist?.trim() || 'Ainda não informado'}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -808,6 +819,7 @@ function EditContactSheet({
   const [email, setEmail] = useState(contact.email ?? '')
   const [notes, setNotes] = useState(contact.notes ?? '')
   const [manicurist, setManicurist] = useState(contact.preferred_manicurist ?? '')
+  const [hairstylist, setHairstylist] = useState(contact.preferred_hairstylist ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -825,6 +837,7 @@ function EditContactSheet({
           email: email || undefined,
           notes,
           preferred_manicurist: manicurist.trim() || null,
+          preferred_hairstylist: hairstylist.trim() || null,
         }),
       })
       const json = await res.json()
@@ -889,6 +902,15 @@ function EditContactSheet({
               value={manicurist}
               onChange={(e) => setManicurist(e.target.value)}
               placeholder="Nome da manicure"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs uppercase tracking-wide text-muted">Cabeleireiro preferido</span>
+            <input
+              value={hairstylist}
+              onChange={(e) => setHairstylist(e.target.value)}
+              placeholder="Nome do cabeleireiro"
               className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-gold"
             />
           </label>

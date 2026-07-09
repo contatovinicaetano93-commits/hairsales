@@ -35,6 +35,7 @@ export interface ContactContext {
     telefone: string | null
     notas: string | null
     manicure_preferida: string | null
+    cabeleireiro_preferido: string | null
   }
   ultima_visita: string | null
   servicos: string[]
@@ -61,6 +62,7 @@ export function buildContactContext(
       telefone: contact.phone,
       notas: contact.notes,
       manicure_preferida: contact.preferred_manicurist,
+      cabeleireiro_preferido: contact.preferred_hairstylist,
     },
     ultima_visita: fmtLastVisit(pickLastVisit(services)),
     servicos: services.map(fmtService),
@@ -92,6 +94,7 @@ export function hashContactContext(contact: ContactRow, services: EnrichedServic
     status: contact.status,
     notes: contact.notes,
     preferred_manicurist: contact.preferred_manicurist,
+    preferred_hairstylist: contact.preferred_hairstylist,
     ultima_visita: last
       ? {
           at: last.last_done_at,

@@ -15,6 +15,7 @@ create table if not exists contacts (
   avec_client_id text,
   notes text,
   preferred_manicurist text,
+  preferred_hairstylist text,
   first_contact_at timestamptz not null default now(),
   last_contact_at timestamptz not null default now(),
   created_at timestamptz not null default now()

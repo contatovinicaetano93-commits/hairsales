@@ -8,24 +8,33 @@ import {
   listEvents,
   CONTACT_STATUSES,
   setPreferredManicurist,
+  setPreferredHairstylist,
 } from '@/lib/contacts'
 import { listServices, autoCompleteServicesOnConversion, pickLastVisit } from '@/lib/services'
 import { enrichServices, computeRecommendations } from '@/lib/recommendations'
-import { isNailService } from '@/lib/avec/normalize'
+import { isNailService, isHairService } from '@/lib/avec/normalize'
 
 type Ctx = { params: Promise<{ id: string }> }
 
-function derivePreferredManicurist(
-  services: { name: string; professional_name: string | null; last_done_at: string | null; scheduled_at: string | null }[]
+type ServiceHint = {
+  name: string
+  professional_name: string | null
+  last_done_at: string | null
+  scheduled_at: string | null
+}
+
+function derivePreferredPro(
+  services: ServiceHint[],
+  match: (name: string) => boolean
 ): string | null {
-  const nail = services
-    .filter((s) => isNailService(s.name) && s.professional_name)
+  const hits = services
+    .filter((s) => match(s.name) && s.professional_name)
     .sort((a, b) => {
       const ta = a.last_done_at ?? a.scheduled_at ?? ''
       const tb = b.last_done_at ?? b.scheduled_at ?? ''
       return tb.localeCompare(ta)
     })
-  return nail[0]?.professional_name ?? null
+  return hits[0]?.professional_name ?? null
 }
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
@@ -36,10 +45,17 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
     const rawServices = await listServices(id)
     if (!contact.preferred_manicurist) {
-      const derived = derivePreferredManicurist(rawServices)
+      const derived = derivePreferredPro(rawServices, isNailService)
       if (derived) {
         await setPreferredManicurist(id, derived)
         contact = { ...contact, preferred_manicurist: derived }
+      }
+    }
+    if (!contact.preferred_hairstylist) {
+      const derived = derivePreferredPro(rawServices, isHairService)
+      if (derived) {
+        await setPreferredHairstylist(id, derived)
+        contact = { ...contact, preferred_hairstylist: derived }
       }
     }
 
@@ -61,6 +77,7 @@ const patchSchema = z.object({
   status: z.enum(CONTACT_STATUSES).optional(),
   notes: z.string().optional(),
   preferred_manicurist: z.string().nullable().optional(),
+  preferred_hairstylist: z.string().nullable().optional(),
 })
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
@@ -79,6 +96,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       notes: body.notes,
       ...(body.preferred_manicurist !== undefined
         ? { preferredManicurist: body.preferred_manicurist }
+        : {}),
+      ...(body.preferred_hairstylist !== undefined
+        ? { preferredHairstylist: body.preferred_hairstylist }
         : {}),
     }
 

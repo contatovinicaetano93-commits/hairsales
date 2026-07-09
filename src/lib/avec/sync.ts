@@ -1,5 +1,11 @@
 import { getSql } from '@/lib/db'
-import { upsertContact, updateContact, logEvent, setPreferredManicurist } from '@/lib/contacts'
+import {
+  upsertContact,
+  updateContact,
+  logEvent,
+  setPreferredManicurist,
+  setPreferredHairstylist,
+} from '@/lib/contacts'
 import {
   listServices,
   addService,
@@ -22,6 +28,7 @@ import {
   normalizeCancellationRow,
   guessServiceCategory,
   isNailService,
+  isHairService,
 } from '@/lib/avec/normalize'
 import { getDailyReports, resolveReportId } from '@/lib/avec/registry'
 import { saveReportSnapshot } from '@/lib/avec/snapshots'
@@ -165,6 +172,8 @@ async function syncAppointments(stats: AvecSyncStats, syncRunId?: string) {
         }
         if (appt.professional && isNailService(appt.serviceName)) {
           await setPreferredManicurist(contact.id, appt.professional)
+        } else if (appt.professional && isHairService(appt.serviceName)) {
+          await setPreferredHairstylist(contact.id, appt.professional)
         }
       }
 
@@ -212,6 +221,8 @@ async function syncAttendances(stats: AvecSyncStats, syncRunId?: string) {
         })
         if (att.professional && isNailService(att.serviceName)) {
           await setPreferredManicurist(contact.id, att.professional)
+        } else if (att.professional && isHairService(att.serviceName)) {
+          await setPreferredHairstylist(contact.id, att.professional)
         }
         stats.services_completed++
       }
