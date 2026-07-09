@@ -342,18 +342,23 @@ export default function RelatorioDiretoriaPage() {
                 <CountBadge value={String(reactivation.length)} tone="gold" />
               </div>
               <ul className="space-y-2 text-sm">
-                {reactivation.map((c, i) => (
+                {reactivation.slice(0, 12).map((c, i) => (
                   <li
                     key={`${pro.id}-${i}`}
-                    className="flex flex-col gap-0.5 border-b border-border/50 pb-2 last:border-0 sm:flex-row sm:items-baseline sm:justify-between"
+                    className="flex flex-col gap-0.5 border-b border-border/50 pb-2 last:border-0"
                   >
-                    <span>
-                      <span className="font-medium">{c.name}</span>
-                      <span className="text-muted"> · {c.days_since}d sem vir</span>
+                    <span className="font-medium">{c.name}</span>
+                    <span className="text-xs text-muted">
+                      {[c.mobile || c.phone, c.email, c.last_visit && `última ${c.last_visit}`]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </span>
                     <span className="text-xs text-muted">{c.suggested_action}</span>
                   </li>
                 ))}
+                {reactivation.length > 12 && (
+                  <li className="text-xs text-muted">+ {reactivation.length - 12} na lista (baixe o CSV 0011)</li>
+                )}
               </ul>
             </div>
           ))}
@@ -369,15 +374,29 @@ export default function RelatorioDiretoriaPage() {
         <PrimaryButton
           type="button"
           onClick={async () => {
-            const res = await apiFetch('/api/director-report', { method: 'POST' })
+            const res = await apiFetch('/api/director-report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ mock: true }),
+            })
             const json = await res.json()
-            alert(json.data?.note ?? json.error ?? 'OK')
+            if (json.error) {
+              alert(json.error)
+              return
+            }
+            const d = json.data
+            alert(
+              d?.note ??
+                (d?.email?.ok
+                  ? `Enviado para ${d.email.to?.join(', ')}`
+                  : 'Relatório gerado')
+            )
           }}
         >
-          Simular envio semanal
+          Enviar teste por e-mail
         </PrimaryButton>
         <p className="self-center text-xs text-muted">
-          Cron: terça 08:00 · POST /api/director-report com CRON_SECRET
+          Destino: contato.vinicaetano93@gmail.com · Cron terça 08:00
         </p>
       </div>
     </main>

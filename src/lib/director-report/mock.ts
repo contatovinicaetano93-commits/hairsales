@@ -1,3 +1,4 @@
+import daniFixture from './fixtures/0011-dani-mariniello.json'
 import type {
   DirectorProfessional,
   MonthKey,
@@ -25,7 +26,7 @@ function hash(s: string) {
 
 function scaleFromName(name: string) {
   const h = hash(name)
-  return 0.55 + ((h % 70) / 100) // 0.55–1.24
+  return 0.55 + ((h % 70) / 100)
 }
 
 function buildMonthsForPro(pro: DirectorProfessional): MonthRevenueRow[] {
@@ -70,7 +71,7 @@ const QUARTERS: { key: QuarterKey; label: string }[] = [
 ]
 
 function buildQuartersForPro(pro: DirectorProfessional): ReturnQuarterRow[] {
-  const base = 0.38 + (hash(pro.name) % 25) / 100 // 38–62%
+  const base = 0.38 + (hash(pro.name) % 25) / 100
   const rows: ReturnQuarterRow[] = []
   let prev: number | null = null
   for (let i = 0; i < QUARTERS.length; i++) {
@@ -92,6 +93,40 @@ function buildQuartersForPro(pro: DirectorProfessional): ReturnQuarterRow[] {
   return rows
 }
 
+function daysSince(iso: string) {
+  const t = new Date(iso + 'T12:00:00').getTime()
+  return Math.max(0, Math.floor((Date.now() - t) / 86400000))
+}
+
+/** Lista real Avec 0011 — Dani Mariniello (1º–2º tri 2026). */
+function buildDaniReactivation(): ReactivationClient[] {
+  const today = Date.now()
+  return (daniFixture.clients as {
+    name: string
+    email: string | null
+    phone: string | null
+    mobile: string | null
+    gender: string | null
+    last_visit: string | null
+  }[]).map((c) => {
+    const last = c.last_visit ?? new Date(today - 60 * 86400000).toISOString().slice(0, 10)
+    const days = daysSince(last)
+    return {
+      name: c.name,
+      email: c.email,
+      phone: c.phone,
+      mobile: c.mobile,
+      gender: c.gender,
+      last_visit: last,
+      days_since: days,
+      suggested_action:
+        days > 90
+          ? 'Mensagem de retorno + oferta de manutenção'
+          : 'Convite para reagendar no horário preferido',
+    }
+  })
+}
+
 const SAMPLE_CLIENTS = [
   'Mariana Oliveira',
   'Patricia Souza',
@@ -103,7 +138,7 @@ const SAMPLE_CLIENTS = [
   'Carolina Dias',
 ]
 
-function buildReactivation(pro: DirectorProfessional): ReactivationClient[] {
+function buildSyntheticReactivation(pro: DirectorProfessional): ReactivationClient[] {
   const n = 4 + (hash(pro.id) % 4)
   const out: ReactivationClient[] = []
   for (let i = 0; i < n; i++) {
@@ -112,7 +147,10 @@ function buildReactivation(pro: DirectorProfessional): ReactivationClient[] {
     d.setDate(d.getDate() - days)
     out.push({
       name: SAMPLE_CLIENTS[(hash(pro.id) + i) % SAMPLE_CLIENTS.length]!,
-      phone: `+55119${String(80000000 + (hash(pro.id + String(i)) % 9999999)).padStart(8, '0')}`,
+      email: null,
+      phone: null,
+      mobile: `119${String(80000000 + (hash(pro.id + String(i)) % 9999999)).padStart(8, '0')}`,
+      gender: 'NAO ESPECIFICADO',
       last_visit: d.toISOString().slice(0, 10),
       days_since: days,
       suggested_action:
@@ -124,6 +162,13 @@ function buildReactivation(pro: DirectorProfessional): ReactivationClient[] {
   return out.sort((a, b) => b.days_since - a.days_since)
 }
 
+function buildReactivation(pro: DirectorProfessional): ReactivationClient[] {
+  if (pro.name === 'Dani Mariniello' || pro.id === 'pro-dani-mariniello') {
+    return buildDaniReactivation()
+  }
+  return buildSyntheticReactivation(pro)
+}
+
 export function buildMockReturnBlocks(
   professionals: DirectorProfessional[],
   selectedQuarter: QuarterKey,
@@ -131,6 +176,16 @@ export function buildMockReturnBlocks(
 ): ProfessionalReturnBlock[] {
   return professionals.map((professional) => {
     const quarters = buildQuartersForPro(professional)
+    // Dani: taxa alinhada ao volume real da lista 0011
+    if (professional.name === 'Dani Mariniello') {
+      const n = daniFixture.clients.length
+      const q1 = quarters.find((q) => q.quarter === '2026-Q1')
+      if (q1) {
+        q1.clients_total = n
+        q1.clients_returned = Math.round(n * 0.42)
+        q1.return_rate = 0.42
+      }
+    }
     return {
       professional,
       quarters,

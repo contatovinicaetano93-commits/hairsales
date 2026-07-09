@@ -18,9 +18,13 @@ export interface ReturnQuarterRow {
   delta_vs_prev: number | null // pontos percentuais
 }
 
+/** Linha no formato Avec 0011 (export Excel). */
 export interface ReactivationClient {
   name: string
+  email: string | null
   phone: string | null
+  mobile: string | null
+  gender: string | null
   last_visit: string // ISO date
   days_since: number
   suggested_action: string

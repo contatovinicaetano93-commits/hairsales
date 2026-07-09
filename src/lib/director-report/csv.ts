@@ -60,9 +60,23 @@ export function returnCsv(report: DirectorReport, selectedQuarter?: QuarterKey) 
   return lines.join('\n')
 }
 
-/** Lista de reativação por profissional. */
+/**
+ * Lista 0011 no formato Avec:
+ * Cliente | E-mail | Telefone | Celular | Sexo | Data ultima comanda
+ * (+ coluna Profissional para o pacote consolidado)
+ */
 export function reactivationCsv(report: DirectorReport) {
-  const header = ['Profissional', 'Cliente', 'Telefone', 'Última visita', 'Dias sem vir', 'Ação sugerida']
+  const header = [
+    'Profissional',
+    'Cliente',
+    'E-mail',
+    'Telefone',
+    'Celular',
+    'Sexo',
+    'Data ultima comanda',
+    'Dias sem vir',
+    'Ação sugerida',
+  ]
   const lines = [header.map(esc).join(';')]
   for (const block of report.return_blocks) {
     for (const c of block.reactivation) {
@@ -70,7 +84,10 @@ export function reactivationCsv(report: DirectorReport) {
         [
           block.professional.name,
           c.name,
+          c.email ?? '',
           c.phone ?? '',
+          c.mobile ?? '',
+          c.gender ?? '',
           c.last_visit,
           c.days_since,
           c.suggested_action,
