@@ -33,6 +33,7 @@ import {
 import { fmtSchedule, whatsAppUrl } from '@/lib/salon/format'
 import { CATEGORY_LABEL } from '@/lib/salon/constants'
 import { apiFetch } from '@/lib/api-client'
+import { buildClientWhatsAppMessage } from '@/lib/whatsapp/client-message'
 import { LastVisitCard, type LastVisitData } from '../../_components/LastVisitCard'
 
 interface Service {
@@ -317,6 +318,14 @@ export default function ContactDetailPage() {
   }
 
   const { contact, services, recommendations, events, last_visit } = data
+  const clientWhatsAppText = buildClientWhatsAppMessage({
+    contact,
+    services,
+    recommendations,
+  })
+  const clientWhatsAppHref = contact.phone
+    ? whatsAppUrl(contact.phone, clientWhatsAppText)
+    : null
 
   return (
     <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-5 px-5 py-6 lg:gap-8 lg:px-8 lg:py-8">
@@ -438,11 +447,12 @@ export default function ContactDetailPage() {
               {briefCopied ? 'Copiado!' : 'Copiar briefing'}
             </button>
           )}
-          {contact.phone && brief?.text && whatsAppUrl(contact.phone, brief.text) && (
+          {clientWhatsAppHref && (
             <a
-              href={whatsAppUrl(contact.phone, brief.text)!}
+              href={clientWhatsAppHref}
               target="_blank"
               rel="noopener noreferrer"
+              title="Abrir WhatsApp com mensagem pessoal de reativação"
               className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-success/40 bg-success/10 py-3 text-sm font-semibold text-success"
             >
               <MessageSquare size={16} />
@@ -452,7 +462,7 @@ export default function ContactDetailPage() {
           <button
             onClick={generateBrief}
             disabled={briefLoading}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl border border-gold/40 bg-gold/10 py-3 text-sm font-semibold text-gold active:scale-[0.99] transition-transform disabled:opacity-60 ${brief && contact.phone ? '' : brief ? '' : 'w-full'}`}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl border border-gold/40 bg-gold/10 py-3 text-sm font-semibold text-gold active:scale-[0.99] transition-transform disabled:opacity-60 ${brief && clientWhatsAppHref ? '' : brief ? '' : 'w-full'}`}
           >
             <Sparkles size={16} />
             {briefLoading ? 'Gerando…' : brief ? 'Atualizar' : 'Gerar briefing'}
