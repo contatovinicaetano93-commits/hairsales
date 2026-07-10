@@ -1,3 +1,31 @@
+export const SALON_TIMEZONE = 'America/Sao_Paulo'
+
+/** Data calendária de hoje no fuso do salão (YYYY-MM-DD). */
+export function todayIso(timeZone = SALON_TIMEZONE): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+}
+
+/** YYYY-MM-DD no fuso do salão a partir de ISO/Date (não usar slice UTC). */
+export function toSalonDateIso(
+  value: string | Date | null | undefined,
+  timeZone = SALON_TIMEZONE,
+): string | null {
+  if (value == null || value === '') return null
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d)
+}
+
 export function fmtSchedule(iso: string) {
   const d = new Date(iso)
   const today = new Date()
