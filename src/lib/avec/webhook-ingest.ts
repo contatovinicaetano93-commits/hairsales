@@ -156,7 +156,16 @@ export function normalizeAvecWebhookBody(raw: unknown): NormalizedAvecWebhook {
       ? new Date(completedRaw).toISOString()
       : undefined
 
-  const priceRaw = pickStr(data.price, data.valor, data.preco, data.preço)
+  const priceRaw = pickStr(
+    data.price,
+    data.valor,
+    data.preco,
+    data.preço,
+    pickNested(agendamento, ['valor']),
+    pickNested(agendamento, ['preco']),
+    pickNested(agendamento, ['preço']),
+    pickNested(agendamento, ['price']),
+  )
   const priceNum =
     typeof data.price === 'number' && data.price > 0
       ? data.price

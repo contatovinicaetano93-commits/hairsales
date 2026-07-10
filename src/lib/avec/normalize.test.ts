@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isHairService,
   isNailService,
+  normalize0011ReactivationRow,
   normalizeAppointmentRow,
   normalizeAttendanceRow,
   normalizePhone,
@@ -79,5 +80,47 @@ describe('isHairService', () => {
     expect(isHairService('Coloração completa')).toBe(true)
     expect(isHairService('Escova modelada')).toBe(true)
     expect(isHairService('Manicure completa')).toBe(false)
+  })
+})
+
+describe('normalize0011ReactivationRow', () => {
+  it('extrai cliente no formato Excel 0011 (Title Case)', () => {
+    const row = normalize0011ReactivationRow({
+      Cliente: 'GABRIELLA VASSOLER',
+      'E-mail': '',
+      Telefone: '',
+      Celular: '11964541122',
+      Sexo: 'NAO ESPECIFICADO',
+      'Data ultima comanda': '13/03/2026',
+      Profissional: 'Dani Mariniello',
+    })
+    expect(row?.name).toBe('GABRIELLA VASSOLER')
+    expect(row?.lastVisit).toBe('2026-03-13')
+    expect(row?.professional).toBe('Dani Mariniello')
+  })
+
+  it('extrai cliente com chaves lower/snake', () => {
+    const row = normalize0011ReactivationRow({
+      cliente: 'GABRIELLA VASSOLER',
+      email: null,
+      telefone: null,
+      celular: '11964541122',
+      sexo: 'NAO ESPECIFICADO',
+      data_ultima_comanda: '13/03/2026',
+      profissional: 'Dani Mariniello',
+    })
+    expect(row?.name).toBe('GABRIELLA VASSOLER')
+    expect(row?.mobile).toBe('11964541122')
+    expect(row?.lastVisit).toBe('2026-03-13')
+    expect(row?.professional).toBe('Dani Mariniello')
+  })
+
+  it('aceita linha só com taxa', () => {
+    const row = normalize0011ReactivationRow({
+      profissional: 'Vitor M',
+      taxa_retorno: '42%',
+    })
+    expect(row?.returnRate).toBeCloseTo(0.42)
+    expect(row?.professional).toBe('Vitor M')
   })
 })

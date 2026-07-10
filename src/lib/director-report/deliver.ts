@@ -20,7 +20,9 @@ export async function deliverDirectorReport(
   if (chat && process.env.TELEGRAM_BOT_TOKEN) {
     try {
       const lines = [
-        `ROM Brasil · Relatório diretoria`,
+        report.source === 'mock'
+          ? `ROM Brasil · Relatório diretoria [DEMO / mock — não usar para decisão]`
+          : `ROM Brasil · Relatório diretoria`,
         stage === 'all' ? 'Etapas: 0011 + 0021' : `Etapa: ${stage}`,
       ]
       if (stage === '0011' || stage === 'all') {

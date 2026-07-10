@@ -1,4 +1,5 @@
 import { isAvecConfigured, isAvecMock } from '@/lib/avec/client'
+import { fetchLiveDirectorBlocks } from './avec-live'
 import {
   buildMockReturnBlocks,
   buildMockRevenueBlocks,
@@ -38,11 +39,32 @@ export async function buildDirectorReport(
     professionals = professionals.filter((p) => p.id === opts.professionalId)
   }
 
-  // 0011/0021 live Avec mapping ainda não wired — sempre fixture/mock.
   const avecReady = isAvecConfigured() && !isAvecMock() && !opts.forceMock
+  let source: 'mock' | 'avec' = 'mock'
+  let return_blocks = buildMockReturnBlocks(professionals, selectedQuarter, compareQuarter)
+  let revenue_blocks = buildMockRevenueBlocks(professionals, selectedMonth)
+  let liveNote: string | null = null
 
-  const return_blocks = buildMockReturnBlocks(professionals, selectedQuarter, compareQuarter)
-  const revenue_blocks = buildMockRevenueBlocks(professionals, selectedMonth)
+  if (avecReady) {
+    try {
+      const live = await fetchLiveDirectorBlocks(
+        professionals,
+        selectedMonth,
+        compareMonth,
+        selectedQuarter,
+        compareQuarter,
+      )
+      return_blocks = live.return_blocks
+      revenue_blocks = live.revenue_blocks
+      source = 'avec'
+      if (live.warnings.length) {
+        liveNote = live.warnings.slice(0, 3).join(' · ')
+      }
+    } catch (e) {
+      liveNote = `Avec live falhou — usando fixture: ${e instanceof Error ? e.message : String(e)}`
+      console.warn('[director-report]', liveNote)
+    }
+  }
 
   const selectedRevenue = revenue_blocks.map((b) => {
     const row = b.months.find((m) => m.month === selectedMonth)
@@ -71,11 +93,14 @@ export async function buildDirectorReport(
       label_0021: '',
       reference_date: '',
     },
-    source: 'mock',
+    source,
     avec_reports: { return: '0011', revenue: '0021' },
-    schedule_note: avecReady
-      ? 'Envio em 2 etapas (terças 08:00 SP): 0011/0021 — Avec token OK; relatório ainda em fixture até mapper live'
-      : 'Envio em 2 etapas (terças 08:00 SP): 0011 trimestre vs trimestre · 0021 mês (ou mês vs mês) · dados mock',
+    schedule_note:
+      source === 'avec'
+        ? `Envio em 2 etapas (terças 08:00 SP): 0011/0021 live Avec${liveNote ? ` · ${liveNote}` : ''}`
+        : avecReady
+          ? `Envio em 2 etapas (terças 08:00 SP): 0011/0021 · fallback fixture${liveNote ? ` · ${liveNote}` : ''}`
+          : 'Envio em 2 etapas (terças 08:00 SP): 0011 trimestre vs trimestre · 0021 mês (ou mês vs mês) · dados mock',
     return_blocks,
     revenue_blocks,
     summary: {

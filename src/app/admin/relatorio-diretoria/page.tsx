@@ -107,6 +107,8 @@ export default function RelatorioDiretoriaPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  /** true = força fixture/demo; false = Avec live quando token OK */
+  const [forceDemo, setForceDemo] = useState(false)
 
   /** Carrega base completa — filtros de profissional são só na UI/envio de cada etapa. */
   const load = useCallback(async () => {
@@ -119,8 +121,8 @@ export default function RelatorioDiretoriaPage() {
         compare_months: compareMonths ? '1' : '0',
         quarter,
         compare,
-        mock: '1',
       })
+      if (forceDemo) q.set('mock', '1')
       const res = await apiFetch(`/api/director-report?${q}`, { cache: 'no-store' })
       const json = await res.json()
       if (!res.ok || json.error) {
@@ -134,7 +136,7 @@ export default function RelatorioDiretoriaPage() {
     } finally {
       setLoading(false)
     }
-  }, [month, compareMonth, compareMonths, quarter, compare])
+  }, [month, compareMonth, compareMonths, quarter, compare, forceDemo])
 
   useEffect(() => {
     load()
@@ -187,8 +189,8 @@ export default function RelatorioDiretoriaPage() {
       format,
       quarter,
       compare,
-      mock: '1',
     })
+    if (forceDemo) q.set('mock', '1')
     if (proId0011) q.set('professional_id', proId0011)
     await downloadBlob(q, filename)
   }
@@ -199,8 +201,8 @@ export default function RelatorioDiretoriaPage() {
       month,
       compare_month: compareMonth,
       compare_months: compareMonths ? '1' : '0',
-      mock: '1',
     })
+    if (forceDemo) q.set('mock', '1')
     if (proId0021) q.set('professional_id', proId0021)
     await downloadBlob(q, filename)
   }
@@ -277,16 +279,34 @@ export default function RelatorioDiretoriaPage() {
           <p className="mt-1 max-w-xl text-sm text-muted">
             Páginas independentes: cada etapa tem seu filtro e envia só o próprio relatório.
           </p>
+          <p className="mt-2 text-xs text-muted">
+            Fonte:{' '}
+            <span className={data?.source === 'avec' ? 'text-foreground' : 'text-warning'}>
+              {loading ? '…' : data?.source === 'avec' ? 'Avec live' : 'demo / fixture'}
+            </span>
+            {data?.schedule_note ? ` · ${data.schedule_note}` : ''}
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={load}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm font-semibold text-gold disabled:opacity-60"
-        >
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-          Atualizar
-        </button>
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          <label className="inline-flex items-center gap-2 text-xs text-muted">
+            <input
+              type="checkbox"
+              checked={forceDemo}
+              onChange={(e) => setForceDemo(e.target.checked)}
+              className="rounded border-border"
+            />
+            Forçar demo (mock)
+          </label>
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm font-semibold text-gold disabled:opacity-60"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            Atualizar
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -448,10 +468,15 @@ export default function RelatorioDiretoriaPage() {
                 para a recepção reaquecer o lead (WhatsApp). Na tela mostramos uma amostra (até 12 por
                 profissional); a lista completa vai no CSV / e-mail.
               </p>
+              {data?.source === 'avec' && (
+                <p className="text-muted">
+                  Fonte Avec live (0011) no trimestre selecionado.
+                </p>
+              )}
               {data?.source === 'mock' && (
                 <p className="text-warning">
-                  Dados de demonstração (mock). Com a Avec real, entram os clientes 0011 de verdade —
-                  hoje só a lista da Dani Mariniello usa fixture real.
+                  Dados de demonstração (mock / fallback). Com token Avec e sync OK, a lista 0011 vem
+                  ao vivo; sem isso, fixture (Dani) + síntese.
                 </p>
               )}
             </div>

@@ -14,12 +14,16 @@ Painel: `/admin/relatorio-diretoria` (somente `ADMIN-BRASIL`).
 - Cron Vercel: terça **08:00** America/Sao_Paulo → `POST /api/director-report` (`0 11 * * 2` UTC)
 - Auth: `Authorization: Bearer $CRON_SECRET` ou sessão admin
 
-## Preview atual
+## Fonte de dados
 
-Sem `AVEC_API_TOKEN` (ou com `?mock=1`), usa:
+Com `AVEC_API_TOKEN` (e sem `AVEC_MOCK=1` / `?mock=1`):
 
-- Série da planilha **FATURAMENTOVITOR** (Vitor M) como base
-- Equipe do portfólio hairstylists 2026 (nomes; IDs Avec quando a planilha oficial chegar)
+- **0021** — faturamento/ticket por mês calendário (`inicio`/`fim` dd/mm/yyyy)
+- **0011** — lista de reativação no trimestre (+ taxa se a linha trouxer; senão fallback **0007**)
+- Match profissional: `avec_pro_id` ou nome (normalizado)
+- Override do código 0011: `AVEC_REPORT_DIRECTOR_RETURN`
+
+Sem token (ou falha Avec / `forceMock`): fixture — série **FATURAMENTOVITOR** + lista Dani embutida.
 
 ## Export / envio
 

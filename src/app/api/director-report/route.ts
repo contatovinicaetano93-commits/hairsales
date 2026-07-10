@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}))
-    // Só força mock se pedido explicitamente; senão build usa Avec se configurada (hoje ainda mock interno).
+    // Só força mock se pedido explicitamente; senão build usa Avec live quando token OK.
     const forceMock = body?.mock === true || body?.mock === 1 || body?.mock === '1'
     const stage = asStage(typeof body?.stage === 'string' ? body.stage : 'all')
 
