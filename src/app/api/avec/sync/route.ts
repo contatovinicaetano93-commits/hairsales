@@ -23,26 +23,27 @@ function parseMode(req: NextRequest, cronFallback: AvecSyncMode = 'fast'): AvecS
   return cronFallback
 }
 
-const MIN_GAP_MS = 45_000
+const FAST_MIN_GAP_MS = 45_000
+const FULL_MIN_GAP_MS = 120_000
 
 async function executeSync(req: NextRequest, opts?: { force?: boolean; defaultMode?: AvecSyncMode }) {
   if (!isAvecConfigured()) return err('Avec não configurado (AVEC_API_TOKEN)', 503)
 
   const mode = parseMode(req, opts?.defaultMode ?? 'fast')
+  const minGap = mode === 'full' ? FULL_MIN_GAP_MS : FAST_MIN_GAP_MS
 
-  // Evita sobrepor syncs quando o cron dispara a cada minuto.
   if (!opts?.force) {
     const last = await getLastAvecSync(mode)
     if (last?.created_at) {
       const age = Date.now() - new Date(last.created_at).getTime()
-      if (age >= 0 && age < MIN_GAP_MS) {
+      if (age >= 0 && age < minGap) {
         return ok({
           skipped: true,
           reason: 'sync_recente',
           mode,
           last,
           schedule: mode === 'fast' ? 'intraday' : 'full',
-          note: `Último sync ${mode} há ${Math.round(age / 1000)}s — aguardando janela de ${MIN_GAP_MS / 1000}s`,
+          note: `Último sync ${mode} há ${Math.round(age / 1000)}s — aguardando janela de ${minGap / 1000}s`,
         })
       }
     }
@@ -75,9 +76,9 @@ export async function GET(req: NextRequest) {
   try {
     if (!(await authorize(req))) return err('Não autorizado', 401)
 
-    // Cron Vercel = GET → fast a cada 5 min (P1–P3 só no full manual / modo=full)
+    // Cron Vercel = GET → fast (5 min) ou full (?mode=full, 10 min)
     if (isCronAuthorized(req)) {
-      return await executeSync(req, { defaultMode: 'fast' })
+      return await executeSync(req, { defaultMode: parseMode(req, 'fast') })
     }
 
     const test = req.nextUrl.searchParams.get('test') === '1'
@@ -88,10 +89,10 @@ export async function GET(req: NextRequest) {
       base_url: getAvecBaseUrl(),
       deployment: getDeploymentContext(),
       cron: {
-        schedule: '*/5 * * * *',
-        mode: 'fast',
-        cadence: 'fast a cada 5 min — full via POST ?mode=full ou webhook',
-        path: '/api/avec/sync',
+        fast: { schedule: '*/5 * * * *', mode: 'fast', path: '/api/avec/sync' },
+        full: { schedule: '*/10 * * * *', mode: 'full', path: '/api/avec/sync?mode=full' },
+        cadence:
+          'fast a cada 5 min + full a cada 10 min (backup) — tempo real via webhook Avec',
       },
       last,
       ...(test ? { connection: await testAvecConnection() } : {}),

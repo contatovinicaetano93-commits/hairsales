@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { verifyAvecWebhook } from '@/lib/webhooks'
 import { ingestAvecWebhook } from '@/lib/avec/webhook-ingest'
+import { scheduleAvecWebhookSideEffects } from '@/lib/avec/sync-trigger'
 import { isAuthorized } from '@/lib/auth'
 
 /**
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const result = await ingestAvecWebhook(body)
+    scheduleAvecWebhookSideEffects(result.event)
     return ok(result)
   } catch (e) {
     return handleError(e)
@@ -61,7 +63,7 @@ export async function GET(req: NextRequest) {
         price: 180,
       },
       note:
-        'Configure este URL no painel Avec (ou Zapier/Make bridge). Cron /api/avec/sync fica como backup.',
+        'Configure este URL no painel Avec (ou Zapier/Make bridge). Cada evento dispara sync fast/full em background; cron /api/avec/sync fica como backup.',
     })
   } catch (e) {
     return handleError(e)
