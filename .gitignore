@@ -44,3 +44,8 @@ NOTES.md
 *.tsbuildinfo
 next-env.d.ts
 ROM
+
+# pastas locais fora do app principal
+_wip/
+academy/
+concept/
