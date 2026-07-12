@@ -171,9 +171,9 @@ async function buildBucket(monthKey: string): Promise<FinanceKpiBucket> {
 }
 
 /** KPIs do Financeiro (Sprint 4). Receita vem de salon_daily_metrics (Avec); despesas são cadastro manual. */
-export async function computeFinanceKpis(referenceDay = todayIso()): Promise<FinanceKpis> {
-  const current = currentMonthKey(referenceDay)
-  const previous = previousMonthKey(current)
-  const [currentBucket, previousBucket] = await Promise.all([buildBucket(current), buildBucket(previous)])
+export async function computeFinanceKpis(opts?: { month?: string; compareMonth?: string }): Promise<FinanceKpis> {
+  const current = opts?.month ?? currentMonthKey(todayIso())
+  const compare = opts?.compareMonth ?? previousMonthKey(current)
+  const [currentBucket, previousBucket] = await Promise.all([buildBucket(current), buildBucket(compare)])
   return { current: currentBucket, previous: previousBucket }
 }

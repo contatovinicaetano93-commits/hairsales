@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, X, Trash2 } from 'lucide-react'
+import { Plus, X, Trash2, Download } from 'lucide-react'
 import { PrimaryButton } from '../_components/ui'
 import { apiFetch } from '@/lib/api-client'
 import { formatCurrency } from '@/lib/salon/format'
@@ -80,7 +80,18 @@ function FinanceKpiCard({
   )
 }
 
+function currentMonthKey() {
+  return new Date().toISOString().slice(0, 7)
+}
+
+function csvEscape(v: string | number | null | undefined) {
+  const s = v == null ? '' : String(v)
+  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
 export default function FinanceiroPage() {
+  const [month, setMonth] = useState(currentMonthKey())
+  const [compareMonth, setCompareMonth] = useState('')
   const [kpis, setKpis] = useState<FinanceKpis | null>(null)
   const [categories, setCategories] = useState<FinanceCategory[]>([])
   const [expenses, setExpenses] = useState<FinanceExpense[]>([])
@@ -92,10 +103,11 @@ export default function FinanceiroPage() {
     setLoading(true)
     setError(null)
     try {
+      const kpisParams = new URLSearchParams({ month, ...(compareMonth ? { compare: compareMonth } : {}) })
       const [kpisRes, catRes, expRes] = await Promise.all([
-        apiFetch('/api/financeiro/kpis', { cache: 'no-store' }),
+        apiFetch(`/api/financeiro/kpis?${kpisParams}`, { cache: 'no-store' }),
         apiFetch('/api/financeiro/categorias', { cache: 'no-store' }),
-        apiFetch('/api/financeiro/despesas', { cache: 'no-store' }),
+        apiFetch(`/api/financeiro/despesas?month=${month}`, { cache: 'no-store' }),
       ])
       const [kpisJson, catJson, expJson] = await Promise.all([kpisRes.json(), catRes.json(), expRes.json()])
       if (kpisJson.error) throw new Error(kpisJson.error)
@@ -107,11 +119,35 @@ export default function FinanceiroPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [month, compareMonth])
 
   useEffect(() => {
     load()
   }, [load])
+
+  function downloadReport() {
+    if (!kpis) return
+    const lines = [
+      ['Métrica', kpis.current.label, kpis.previous.label].map(csvEscape).join(';'),
+      ['Receita', kpis.current.revenue, kpis.previous.revenue].map(csvEscape).join(';'),
+      ['Despesas', kpis.current.expenses, kpis.previous.expenses].map(csvEscape).join(';'),
+      ['Margem bruta (%)', kpis.current.gross_margin ?? '', kpis.previous.gross_margin ?? ''].map(csvEscape).join(';'),
+      ['Fluxo (receita - despesas)', kpis.current.cash_flow, kpis.previous.cash_flow].map(csvEscape).join(';'),
+      '',
+      ['Despesas de ' + kpis.current.label].map(csvEscape).join(';'),
+      ['Data', 'Descrição', 'Categoria', 'Valor'].map(csvEscape).join(';'),
+      ...expenses.map((e) =>
+        [e.expense_date, e.description, categoryName(e.category_id), e.amount].map(csvEscape).join(';')
+      ),
+    ]
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `financeiro_${kpis.current.month}_vs_${kpis.previous.month}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   async function removeExpense(id: string) {
     if (!confirm('Excluir essa despesa?')) return
@@ -127,9 +163,40 @@ export default function FinanceiroPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 px-5 py-6 lg:px-8 lg:py-8">
-      <div>
-        <p className="text-[0.65rem] uppercase tracking-[0.25em] text-gold">Financeiro</p>
-        <h1 className="mt-1 text-xl font-semibold lg:text-2xl">{kpis ? kpis.current.label : 'Este mês'}</h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[0.65rem] uppercase tracking-[0.25em] text-gold">Financeiro</p>
+          <h1 className="mt-1 text-xl font-semibold lg:text-2xl">{kpis ? kpis.current.label : 'Este mês'}</h1>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-[0.65rem] uppercase tracking-wide text-muted">Mês</span>
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-gold"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-[0.65rem] uppercase tracking-wide text-muted">Comparar com</span>
+            <input
+              type="month"
+              value={compareMonth}
+              onChange={(e) => setCompareMonth(e.target.value)}
+              placeholder="Automático"
+              className="rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-gold"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={downloadReport}
+            disabled={!kpis}
+            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-medium text-foreground/90 transition-colors hover:bg-card disabled:opacity-50"
+          >
+            <Download size={14} /> Relatório (CSV)
+          </button>
+        </div>
       </div>
 
       {error && (
