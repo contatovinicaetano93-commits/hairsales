@@ -8,7 +8,7 @@ export function LenisProvider() {
     const lenis = new Lenis({
       autoRaf: true,
       duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       lerp: 0.1,
       wheelMultiplier: 1,
       touchMultiplier: 1.5,
