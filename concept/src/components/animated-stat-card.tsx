@@ -20,9 +20,13 @@ export function AnimatedStatCard({ value, label, index = 0 }: AnimatedStatCardPr
     if (!card || !progress) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
+    let hasAnimated = false
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return
+        if (!entry.isIntersecting || hasAnimated) return
+
+        hasAnimated = true
 
         // Fade in card
         gsap.fromTo(
@@ -49,7 +53,7 @@ export function AnimatedStatCard({ value, label, index = 0 }: AnimatedStatCardPr
           }
         )
       },
-      { threshold: 0.4, once: true }
+      { threshold: 0.4 }
     )
 
     observer.observe(card)
