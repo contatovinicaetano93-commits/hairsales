@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
-import { requireAdmin } from '@/lib/auth'
+import { requireStock } from '@/lib/auth'
 import { isCronAuthorized } from '@/lib/cron-auth'
 import { isAvecConfigured } from '@/lib/avec/client'
 import { runStockSync, type StockSyncMode } from '@/lib/avec/sync-stock'
@@ -35,11 +35,12 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/** Trigger manual — admin, financeiro (acesso duplo) ou estoque, direto da própria área de diagnóstico. */
 export async function POST(req: NextRequest) {
   try {
     const cron = isCronAuthorized(req)
     if (!cron) {
-      const auth = await requireAdmin(req)
+      const auth = await requireStock(req)
       if (!auth.ok) return err(auth.message, auth.status)
     }
     return await execute(req, cron)
