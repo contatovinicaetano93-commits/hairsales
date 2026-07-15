@@ -35,9 +35,14 @@ function LoginForm() {
         setError(json.error ?? 'Usuário ou senha incorretos')
         return
       }
-      // Financeiro tem painel próprio — não faz sentido cair no playbook do dia por padrão.
+      // Financeiro/estoque têm painel próprio — não faz sentido cair no playbook do dia por padrão.
       const role = json.data?.role
-      const dest = role === 'financeiro' && !next.startsWith('/financeiro') ? '/financeiro' : next
+      const dest =
+        role === 'financeiro' && !next.startsWith('/financeiro')
+          ? '/financeiro'
+          : role === 'estoque' && !next.startsWith('/estoque')
+            ? '/estoque'
+            : next
       // Hard navigation garante que o cookie da sessão seja lido pelo middleware
       window.location.assign(dest)
     } catch (err) {
