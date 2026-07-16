@@ -1,0 +1,17 @@
+/Users/thaise/Downloads/ROM/.github/workflows/sync-iguatemi-repo.yml
+/Users/thaise/Downloads/ROM/AGENTS.md
+/Users/thaise/Downloads/ROM/CLAUDE.md
+/Users/thaise/Downloads/ROM/README.md
+/Users/thaise/Downloads/ROM/deploy/PUSH-IGUATEMI-VIA-GITHUB.md
+/Users/thaise/Downloads/ROM/deploy/SETUP-IGUATEMI.md
+/Users/thaise/Downloads/ROM/docs/relatorio-diretoria-rom-brasil.md
+/Users/thaise/Downloads/ROM/pitch-henrique.html
+/Users/thaise/Downloads/ROM/pitch-henrique.md
+/Users/thaise/Downloads/ROM/pitch-henrique.pdf
+/Users/thaise/Downloads/ROM/public/file.svg
+/Users/thaise/Downloads/ROM/public/globe.svg
+/Users/thaise/Downloads/ROM/public/next.svg
+/Users/thaise/Downloads/ROM/public/vercel.svg
+/Users/thaise/Downloads/ROM/public/window.svg
+/Users/thaise/Downloads/ROM/src/app/apple-icon.png
+/Users/thaise/Downloads/ROM/src/app/icon.png
