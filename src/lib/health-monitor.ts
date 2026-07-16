@@ -29,7 +29,7 @@ export class HealthMonitor {
 
       // Check sync status
       if (health.avec?.last_fast) {
-        const status = calculateSyncStatus(health.avec.last_fast.last_sync_at, health.avec.last_fast.error)
+        const status = calculateSyncStatus(health.avec.last_fast.created_at, health.avec.last_fast.error)
         if (status.status === 'failed') {
           issues.push(`Avec fast sync failed: ${status.error}`)
           await this.alertIfNew('avec_sync_fast_failed', 'error', 'Avec Fast Sync Failed', status.error || 'Unknown error')
@@ -40,7 +40,7 @@ export class HealthMonitor {
       }
 
       if (health.stock?.last_fast) {
-        const status = calculateSyncStatus(health.stock.last_fast.last_sync_at, health.stock.last_fast.error)
+        const status = calculateSyncStatus(health.stock.last_fast.created_at, health.stock.last_fast.error)
         if (status.status === 'failed') {
           issues.push(`Stock sync failed: ${status.error}`)
           await this.alertIfNew('stock_sync_failed', 'error', 'Stock Sync Failed', status.error || 'Unknown error')
