@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "db:migrate": "node scripts/run-migrations.mjs",
     "stripe:portal": "node scripts/setup-stripe-portal.mjs",
+    "vercel:env-pro": "node scripts/set-pro-vercel-env.mjs",
     "verify:deploy": "bash scripts/post-deploy-verification.sh",
     "verify:pro": "bash scripts/pro-smoke.sh"
   },

@@ -71,6 +71,17 @@ WhatsApp Cloud (só Pro):
 
 Template: `deploy/vercel-gabriel-vitrini.env` (seção Pro).
 
+### Atalho via API (token)
+
+```bash
+VERCEL_TOKEN=... \
+VERCEL_PROJECT=gabriel-vitrini \
+NEXT_PUBLIC_APP_URL=https://gabriel-vitrini.vercel.app \
+npm run vercel:env-pro
+```
+
+Gera `PRO_DATA_SECRET` se não passar um. Opcionais (`STRIPE_*`, `TELEGRAM_PRO_*`, …) só entram se já estiverem no ambiente da shell.
+
 ## 3. Stripe Customer Portal
 
 ```bash
