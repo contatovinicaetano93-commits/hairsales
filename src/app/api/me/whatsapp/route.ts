@@ -8,6 +8,8 @@ import {
   upsertSubscriberWhatsapp,
   WhatsappPlanError,
 } from '@/lib/pro/whatsapp-cloud'
+import { listMarketingPacks } from '@/lib/pro/whatsapp-packs'
+import { getEmbeddedSignupConfig } from '@/lib/pro/whatsapp-embedded'
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,6 +28,8 @@ export async function GET(req: NextRequest) {
       display_phone: wa?.display_phone ?? null,
       phone_number_id: wa ? `${wa.phone_number_id.slice(0, 4)}…` : null,
       usage,
+      packs: listMarketingPacks(),
+      embedded_signup: getEmbeddedSignupConfig(),
       templates: {
         reminder: process.env.WHATSAPP_TEMPLATE_REMINDER || 'lembrete_horario',
         reactivation: process.env.WHATSAPP_TEMPLATE_REACTIVATION || 'reativacao_cliente',

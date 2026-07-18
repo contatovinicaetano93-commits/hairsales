@@ -236,6 +236,16 @@ function WhatsappBlock() {
     utility_included: number
     marketing_sent: number
     marketing_included: number
+    marketing_pack_credits?: number
+    marketing_remaining?: number
+  } | null>(null)
+  const [packs, setPacks] = useState<Array<{ id: string; credits: number; label: string; amount_cents: number }>>(
+    [],
+  )
+  const [embedded, setEmbedded] = useState<{
+    enabled: boolean
+    app_id: string | null
+    config_id: string | null
   } | null>(null)
   const [phoneNumberId, setPhoneNumberId] = useState('')
   const [accessToken, setAccessToken] = useState('')
@@ -251,6 +261,8 @@ function WhatsappBlock() {
           setPlan(json.data.plan)
           setConnected(Boolean(json.data.connected))
           setUsage(json.data.usage)
+          setPacks(json.data.packs ?? [])
+          setEmbedded(json.data.embedded_signup ?? null)
         }
       })
       .catch(() => {})
@@ -290,6 +302,88 @@ function WhatsappBlock() {
     reload()
   }
 
+  async function buyPack(packId: string) {
+    setError(null)
+    setMsg(null)
+    const res = await fetch('/api/me/whatsapp/packs', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pack_id: packId }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      setError(json.error ?? 'Falha na compra')
+      return
+    }
+    setMsg(`Pack +${json.data.credits_added} créditos de marketing.`)
+    reload()
+  }
+
+  async function launchEmbeddedSignup() {
+    setError(null)
+    if (!embedded?.enabled || !embedded.app_id || !embedded.config_id) {
+      setError('Embedded Signup não configurado (META_APP_ID / META_EMBEDDED_SIGNUP_CONFIG_ID).')
+      return
+    }
+
+    const w = window as Window & {
+      FB?: {
+        init: (o: Record<string, unknown>) => void
+        login: (cb: (r: { authResponse?: { code?: string } }) => void, o: Record<string, unknown>) => void
+      }
+      fbAsyncInit?: () => void
+    }
+
+    const run = () => {
+      if (!w.FB) return
+      w.FB.init({ appId: embedded.app_id!, autoLogAppEvents: true, xfbml: true, version: 'v21.0' })
+      w.FB.login(
+        (response) => {
+          const code = response.authResponse?.code
+          if (!code) {
+            setError('Embedded Signup cancelado ou sem code.')
+            return
+          }
+          fetch('/api/me/whatsapp/embedded-signup', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+          })
+            .then((r) => r.json())
+            .then((json) => {
+              if (json.error) {
+                setError(json.error)
+                return
+              }
+              setMsg('WhatsApp conectado via Embedded Signup.')
+              reload()
+            })
+            .catch((e) => setError(String(e)))
+        },
+        {
+          config_id: embedded.config_id,
+          response_type: 'code',
+          override_default_response_type: true,
+        },
+      )
+    }
+
+    if (w.FB) {
+      run()
+      return
+    }
+
+    w.fbAsyncInit = run
+    if (!document.getElementById('facebook-jssdk')) {
+      const script = document.createElement('script')
+      script.id = 'facebook-jssdk'
+      script.src = 'https://connect.facebook.net/en_US/sdk.js'
+      document.body.appendChild(script)
+    }
+  }
+
   return (
     <section className="mt-10 border-t border-border pt-6">
       <h3 className="font-serif text-lg">WhatsApp Cloud (Pro)</h3>
@@ -299,10 +393,32 @@ function WhatsappBlock() {
       </p>
       {usage && plan === 'pro' && (
         <p className="mt-2 text-xs text-muted">
-          Utility: {usage.utility_sent}/{usage.utility_included} · Marketing:{' '}
-          {usage.marketing_sent}/{usage.marketing_included}
+          Utility: {usage.utility_sent}/{usage.utility_included} · Marketing restante:{' '}
+          {usage.marketing_remaining ?? 0}
+          {usage.marketing_pack_credits != null
+            ? ` (packs: ${usage.marketing_pack_credits})`
+            : ''}
         </p>
       )}
+
+      {plan === 'pro' && packs.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs uppercase tracking-wide text-muted">Packs marketing</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {packs.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => buyPack(p.id)}
+                className="rounded-xl border border-border px-3 py-2 text-xs"
+              >
+                {p.label} · R$ {(p.amount_cents / 100).toFixed(0)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {connected ? (
         <div className="mt-4 flex flex-col gap-2">
           <p className="text-sm text-success">Cloud API conectada.</p>
@@ -315,39 +431,51 @@ function WhatsappBlock() {
           </button>
         </div>
       ) : (
-        <form onSubmit={connect} className="mt-4 flex flex-col gap-3">
-          <input
-            value={phoneNumberId}
-            onChange={(e) => setPhoneNumberId(e.target.value)}
-            required
-            placeholder="Phone number ID"
-            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
-          />
-          <input
-            type="password"
-            value={accessToken}
-            onChange={(e) => setAccessToken(e.target.value)}
-            required
-            placeholder="Access token (ou mock)"
-            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
-            autoComplete="off"
-          />
-          <input
-            value={displayPhone}
-            onChange={(e) => setDisplayPhone(e.target.value)}
-            placeholder="Número exibido (opcional)"
-            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
-          />
-          {error && <p className="text-sm text-danger">{error}</p>}
-          {msg && <p className="text-sm text-success">{msg}</p>}
-          <button
-            type="submit"
-            className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm font-medium text-gold-strong"
-          >
-            Conectar WhatsApp Cloud
-          </button>
-        </form>
+        <div className="mt-4 flex flex-col gap-3">
+          {embedded?.enabled && (
+            <button
+              type="button"
+              onClick={launchEmbeddedSignup}
+              className="rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold"
+            >
+              Conectar com Meta (Embedded Signup)
+            </button>
+          )}
+          <form onSubmit={connect} className="flex flex-col gap-3">
+            <p className="text-xs text-muted">Ou cole as credenciais manualmente:</p>
+            <input
+              value={phoneNumberId}
+              onChange={(e) => setPhoneNumberId(e.target.value)}
+              required
+              placeholder="Phone number ID"
+              className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
+            />
+            <input
+              type="password"
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
+              required
+              placeholder="Access token (ou mock)"
+              className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
+              autoComplete="off"
+            />
+            <input
+              value={displayPhone}
+              onChange={(e) => setDisplayPhone(e.target.value)}
+              placeholder="Número exibido (opcional)"
+              className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
+            />
+            <button
+              type="submit"
+              className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm font-medium text-gold-strong"
+            >
+              Conectar WhatsApp Cloud
+            </button>
+          </form>
+        </div>
       )}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      {msg && <p className="mt-2 text-sm text-success">{msg}</p>}
     </section>
   )
 }

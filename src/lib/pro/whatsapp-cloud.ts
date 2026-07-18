@@ -5,6 +5,11 @@
 
 import { getSql } from '@/lib/db'
 import { decryptSecret, encryptSecret } from '@/lib/pro/crypto'
+import {
+  decrementMarketingCredit,
+  getMarketingCredits,
+  incrementMarketingCredit,
+} from '@/lib/pro/whatsapp-packs'
 import type { SubscriberPlan, SubscriberRow } from '@/lib/pro/subscribers'
 
 const GRAPH = 'https://graph.facebook.com/v21.0'
@@ -97,14 +102,17 @@ export async function getWhatsappUsage(subscriberId: string, plan: SubscriberPla
   const included = WA_MONTHLY_INCLUDED[plan]
   const utilitySent = rows[0]?.utility_sent ?? 0
   const marketingSent = rows[0]?.marketing_sent ?? 0
+  const packCredits = await getMarketingCredits(subscriberId)
+  const monthlyMarketingLeft = Math.max(0, included.marketing - marketingSent)
   return {
     month,
     utility_sent: utilitySent,
     marketing_sent: marketingSent,
     utility_included: included.utility,
     marketing_included: included.marketing,
+    marketing_pack_credits: packCredits,
     utility_remaining: Math.max(0, included.utility - utilitySent),
-    marketing_remaining: Math.max(0, included.marketing - marketingSent),
+    marketing_remaining: monthlyMarketingLeft + packCredits,
   }
 }
 
@@ -122,12 +130,14 @@ export class WhatsappPlanError extends Error {
   }
 }
 
+type CreditSource = 'utility' | 'marketing_monthly' | 'marketing_pack' | 'service'
+
 async function consumeWhatsappCredit(
   subscriberId: string,
   plan: SubscriberPlan,
   category: WaCategory,
-) {
-  if (category === 'service') return // Meta: service window ≈ grátis
+): Promise<CreditSource> {
+  if (category === 'service') return 'service'
   const usage = await getWhatsappUsage(subscriberId, plan)
   if (category === 'utility' && usage.utility_remaining < 1) {
     throw new WhatsappQuotaError(
@@ -136,22 +146,75 @@ async function consumeWhatsappCredit(
   }
   if (category === 'marketing' && usage.marketing_remaining < 1) {
     throw new WhatsappQuotaError(
-      'Sem créditos de marketing. Compre um pack ou aguarde o próximo mês.',
+      'Sem créditos de marketing. Compre um pack em Conectar.',
     )
   }
 
   const sql = getSql()
   const month = monthKey()
-  const utilInc = category === 'utility' ? 1 : 0
-  const mktInc = category === 'marketing' ? 1 : 0
+
+  if (category === 'utility') {
+    await sql`
+      insert into subscriber_whatsapp_usage (subscriber_id, month, utility_sent, marketing_sent, updated_at)
+      values (${subscriberId}, ${month}, 1, 0, now())
+      on conflict (subscriber_id, month) do update set
+        utility_sent = subscriber_whatsapp_usage.utility_sent + 1,
+        updated_at = now()
+    `
+    return 'utility'
+  }
+
+  const includedLeft = Math.max(0, usage.marketing_included - usage.marketing_sent)
+  if (includedLeft > 0) {
+    await sql`
+      insert into subscriber_whatsapp_usage (subscriber_id, month, utility_sent, marketing_sent, updated_at)
+      values (${subscriberId}, ${month}, 0, 1, now())
+      on conflict (subscriber_id, month) do update set
+        marketing_sent = subscriber_whatsapp_usage.marketing_sent + 1,
+        updated_at = now()
+    `
+    return 'marketing_monthly'
+  }
+
+  const ok = await decrementMarketingCredit(subscriberId)
+  if (!ok) {
+    throw new WhatsappQuotaError('Sem créditos de marketing. Compre um pack em Conectar.')
+  }
   await sql`
     insert into subscriber_whatsapp_usage (subscriber_id, month, utility_sent, marketing_sent, updated_at)
-    values (${subscriberId}, ${month}, ${utilInc}, ${mktInc}, now())
+    values (${subscriberId}, ${month}, 0, 1, now())
     on conflict (subscriber_id, month) do update set
-      utility_sent = subscriber_whatsapp_usage.utility_sent + ${utilInc},
-      marketing_sent = subscriber_whatsapp_usage.marketing_sent + ${mktInc},
+      marketing_sent = subscriber_whatsapp_usage.marketing_sent + 1,
       updated_at = now()
   `
+  return 'marketing_pack'
+}
+
+async function refundWhatsappCredit(
+  subscriberId: string,
+  source: CreditSource,
+) {
+  if (source === 'service') return
+  const sql = getSql()
+  const month = monthKey()
+  if (source === 'utility') {
+    await sql`
+      update subscriber_whatsapp_usage set
+        utility_sent = greatest(0, utility_sent - 1),
+        updated_at = now()
+      where subscriber_id = ${subscriberId} and month = ${month}
+    `.catch(() => {})
+    return
+  }
+  await sql`
+    update subscriber_whatsapp_usage set
+      marketing_sent = greatest(0, marketing_sent - 1),
+      updated_at = now()
+    where subscriber_id = ${subscriberId} and month = ${month}
+  `.catch(() => {})
+  if (source === 'marketing_pack') {
+    await incrementMarketingCredit(subscriberId).catch(() => {})
+  }
 }
 
 async function graphSend(
@@ -257,7 +320,11 @@ export async function sendTemplateMessage(input: {
       : undefined
 
   const sql = getSql()
-  await consumeWhatsappCredit(input.subscriber.id, input.subscriber.plan, input.category)
+  const creditSource = await consumeWhatsappCredit(
+    input.subscriber.id,
+    input.subscriber.plan,
+    input.category,
+  )
   try {
     const { messageId } = await graphSend(wa.phone_number_id, token, {
       to,
@@ -287,17 +354,7 @@ export async function sendTemplateMessage(input: {
     return { messageId, category: input.category }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
-    // Estorna crédito se o envio falhou
-    const month = monthKey()
-    const utilDec = input.category === 'utility' ? 1 : 0
-    const mktDec = input.category === 'marketing' ? 1 : 0
-    await sql`
-      update subscriber_whatsapp_usage set
-        utility_sent = greatest(0, utility_sent - ${utilDec}),
-        marketing_sent = greatest(0, marketing_sent - ${mktDec}),
-        updated_at = now()
-      where subscriber_id = ${input.subscriber.id} and month = ${month}
-    `.catch(() => {})
+    await refundWhatsappCredit(input.subscriber.id, creditSource)
     await sql`
       insert into subscriber_whatsapp_sends (
         subscriber_id, client_id, to_phone, category, template_name, body_preview,

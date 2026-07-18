@@ -67,7 +67,8 @@ export async function middleware(req: NextRequest) {
     pathname === '/api/estoque/sync' ||
     pathname === '/api/director-report' ||
     pathname === '/api/lgpd/purge' ||
-    pathname === '/api/reminders/financeiro'
+    pathname === '/api/reminders/financeiro' ||
+    pathname === '/api/pro/reminders'
   if (!(await isAuthorized(req, { allowHeaderTokens }))) {
     if (isProtectedApi(pathname)) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })

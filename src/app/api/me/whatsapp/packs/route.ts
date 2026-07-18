@@ -1,0 +1,47 @@
+import { NextRequest } from 'next/server'
+import { ok, err, handleError } from '@/lib/api-response'
+import { requireProSession } from '@/lib/pro/auth'
+import {
+  listMarketingPacks,
+  listPackPurchases,
+  purchaseMarketingPack,
+} from '@/lib/pro/whatsapp-packs'
+import { getWhatsappUsage } from '@/lib/pro/whatsapp-cloud'
+
+export async function GET(req: NextRequest) {
+  try {
+    const auth = await requireProSession(req)
+    if (!auth.ok) return err(auth.message, auth.status)
+    const usage = await getWhatsappUsage(
+      auth.session.subscriber.id,
+      auth.session.subscriber.plan,
+    )
+    const purchases = await listPackPurchases(auth.session.subscriber.id)
+    return ok({
+      packs: listMarketingPacks(),
+      usage,
+      purchases,
+    })
+  } catch (e) {
+    return handleError(e)
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const auth = await requireProSession(req)
+    if (!auth.ok) return err(auth.message, auth.status)
+    const body = await req.json().catch(() => null)
+    const packId = typeof body?.pack_id === 'string' ? body.pack_id : ''
+    if (!packId) return err('pack_id obrigatório', 400)
+
+    const result = await purchaseMarketingPack(auth.session.subscriber, packId)
+    const usage = await getWhatsappUsage(
+      auth.session.subscriber.id,
+      auth.session.subscriber.plan,
+    )
+    return ok({ ...result, usage })
+  } catch (e) {
+    return handleError(e)
+  }
+}

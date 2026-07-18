@@ -14,6 +14,7 @@ export interface SubscriberRow {
   daily_goal_revenue: number | null
   weekly_goal_revenue: number | null
   telegram_chat_id?: string | null
+  marketing_credits?: number | null
   created_at: string
   updated_at: string
 }
