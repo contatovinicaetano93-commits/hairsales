@@ -1,8 +1,11 @@
 import type { NextRequest } from 'next/server'
+import { getRomPanelId, type RomPanelId } from '@/lib/brand'
 import { isProduction } from '@/lib/env'
 
 export const AUTH_COOKIE = 'rom_session'
-const DEFAULT_ADMIN_USER = 'admin'
+
+/** Senha padrão compartilhada por todas as roles (override via env). */
+export const DEFAULT_SHARED_PASSWORD = 'Senha@123'
 
 export type AuthRole = 'admin' | 'staff' | 'financeiro' | 'estoque'
 
@@ -22,6 +25,41 @@ interface Account {
   role: AuthRole
 }
 
+type DefaultUsers = Record<AuthRole, string>
+
+const DEFAULT_USERS_BY_PANEL: Record<RomPanelId, DefaultUsers> = {
+  vitrini: {
+    admin: 'ADMIN-VITRINI',
+    staff: 'EQUIPE-VITRINI',
+    financeiro: 'FINANCEIRO-VITRINI',
+    estoque: 'ESTOQUE-VITRINI',
+  },
+  brasil: {
+    admin: 'ADMIN-BRASIL',
+    staff: 'FUNC-BRASIL',
+    financeiro: 'FINANCEIRO-BRASIL',
+    estoque: 'ESTOQUE-BRASIL',
+  },
+  iguatemi: {
+    admin: 'admin',
+    staff: 'EQUIPE-IGUATEMI',
+    financeiro: 'FINANCEIRO-IGUATEMI',
+    estoque: 'ESTOQUE-IGUATEMI',
+  },
+}
+
+function defaultUsers(): DefaultUsers {
+  return DEFAULT_USERS_BY_PANEL[getRomPanelId()]
+}
+
+function sharedPassword() {
+  return (
+    process.env.ROM_ADMIN_PASSWORD?.trim() ||
+    process.env.ROM_ACCESS_TOKEN?.trim() ||
+    DEFAULT_SHARED_PASSWORD
+  )
+}
+
 function timingSafeEqual(a: string, b: string) {
   if (a.length !== b.length) return false
   let out = 0
@@ -38,59 +76,48 @@ function usernamesMatch(a: string, b: string) {
 }
 
 export function getAdminUser() {
-  return (process.env.ROM_ADMIN_USER ?? DEFAULT_ADMIN_USER).trim()
+  return (process.env.ROM_ADMIN_USER ?? defaultUsers().admin).trim()
 }
 
 export function getAdminPassword() {
-  return (process.env.ROM_ADMIN_PASSWORD ?? process.env.ROM_ACCESS_TOKEN ?? '').trim()
+  return (
+    process.env.ROM_ADMIN_PASSWORD?.trim() ||
+    process.env.ROM_ACCESS_TOKEN?.trim() ||
+    DEFAULT_SHARED_PASSWORD
+  )
 }
 
 export function getStaffUser() {
-  return (process.env.ROM_STAFF_USER ?? '').trim()
+  return (process.env.ROM_STAFF_USER ?? defaultUsers().staff).trim()
 }
 
 export function getStaffPassword() {
-  return (process.env.ROM_STAFF_PASSWORD ?? '').trim()
+  return (process.env.ROM_STAFF_PASSWORD?.trim() || sharedPassword())
 }
 
 export function getFinanceUser() {
-  return (process.env.ROM_FINANCE_USER ?? '').trim()
+  return (process.env.ROM_FINANCE_USER ?? defaultUsers().financeiro).trim()
 }
 
 export function getFinancePassword() {
-  return (process.env.ROM_FINANCE_PASSWORD ?? '').trim()
+  return (process.env.ROM_FINANCE_PASSWORD?.trim() || sharedPassword())
 }
 
 export function getStockUser() {
-  return (process.env.ROM_STOCK_USER ?? '').trim()
+  return (process.env.ROM_STOCK_USER ?? defaultUsers().estoque).trim()
 }
 
 export function getStockPassword() {
-  return (process.env.ROM_STOCK_PASSWORD ?? '').trim()
+  return (process.env.ROM_STOCK_PASSWORD?.trim() || sharedPassword())
 }
 
 function listAccounts(): Account[] {
-  const accounts: Account[] = []
-  const adminPass = getAdminPassword()
-  if (adminPass) {
-    accounts.push({ user: getAdminUser(), password: adminPass, role: 'admin' })
-  }
-  const staffUser = getStaffUser()
-  const staffPass = getStaffPassword()
-  if (staffUser && staffPass) {
-    accounts.push({ user: staffUser, password: staffPass, role: 'staff' })
-  }
-  const financeUser = getFinanceUser()
-  const financePass = getFinancePassword()
-  if (financeUser && financePass) {
-    accounts.push({ user: financeUser, password: financePass, role: 'financeiro' })
-  }
-  const stockUser = getStockUser()
-  const stockPass = getStockPassword()
-  if (stockUser && stockPass) {
-    accounts.push({ user: stockUser, password: stockPass, role: 'estoque' })
-  }
-  return accounts
+  return [
+    { user: getAdminUser(), password: getAdminPassword(), role: 'admin' },
+    { user: getStaffUser(), password: getStaffPassword(), role: 'staff' },
+    { user: getFinanceUser(), password: getFinancePassword(), role: 'financeiro' },
+    { user: getStockUser(), password: getStockPassword(), role: 'estoque' },
+  ]
 }
 
 export function isAuthEnabled() {
