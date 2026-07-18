@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ProEmptyRow, ProPageHeader, ProPanel, ProTable } from '@/app/pro/_components/ProUi'
 
 type Filter = 'all' | 'hot' | 'reactivation'
 
@@ -13,6 +14,11 @@ interface ClientRow {
   last_visit_at: string | null
   last_service_name: string | null
   last_price: number | null
+}
+
+function money(n: number | null | undefined) {
+  if (n == null) return '—'
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 export default function ProClientesPage() {
@@ -43,62 +49,70 @@ export default function ProClientesPage() {
   }, [load])
 
   return (
-    <div>
-      <h2 className="font-serif text-2xl">Meus clientes</h2>
-      <p className="mt-1 text-sm text-muted">Só a sua carteira — nada do restante do salão.</p>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {(
-          [
-            ['all', 'Todos'],
-            ['hot', 'Leads quentes'],
-            ['reactivation', 'Reativar'],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setFilter(id)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-              filter === id ? 'bg-gold/20 text-gold-strong' : 'bg-surface text-muted'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Buscar nome ou telefone"
-        className="mt-3 w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:border-gold"
+    <div className="flex flex-col gap-6">
+      <ProPageHeader
+        title="Meus clientes"
+        subtitle="Só a sua carteira — nada do restante do salão."
       />
 
-      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      <ProPanel>
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3.5">
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ['all', 'Todos'],
+                ['hot', 'Leads quentes'],
+                ['reactivation', 'Reativar'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setFilter(id)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
+                  filter === id
+                    ? 'bg-gold text-[#1a1714]'
+                    : 'border border-border bg-surface text-muted hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar nome ou telefone"
+            className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium outline-none focus:border-gold"
+          />
+          {error && <p className="text-sm font-medium text-danger">{error}</p>}
+        </div>
 
-      <ul className="mt-4 flex flex-col gap-2">
-        {clients.length === 0 ? (
-          <li className="text-sm text-muted">
-            Nenhum cliente ainda.{' '}
-            <Link href="/pro/conectar" className="text-gold-strong hover:underline">
-              Conecte a agenda
-            </Link>
-          </li>
-        ) : (
-          clients.map((c) => (
-            <li key={c.id} className="border-b border-border/70 py-3">
-              <p className="text-sm font-medium">{c.name ?? 'Sem nome'}</p>
-              <p className="text-xs text-muted">
-                {c.last_service_name ?? '—'}
-                {c.last_visit_at
-                  ? ` · última visita ${new Date(c.last_visit_at).toLocaleDateString('pt-BR')}`
-                  : ''}
-              </p>
-            </li>
-          ))
-        )}
-      </ul>
+        <ProTable columns={['Cliente', 'Telefone', 'Último serviço', 'Última visita', 'Valor']}>
+          {clients.length === 0 ? (
+            <ProEmptyRow colSpan={5}>
+              Nenhum cliente ainda.{' '}
+              <Link href="/pro/conectar" className="font-bold text-gold-strong underline">
+                Conecte a agenda
+              </Link>
+            </ProEmptyRow>
+          ) : (
+            clients.map((c) => (
+              <tr key={c.id}>
+                <td className="px-4 py-3 font-semibold text-foreground">{c.name ?? 'Sem nome'}</td>
+                <td className="px-4 py-3 font-medium text-muted">{c.phone ?? '—'}</td>
+                <td className="px-4 py-3 font-medium text-muted">{c.last_service_name ?? '—'}</td>
+                <td className="px-4 py-3 font-medium text-muted">
+                  {c.last_visit_at
+                    ? new Date(c.last_visit_at).toLocaleDateString('pt-BR')
+                    : '—'}
+                </td>
+                <td className="px-4 py-3 font-semibold text-foreground">{money(c.last_price)}</td>
+              </tr>
+            ))
+          )}
+        </ProTable>
+      </ProPanel>
     </div>
   )
 }

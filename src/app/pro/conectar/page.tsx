@@ -4,6 +4,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 import { OnboardingChecklist } from '@/app/pro/_components/OnboardingChecklist'
+import { ProPageHeader } from '@/app/pro/_components/ProUi'
 
 interface ProviderOpt {
   id: string
@@ -28,24 +29,28 @@ function ConnectCard({
   const panelId = useId()
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card/70 shadow-[0_1px_0_rgba(26,23,20,0.04)]">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_8px_28px_-18px_rgba(26,23,20,0.35)]">
       <button
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-start justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-surface/60"
+        className="flex w-full items-start justify-between gap-3 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] px-4 py-3.5 text-left transition hover:bg-surface/60"
       >
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-serif text-lg leading-tight">{title}</h3>
+            <h3 className="font-serif text-xl font-semibold leading-tight tracking-tight">{title}</h3>
             {badge && (
-              <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-gold-strong">
+              <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-gold-strong">
                 {badge}
               </span>
             )}
           </div>
-          {summary && <p className="mt-1 text-xs text-muted">{summary}</p>}
+          {summary && (
+            <p className="mt-1 text-xs font-medium text-[color:color-mix(in_srgb,var(--muted)_85%,var(--foreground))]">
+              {summary}
+            </p>
+          )}
         </div>
         <ChevronDown
           className={`mt-1 h-5 w-5 shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
@@ -125,13 +130,13 @@ export default function ProConectarPage() {
   }
 
   return (
-    <div>
-      <h2 className="font-serif text-xl">Conectar</h2>
-      <p className="mt-2 text-sm text-muted">
-        Cada card é uma conexão. Toque no título para abrir ou recolher.
-      </p>
+    <div className="flex flex-col gap-5">
+      <ProPageHeader
+        title="Conectar"
+        subtitle="Cada bloco é uma conexão. Toque no título para abrir ou recolher."
+      />
 
-      <div className="mt-6 mb-4">
+      <div>
         <OnboardingChecklist />
       </div>
 

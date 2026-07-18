@@ -1,6 +1,13 @@
 import type { Metadata } from 'next'
+import { Fraunces } from 'next/font/google'
 import { getBrand } from '@/lib/brand'
 import { ProShell } from './_components/ProShell'
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  weight: ['500', '600', '700'],
+})
 
 const brand = getBrand()
 
@@ -16,5 +23,9 @@ export const metadata: Metadata = {
 }
 
 export default function ProLayout({ children }: { children: React.ReactNode }) {
-  return <ProShell>{children}</ProShell>
+  return (
+    <div className={`${fraunces.variable}`}>
+      <ProShell>{children}</ProShell>
+    </div>
+  )
 }

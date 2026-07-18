@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { ProPageHeader, ProPanel } from '../_components/ProUi'
 
 interface Quota {
   daily_used: number
@@ -102,63 +103,68 @@ export default function ProAssistentePage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-serif text-2xl">Assistente</h2>
-        <p className="mt-1 text-sm text-muted">
-          Pergunte sobre sua agenda, meta e clientes — só os seus dados.
+    <div className="flex flex-col gap-5">
+      <ProPageHeader
+        title="Assistente"
+        subtitle="Pergunte sobre agenda, meta e clientes — só os seus dados."
+        action={
+          <button
+            type="button"
+            onClick={runBriefing}
+            disabled={loading}
+            className="rounded-xl border border-gold/40 bg-gold/15 px-3.5 py-2.5 text-sm font-semibold text-gold-strong disabled:opacity-60"
+          >
+            Briefing da manhã
+          </button>
+        }
+      />
+
+      {quotas && (
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gold-strong">
+          IA hoje: {quotas.daily_used}/{quotas.daily_limit} · plano {quotas.plan}
+          {quotas.daily_remaining === 0 ? ' · cota do dia esgotada' : ''}
         </p>
-        {quotas && (
-          <p className="mt-2 text-xs text-muted">
-            IA hoje: {quotas.daily_used}/{quotas.daily_limit} · plano {quotas.plan}
-            {quotas.daily_remaining === 0 ? ' · cota do dia esgotada (KPIs seguem ok)' : ''}
-          </p>
-        )}
-      </div>
+      )}
 
-      <button
-        type="button"
-        onClick={runBriefing}
-        disabled={loading}
-        className="rounded-xl border border-gold/40 bg-gold/10 px-3 py-2.5 text-sm font-medium text-gold-strong disabled:opacity-60"
+      <ProPanel title="Conversa" subtitle="Histórico do dia">
+        <div className="flex min-h-[280px] flex-col gap-3 px-4 py-4">
+          {messages.length === 0 ? (
+            <p className="text-sm font-medium text-muted">
+              Ex.: “Como está minha meta?” · “Quem reativar?” · “Quantos horários tenho hoje?”
+            </p>
+          ) : (
+            messages.map((m, i) => (
+              <div
+                key={`${m.role}-${i}`}
+                className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm font-medium whitespace-pre-wrap ${
+                  m.role === 'user'
+                    ? 'ml-auto bg-gold/20 text-foreground'
+                    : 'mr-auto border border-border bg-surface'
+                }`}
+              >
+                {m.content}
+              </div>
+            ))
+          )}
+        </div>
+      </ProPanel>
+
+      {error && <p className="text-sm font-medium text-danger">{error}</p>}
+
+      <form
+        onSubmit={send}
+        className="flex gap-2 rounded-2xl border border-border bg-card p-3 shadow-[0_8px_28px_-18px_rgba(26,23,20,0.35)]"
       >
-        Gerar briefing da manhã
-      </button>
-
-      <div className="flex min-h-[280px] flex-col gap-3 rounded-2xl border border-border bg-surface/50 p-3">
-        {messages.length === 0 ? (
-          <p className="text-sm text-muted">
-            Ex.: “Como está minha meta?” · “Quem reativar?” · “Quantos horários tenho hoje?”
-          </p>
-        ) : (
-          messages.map((m, i) => (
-            <div
-              key={`${m.role}-${i}`}
-              className={`max-w-[92%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${
-                m.role === 'user'
-                  ? 'ml-auto bg-gold/20 text-foreground'
-                  : 'mr-auto bg-card border border-border'
-              }`}
-            >
-              {m.content}
-            </div>
-          ))
-        )}
-      </div>
-
-      {error && <p className="text-sm text-danger">{error}</p>}
-
-      <form onSubmit={send} className="flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Pergunte à assistente…"
-          className="flex-1 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-gold"
+          className="flex-1 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-medium outline-none focus:border-gold"
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
+          className="rounded-xl bg-gold px-4 py-2.5 text-sm font-bold text-[color:var(--on-gold,#1a1714)] disabled:opacity-60"
         >
           Enviar
         </button>

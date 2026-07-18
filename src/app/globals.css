@@ -9,11 +9,13 @@
   --card-elevated: #fffdf8;
   --foreground: #1a1714;
   --border: #e4dac2;
-  --muted: #746d63;
+  --muted: #5c554c;
 
   --gold: #c9a227;
   --gold-strong: #8a6a12;
   --gold-bright: #d4af37;
+
+  --font-display: var(--font-fraunces), var(--font-geist-sans), Georgia, serif;
 
   --success: #287654;
   --danger: #b33b46;
@@ -39,6 +41,7 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
 
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
@@ -100,3 +103,26 @@ textarea::placeholder {
 .animate-slide-in-left { animation: rom-slide-in-left 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-slide-up { animation: rom-slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-rise { animation: rom-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* App Pro — tipografia e densidade visual */
+.pro-app {
+  --muted: #534d45;
+  letter-spacing: 0.01em;
+}
+
+.pro-app .font-serif {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.pro-app h1,
+.pro-app h2,
+.pro-app h3 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+.pro-app table tbody tr:hover {
+  background: color-mix(in srgb, var(--gold) 6%, var(--card));
+}

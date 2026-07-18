@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ProEmptyRow, ProPageHeader, ProPanel, ProTable } from '@/app/pro/_components/ProUi'
 
 export default function ProAcoesPage() {
   const [data, setData] = useState<{
@@ -75,83 +76,107 @@ export default function ProAcoesPage() {
     }
   }
 
-  if (error) return <p className="text-sm text-danger">{error}</p>
-  if (!data) return <p className="text-sm text-muted">Carregando ações…</p>
+  if (error) return <p className="text-sm font-medium text-danger">{error}</p>
+  if (!data) return <p className="text-sm font-medium text-muted">Carregando ações…</p>
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h2 className="font-serif text-2xl">Ações</h2>
-        <p className="mt-1 text-sm text-muted">Reativação e upsell só da sua carteira.</p>
-        {plan === 'pro' && !waConnected && (
-          <p className="mt-2 text-xs text-muted">
-            WhatsApp Cloud não conectado —{' '}
-            <Link href="/pro/conectar" className="text-gold-strong hover:underline">
-              conectar
-            </Link>
-          </p>
-        )}
-        {toast && <p className="mt-2 text-xs text-muted">{toast}</p>}
-      </div>
+    <div className="flex flex-col gap-6">
+      <ProPageHeader
+        title="Ações"
+        subtitle="Reativação e retorno só da sua carteira — nada do salão inteiro."
+        action={
+          <Link
+            href="/pro/hoje"
+            className="rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:border-gold/40"
+          >
+            Voltar ao Hoje
+          </Link>
+        }
+      />
 
-      <section>
-        <h3 className="font-serif text-lg">Reativação</h3>
-        {data.reactivation.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">Ninguém sumido há 45+ dias na sua base.</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {data.reactivation.map((r) => (
-              <li key={r.id} className="rounded-xl bg-surface px-3 py-3">
-                <p className="text-sm font-medium">{r.name ?? 'Cliente'}</p>
-                <p className="text-xs text-muted">
-                  Sumiu há {r.days_gone} dias
-                  {r.last_service_name ? ` · ${r.last_service_name}` : ''}
-                </p>
-                {waConnected && r.phone && (
-                  <button
-                    type="button"
-                    disabled={sending === `reactivation-${r.id}`}
-                    onClick={() => sendWa('reactivation', r.id)}
-                    className="mt-2 text-xs font-medium text-gold-strong hover:underline disabled:opacity-50"
-                  >
-                    Enviar WhatsApp (marketing)
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {plan === 'pro' && !waConnected && (
+        <p className="rounded-xl border border-gold/25 bg-gold/10 px-3 py-2.5 text-sm font-medium text-gold-strong">
+          WhatsApp Cloud não conectado —{' '}
+          <Link href="/pro/conectar" className="underline underline-offset-2">
+            conectar
+          </Link>
+        </p>
+      )}
+      {toast && (
+        <p className="rounded-xl border border-success/25 bg-success/10 px-3 py-2.5 text-sm font-medium text-success">
+          {toast}
+        </p>
+      )}
 
-      <section>
-        <h3 className="font-serif text-lg">Upsell / retorno</h3>
-        {data.upsell.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">Nenhuma sugestão de retorno agora.</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {data.upsell.map((u) => (
-              <li key={`${u.client_id}-${u.service_name}`} className="rounded-xl bg-surface px-3 py-3">
-                <p className="text-sm font-medium">{u.client_name ?? 'Cliente'}</p>
-                <p className="text-xs text-muted">Sugerir {u.service_name}</p>
-                {waConnected && (
-                  <button
-                    type="button"
-                    disabled={sending === `reminder-${u.client_id}`}
-                    onClick={() => sendWa('reminder', u.client_id)}
-                    className="mt-2 text-xs font-medium text-gold-strong hover:underline disabled:opacity-50"
-                  >
-                    Enviar lembrete (utility)
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <ProPanel
+        title="Reativação"
+        subtitle={`${data.reactivation.length} cliente(s) sem visita há 45+ dias`}
+      >
+        <ProTable columns={['Cliente', 'Sumiu', 'Último serviço', 'Ação']}>
+          {data.reactivation.length === 0 ? (
+            <ProEmptyRow colSpan={4}>Ninguém sumido há 45+ dias na sua base.</ProEmptyRow>
+          ) : (
+            data.reactivation.map((r) => (
+              <tr key={r.id}>
+                <td className="px-4 py-3 font-semibold text-foreground">{r.name ?? 'Cliente'}</td>
+                <td className="px-4 py-3 font-medium text-muted">{r.days_gone} dias</td>
+                <td className="px-4 py-3 font-medium text-muted">{r.last_service_name ?? '—'}</td>
+                <td className="px-4 py-3">
+                  {waConnected && r.phone ? (
+                    <button
+                      type="button"
+                      disabled={sending === `reactivation-${r.id}`}
+                      onClick={() => sendWa('reactivation', r.id)}
+                      className="rounded-lg border border-gold/35 bg-gold/10 px-2.5 py-1.5 text-xs font-bold text-gold-strong hover:bg-gold/15 disabled:opacity-50"
+                    >
+                      WhatsApp
+                    </button>
+                  ) : (
+                    <span className="text-xs font-medium text-muted">—</span>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </ProTable>
+      </ProPanel>
 
-      <Link href="/pro/hoje" className="text-sm text-gold-strong hover:underline">
-        Voltar ao Hoje
-      </Link>
+      <ProPanel
+        title="Upsell / retorno"
+        subtitle={`${data.upsell.length} sugestão(ões) de retorno por cadência`}
+      >
+        <ProTable columns={['Cliente', 'Serviço', 'Última vez', 'Ação']}>
+          {data.upsell.length === 0 ? (
+            <ProEmptyRow colSpan={4}>Nenhuma sugestão de retorno agora.</ProEmptyRow>
+          ) : (
+            data.upsell.map((u) => (
+              <tr key={`${u.client_id}-${u.service_name}`}>
+                <td className="px-4 py-3 font-semibold text-foreground">
+                  {u.client_name ?? 'Cliente'}
+                </td>
+                <td className="px-4 py-3 font-medium text-muted">{u.service_name}</td>
+                <td className="px-4 py-3 font-medium text-muted">
+                  {new Date(u.last_done_at).toLocaleDateString('pt-BR')}
+                </td>
+                <td className="px-4 py-3">
+                  {waConnected ? (
+                    <button
+                      type="button"
+                      disabled={sending === `reminder-${u.client_id}`}
+                      onClick={() => sendWa('reminder', u.client_id)}
+                      className="rounded-lg border border-gold/35 bg-gold/10 px-2.5 py-1.5 text-xs font-bold text-gold-strong hover:bg-gold/15 disabled:opacity-50"
+                    >
+                      Lembrete
+                    </button>
+                  ) : (
+                    <span className="text-xs font-medium text-muted">—</span>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </ProTable>
+      </ProPanel>
     </div>
   )
 }
