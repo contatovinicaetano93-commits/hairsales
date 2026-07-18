@@ -82,6 +82,21 @@ STRIPE_SECRET_KEY=sk_test_... NEXT_PUBLIC_APP_URL=http://localhost:3000 npm run 
 
 Botão **Gerenciar cobrança** em `/pro/conectar` após a primeira compra (quando há `stripe_customer_id`).
 
+### Deploy e smoke Pro
+
+Checklist completo: **`deploy/SETUP-PRO.md`**.
+
+```bash
+# ROM + presença do /pro
+npm run verify:deploy -- https://SEU-DOMINIO
+
+# Smoke dedicado do assinante
+npm run verify:pro -- https://SEU-PREVIEW-OU-DOMINIO
+
+# Fluxo register→connect (só preview/dev com mock)
+PRO_SMOKE_FULL=1 npm run verify:pro -- http://localhost:3000
+```
+
 ### E2E do setup Pro
 
 Com `npm run dev` + Neon migrado (`020`–`024`):

@@ -131,6 +131,24 @@ check_unit() {
   else
     warn "ROM_ACCESS_TOKEN não definido — pulando health completo (readiness/Avec)"
   fi
+
+  # App Pro — presença (404 = branch ainda não deployado)
+  local pro_login_code
+  pro_login_code="$(curl -sS -o /dev/null -w "%{http_code}" "${base}/pro/login" || echo "000")"
+  if [[ "$pro_login_code" == "200" ]]; then
+    pass "GET /pro/login → 200 (app Pro no ar)"
+    local pro_onb
+    pro_onb="$(curl -sS -o /dev/null -w "%{http_code}" "${base}/api/me/onboarding" || echo "000")"
+    if [[ "$pro_onb" == "401" || "$pro_onb" == "403" ]]; then
+      pass "GET /api/me/onboarding sem sessão → ${pro_onb}"
+    else
+      fail "GET /api/me/onboarding → ${pro_onb} (esperado 401/403)"
+    fi
+  elif [[ "$pro_login_code" == "404" ]]; then
+    warn "GET /pro/login → 404 — app Pro ainda não deployado (ver deploy/SETUP-PRO.md)"
+  else
+    fail "GET /pro/login → ${pro_login_code}"
+  fi
 }
 
 FAILURES=0

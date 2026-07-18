@@ -69,3 +69,8 @@ Use os respectivos segredos exclusivos nos headers/configurações de webhook.
 - [ ] Financeiro, estoque, contatos e onboarding respeitam as roles
 - [ ] CRON, WhatsApp e Telegram usam segredos próprios
 - [ ] `npm run verify:deploy -- https://SEU-DOMINIO` passa
+
+## 7. App Pro (assinante)
+
+Depois do painel ROM estável, siga **`deploy/SETUP-PRO.md`** (migrations `020`–`024`,
+`PRO_DATA_SECRET`, Stripe Portal, smoke `npm run verify:pro`).
