@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { OnboardingChecklist } from '@/app/pro/_components/OnboardingChecklist'
 
 interface ProviderOpt {
   id: string
@@ -80,6 +81,10 @@ export default function ProConectarPage() {
         Preencha o nome do assinante e o token da API. A ferramenta puxa apenas o que for desse
         profissional — nunca o salão inteiro.
       </p>
+
+      <div className="mt-6 mb-2">
+        <OnboardingChecklist />
+      </div>
 
       <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
@@ -167,6 +172,7 @@ function PlanBlock() {
   const [allowed, setAllowed] = useState(false)
   const [stripeEnabled, setStripeEnabled] = useState(false)
   const [stripeProPrice, setStripeProPrice] = useState(false)
+  const [hasCustomer, setHasCustomer] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
 
   useEffect(() => {
@@ -174,19 +180,36 @@ function PlanBlock() {
     if (params.get('plan') === 'success') setMsg('Pagamento Pro recebido — atualizando plano…')
     if (params.get('plan') === 'cancel') setMsg('Checkout Pro cancelado.')
 
-    fetch('/api/me/plan', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.data?.plan) setPlan(json.data.plan)
-        setAllowed(Boolean(json.data?.self_upgrade_allowed))
-        setStripeEnabled(Boolean(json.data?.stripe_enabled))
-        setStripeProPrice(Boolean(json.data?.stripe_pro_price_configured))
-        if (params.get('plan') === 'success' && json.data?.plan === 'pro') {
+    Promise.all([
+      fetch('/api/me/plan', { credentials: 'include' }).then((r) => r.json()),
+      fetch('/api/me/onboarding', { credentials: 'include' }).then((r) => r.json()),
+    ])
+      .then(([planJson, onboardingJson]) => {
+        if (planJson.data?.plan) setPlan(planJson.data.plan)
+        setAllowed(Boolean(planJson.data?.self_upgrade_allowed))
+        setStripeEnabled(Boolean(planJson.data?.stripe_enabled))
+        setStripeProPrice(Boolean(planJson.data?.stripe_pro_price_configured))
+        setHasCustomer(Boolean(onboardingJson.data?.has_stripe_customer))
+        if (params.get('plan') === 'success' && planJson.data?.plan === 'pro') {
           setMsg('Plano Pro ativo via Stripe.')
         }
       })
       .catch(() => {})
   }, [])
+
+  async function openPortal() {
+    setMsg(null)
+    const res = await fetch('/api/me/billing/portal', {
+      method: 'POST',
+      credentials: 'include',
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      setMsg(json.error ?? 'Portal indisponível')
+      return
+    }
+    window.location.assign(json.data.url)
+  }
 
   async function setTo(next: 'free' | 'pro', checkout = false) {
     setMsg(null)
@@ -242,6 +265,15 @@ function PlanBlock() {
             className="rounded-xl border border-border px-3 py-2 text-sm"
           >
             Voltar Free
+          </button>
+        )}
+        {stripeEnabled && hasCustomer && (
+          <button
+            type="button"
+            onClick={openPortal}
+            className="rounded-xl border border-border px-3 py-2 text-sm"
+          >
+            Gerenciar cobrança (Portal)
           </button>
         )}
       </div>

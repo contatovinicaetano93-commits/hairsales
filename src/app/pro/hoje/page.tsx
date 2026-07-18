@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { ProHojePayload } from '@/lib/pro/hoje'
+import { OnboardingChecklist } from '@/app/pro/_components/OnboardingChecklist'
 
 function money(n: number | null | undefined) {
   if (n == null) return '—'
@@ -42,24 +43,28 @@ export default function ProHojePage() {
 
   if (data.connection.status !== 'active') {
     return (
-      <div className="rounded-2xl border border-gold/30 bg-gold/10 px-4 py-5">
-        <h2 className="font-serif text-xl">Conecte sua agenda</h2>
-        <p className="mt-2 text-sm text-muted">
-          Sem conexão, o app não mostra dados. Informe seu nome e o token da API — só o que for seu
-          entra aqui.
-        </p>
-        <Link
-          href="/pro/conectar"
-          className="mt-4 inline-flex rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold"
-        >
-          Ir para Conectar
-        </Link>
+      <div className="flex flex-col gap-4">
+        <div className="rounded-2xl border border-gold/30 bg-gold/10 px-4 py-5">
+          <h2 className="font-serif text-xl">Conecte sua agenda</h2>
+          <p className="mt-2 text-sm text-muted">
+            Sem conexão, o app não mostra dados. Informe seu nome e o token da API — só o que for seu
+            entra aqui.
+          </p>
+          <Link
+            href="/pro/conectar"
+            className="mt-4 inline-flex rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold"
+          >
+            Ir para Conectar
+          </Link>
+        </div>
+        <OnboardingChecklist />
       </div>
     )
   }
 
   return (
     <div className="flex flex-col gap-6">
+      <OnboardingChecklist compact />
       <div>
         <p className="text-sm text-muted">Olá, {data.subscriber.display_name}</p>
         <h2 className="mt-1 font-serif text-2xl">Hoje</h2>

@@ -228,3 +228,24 @@ export async function fulfillProSubscription(session: Stripe.Checkout.Session) {
   `
   return { upgraded: true, subscriber_id: subscriberId }
 }
+
+/** Customer Portal — faturas, cartão, cancelar assinatura. */
+export async function createBillingPortalSession(
+  subscriber: SubscriberRow,
+): Promise<{ url: string }> {
+  if (!isStripeConfigured()) {
+    throw new Error('Stripe não configurado')
+  }
+  if (!subscriber.stripe_customer_id) {
+    throw new Error('Nenhuma conta de cobrança Stripe ainda. Assine o Pro ou compre um pack primeiro.')
+  }
+
+  const stripe = getStripe()
+  const base = appBaseUrl()
+  const portal = await stripe.billingPortal.sessions.create({
+    customer: subscriber.stripe_customer_id,
+    return_url: `${base}/pro/conectar`,
+  })
+  if (!portal.url) throw new Error('Stripe Portal sem URL')
+  return { url: portal.url }
+}
