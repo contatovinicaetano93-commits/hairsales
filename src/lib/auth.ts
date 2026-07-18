@@ -52,14 +52,6 @@ function defaultUsers(): DefaultUsers {
   return DEFAULT_USERS_BY_PANEL[getRomPanelId()]
 }
 
-function sharedPassword() {
-  return (
-    process.env.ROM_ADMIN_PASSWORD?.trim() ||
-    process.env.ROM_ACCESS_TOKEN?.trim() ||
-    DEFAULT_SHARED_PASSWORD
-  )
-}
-
 function timingSafeEqual(a: string, b: string) {
   if (a.length !== b.length) return false
   let out = 0
@@ -79,12 +71,9 @@ export function getAdminUser() {
   return (process.env.ROM_ADMIN_USER ?? defaultUsers().admin).trim()
 }
 
+/** Senha única de todas as roles — ignora env para evitar drift na Vercel. */
 export function getAdminPassword() {
-  return (
-    process.env.ROM_ADMIN_PASSWORD?.trim() ||
-    process.env.ROM_ACCESS_TOKEN?.trim() ||
-    DEFAULT_SHARED_PASSWORD
-  )
+  return DEFAULT_SHARED_PASSWORD
 }
 
 export function getStaffUser() {
@@ -92,7 +81,7 @@ export function getStaffUser() {
 }
 
 export function getStaffPassword() {
-  return (process.env.ROM_STAFF_PASSWORD?.trim() || sharedPassword())
+  return DEFAULT_SHARED_PASSWORD
 }
 
 export function getFinanceUser() {
@@ -100,7 +89,7 @@ export function getFinanceUser() {
 }
 
 export function getFinancePassword() {
-  return (process.env.ROM_FINANCE_PASSWORD?.trim() || sharedPassword())
+  return DEFAULT_SHARED_PASSWORD
 }
 
 export function getStockUser() {
@@ -108,7 +97,7 @@ export function getStockUser() {
 }
 
 export function getStockPassword() {
-  return (process.env.ROM_STOCK_PASSWORD?.trim() || sharedPassword())
+  return DEFAULT_SHARED_PASSWORD
 }
 
 function listAccounts(): Account[] {
