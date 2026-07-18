@@ -87,12 +87,40 @@ export function mockCancellations() {
   ]
 }
 
+export function mockProfessionalsRevenue() {
+  return [
+    {
+      profissional: 'Dani Mariniello',
+      profissional_id: 'pro-dani',
+      faturamento: '1.850,00',
+      atendimentos: '5',
+      ticket: '370,00',
+    },
+    {
+      profissional: 'Walter',
+      profissional_id: 'pro-walter',
+      faturamento: '980,00',
+      atendimentos: '4',
+      ticket: '245,00',
+    },
+  ]
+}
+
+export function mockOccupancy() {
+  return [
+    { profissional: 'Dani Mariniello', ocupacao: '72%' },
+    { profissional: 'Walter', ocupacao: '58%' },
+  ]
+}
+
 export function getMockReport(reportId: string, page = 1) {
   if (page > 1) return { data: [] }
 
   if (reportId === '0004') return { data: MOCK_CLIENTS }
   if (reportId === '0051') return { data: mockAppointments() }
   if (reportId === '0002') return { data: mockAttendances() }
+  if (reportId === '0021') return { data: mockProfessionalsRevenue() }
+  if (reportId === '0126') return { data: mockOccupancy() }
   if (reportId === 'revenue' || reportId === process.env.AVEC_REPORT_REVENUE) return { data: mockRevenue() }
   if (reportId === 'cancellations' || reportId === process.env.AVEC_REPORT_CANCELLATIONS)
     return { data: mockCancellations() }

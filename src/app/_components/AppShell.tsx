@@ -10,6 +10,11 @@ const STANDALONE_PATHS = ['/login']
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
+  // App do profissional tem shell próprio — não mistura com o painel ROM da unidade.
+  if (pathname === '/pro' || pathname.startsWith('/pro/')) {
+    return <>{children}</>
+  }
+
   if (STANDALONE_PATHS.includes(pathname)) {
     return <>{children}</>
   }

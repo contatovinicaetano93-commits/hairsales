@@ -3,10 +3,15 @@ import type { NextRequest } from 'next/server'
 import { isAuthorized, isAuthEnabled, getSession } from '@/lib/auth'
 import { isCronAuthorized } from '@/lib/cron-auth'
 
-const PUBLIC_API_PREFIXES = ['/api/auth', '/api/health', '/api/webhooks']
+const PUBLIC_API_PREFIXES = ['/api/auth', '/api/health', '/api/webhooks', '/api/pro/auth']
 
 function isPublicApi(pathname: string) {
   return PUBLIC_API_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
+
+/** App do profissional — autenticação própria (cookie vitrini_pro_session), não ROM. */
+function isProAppApi(pathname: string) {
+  return pathname.startsWith('/api/me') || pathname.startsWith('/api/pro/')
 }
 
 function isFinancePath(pathname: string) {
@@ -45,9 +50,13 @@ function isProtectedApi(pathname: string) {
 }
 
 export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  // Rotas do app do profissional: handlers validam sessão própria.
+  if (isProAppApi(pathname)) return NextResponse.next()
+
   if (!isAuthEnabled()) return NextResponse.next()
 
-  const { pathname } = req.nextUrl
   if (pathname === '/login') return NextResponse.next()
 
   const needsAuth = isProtectedPage(pathname) || isProtectedApi(pathname)
