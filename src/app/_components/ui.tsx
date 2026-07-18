@@ -14,8 +14,8 @@ export const STATUS_LABEL: Record<string, string> = {
 // tom = classe de cor semântica pra pills e destaques
 export const STATUS_TONE: Record<string, string> = {
   novo: 'bg-gold/15 text-gold',
-  em_atendimento: 'bg-sky-500/15 text-sky-300',
-  agendado: 'bg-violet-500/15 text-violet-300',
+  em_atendimento: 'bg-gold/10 text-gold-strong',
+  agendado: 'bg-warning/15 text-warning',
   convertido: 'bg-success/15 text-success',
   perdido: 'bg-danger/15 text-danger',
 }
@@ -87,7 +87,7 @@ export function PrimaryButton({
   return (
     <button
       {...props}
-      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-bright py-3.5 text-base font-semibold text-background transition-transform active:scale-[0.99] disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-bright py-3.5 text-base font-semibold text-foreground transition-transform active:scale-[0.99] disabled:opacity-60"
     >
       {children}
     </button>

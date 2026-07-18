@@ -1,9 +1,9 @@
-# ROM — Onboarding & Painel de KPIs
+# GABRIEL VITRINI — Operação do salão
 
-Sistema interno da frente de caixa do ROM Club: recebe contatos de clientes por
+Sistema interno do salão Gabriel Vitrini: recebe contatos de clientes por
 WhatsApp (IA de primeiro atendimento), Telegram (secretária de consulta prática
 pra equipe) e Avec (sync de agenda/clientes), e centraliza tudo num painel de
-KPIs.
+KPIs, financeiro, estoque, contatos e treinamento.
 
 Stack: Next.js (App Router) + TypeScript + Tailwind + Neon (Postgres serverless),
 API-first (front-end só fala com `/api/*`). Acesso ao banco por SQL direto
@@ -36,11 +36,13 @@ Resiliência: todo evento (mensagem recebida, resposta da IA, erro) vira uma
 linha em `contact_events` — nada se perde silenciosamente, dá pra reprocessar
 ou investigar depois.
 
-## PENDENTE — você precisa fazer manualmente
+## Configuração pendente
 
-1. **Criar um projeto Neon dedicado ao ROM** e copiar a `DATABASE_URL`
-   (connection string com `sslmode=require`) pro `.env.local`.
-2. **Rodar `db/schema.sql`** no SQL Editor do Neon (ou `psql`).
+O Neon e o projeto Vercel devem ser exclusivos desta instância. Siga
+`deploy/SETUP-GABRIEL-VITRINI.md` e use `deploy/vercel-gabriel-vitrini.env`.
+
+1. Preencher cidade/unidade, endereço, telefone e roster do Gabriel Vitrini.
+2. Rodar o pipeline `npm run db:migrate` no Neon dedicado.
 3. **Claude (Anthropic)** — `ANTHROPIC_API_KEY` em [console.anthropic.com](https://console.anthropic.com)
    para briefings IA, WhatsApp e Telegram. Modelo padrão: `claude-sonnet-4-20250514`.
 4. **Avec** — gerar `AVEC_API_TOKEN` no painel Avec. A URL padrão já é
@@ -51,7 +53,7 @@ ou investigar depois.
    (mais lento pra configurar — verificação Meta Business — porém mais
    resiliente a longo prazo). O código já está pronto pros dois, só falta a
    decisão + credenciais.
-6. **Criar um bot Telegram dedicado ao ROM** via `@BotFather` (2 min, token na
+6. **Criar um bot Telegram dedicado ao Gabriel Vitrini** via `@BotFather` (2 min, token na
    hora) e configurar o `setWebhook` apontando para
    `/api/webhooks/telegram` com um `secret_token`.
 7. Preencher `.env.local` com base no `.env.example`.

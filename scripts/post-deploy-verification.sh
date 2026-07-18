@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 #
-# Verificação pós-deploy — ROM Club (Brasil / Iguatemi)
+# Verificação pós-deploy — Gabriel Vitrini
 #
 # Uso:
 #   bash scripts/post-deploy-verification.sh
-#   bash scripts/post-deploy-verification.sh https://rom-club.vercel.app
-#   bash scripts/post-deploy-verification.sh https://rom-iguatemi.vercel.app
+#   bash scripts/post-deploy-verification.sh https://gabriel-vitrini.vercel.app
 #
 # Health completo (readiness, Avec, cron):
-#   ROM_ACCESS_TOKEN=... bash scripts/post-deploy-verification.sh https://rom-club.vercel.app
+#   ROM_ACCESS_TOKEN=... bash scripts/post-deploy-verification.sh https://gabriel-vitrini.vercel.app
 #
 set -euo pipefail
 
 DEFAULT_URLS=(
-  "https://rom-club.vercel.app"
-  "https://rom-iguatemi.vercel.app"
+  "https://gabriel-vitrini.vercel.app"
 )
 
 RED='\033[0;31m'
@@ -137,17 +135,14 @@ check_unit() {
 
 FAILURES=0
 
-echo "Post-deploy verification · ROM Club"
+echo "Post-deploy verification · Gabriel Vitrini"
 echo "Data: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 if [[ $# -gt 0 ]]; then
   check_unit "$1" "Unidade informada"
 else
   for url in "${DEFAULT_URLS[@]}"; do
-    case "$url" in
-      *iguatemi*) check_unit "$url" "ROM Club Iguatemi" ;;
-      *) check_unit "$url" "ROM Club Brasil" ;;
-    esac
+    check_unit "$url" "Gabriel Vitrini"
   done
 fi
 

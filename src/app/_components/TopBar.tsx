@@ -74,8 +74,8 @@ export function TopBar() {
           </div>
 
           <div className="flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 py-1 pl-1 pr-3">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold text-xs font-bold text-background">
-              R
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold text-xs font-bold text-foreground">
+              {brand.shortMonogram}
             </span>
             <div className="hidden leading-tight sm:block">
               <p className="text-[0.6rem] text-muted">{brand.displayName}</p>

@@ -66,6 +66,18 @@ describe('migrations registry', () => {
     }
   })
 
+  it('Vitrini tem pipeline completo sem seed de equipe de outra unidade', () => {
+    const list = listMigrationsForPanel('vitrini')
+    const files = list.map((migration) => migration.file)
+
+    expect(files).toContain('schema.sql')
+    expect(files).toContain('delta-vitrini-staff-links.sql')
+    expect(files).not.toContain('delta-telegram-staff-links.sql')
+    for (const migration of list) {
+      expect(existsSync(join(process.cwd(), 'db', migration.file))).toBe(true)
+    }
+  })
+
   it('falha se arquivo do outro painel estiver ausente neste repo', () => {
     const panel = panelOfThisRepo()
     const other: RomPanelId = panel === 'brasil' ? 'iguatemi' : 'brasil'

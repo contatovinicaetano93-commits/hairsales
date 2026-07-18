@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   applicationName: brand.shortMonogram,
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: brand.shortMonogram,
   },
   formatDetection: { telephone: false },
@@ -32,7 +32,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0a0908',
+  themeColor: '#fafaf7',
 }
 
 export default function RootLayout({

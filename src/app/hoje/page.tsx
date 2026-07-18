@@ -93,7 +93,7 @@ export default function HojePage() {
         <p className="text-[0.65rem] uppercase tracking-[0.25em] text-gold">Playbook do dia</p>
         <h1 className="mt-1 flex items-center gap-2 text-xl font-semibold capitalize lg:text-2xl">
           <Sun size={22} className="text-gold" />
-          Hoje no {brand.displayName}
+          {brand.hojeTitle}
         </h1>
         {!loading && data && <p className="mt-0.5 text-xs text-muted capitalize">{dayLabel}</p>}
       </div>
@@ -186,7 +186,7 @@ export default function HojePage() {
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-1.5 text-sm font-medium">
-            <Calendar size={15} className="text-sky-300" /> Agendamentos hoje
+            <Calendar size={15} className="text-gold-strong" /> Agendamentos hoje
           </h2>
           <CountBadge value={loading ? '—' : String(data?.scheduleToday.length ?? 0)} tone="gold" />
         </div>
@@ -207,12 +207,12 @@ export default function HojePage() {
             <Link
               key={s.id}
               href={`/contatos/${s.contact_id}`}
-              className="flex items-center gap-3 rounded-2xl border border-sky-500/25 bg-sky-500/5 p-4 active:bg-surface"
+              className="flex items-center gap-3 rounded-2xl border border-gold/25 bg-gold/5 p-4 active:bg-surface"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{s.contact_name ?? 'Cliente'}</p>
                 <p className="mt-0.5 truncate text-xs text-muted">
-                  <span className="text-sky-300">{s.name}</span> · {fmtSchedule(s.scheduled_at)}
+                  <span className="text-gold-strong">{s.name}</span> · {fmtSchedule(s.scheduled_at)}
                 </p>
               </div>
               <ChevronRight size={16} className="shrink-0 text-muted" />

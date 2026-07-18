@@ -335,7 +335,7 @@ export default function DashboardPage() {
             <section className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-1.5 text-sm font-medium">
-                  <Calendar size={15} className="text-sky-300" /> Próximos agendamentos
+                  <Calendar size={15} className="text-gold-strong" /> Próximos agendamentos
                 </h2>
                 <CountBadge value={`${schedule.length}`} tone="gold" />
               </div>
@@ -343,12 +343,12 @@ export default function DashboardPage() {
                 <Link
                   key={s.id}
                   href={`/contatos/${s.contact_id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-sky-500/25 bg-sky-500/5 p-4 active:bg-surface lg:hover:bg-sky-500/10"
+                  className="flex items-center gap-3 rounded-2xl border border-gold/25 bg-gold/5 p-4 active:bg-surface lg:hover:bg-gold/10"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{s.contact_name ?? 'Cliente'}</p>
                     <p className="mt-0.5 truncate text-xs text-muted">
-                      <span className="text-sky-300">{s.name}</span> · {fmtSchedule(s.scheduled_at)}
+                      <span className="text-gold-strong">{s.name}</span> · {fmtSchedule(s.scheduled_at)}
                     </p>
                   </div>
                   <ChevronRight size={16} className="shrink-0 text-muted" />

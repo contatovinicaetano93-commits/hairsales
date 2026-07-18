@@ -20,6 +20,11 @@ describe('listDirectorProfessionals — roster por unidade', () => {
     expect(listDirectorProfessionals()).toEqual([])
   })
 
+  it('ROM_PANEL=vitrini começa sem herdar profissionais de outra unidade', () => {
+    process.env.ROM_PANEL = 'vitrini'
+    expect(listDirectorProfessionals()).toEqual([])
+  })
+
   it('nunca mistura os dois rosters', () => {
     process.env.ROM_PANEL = 'iguatemi'
     const iguatemiNames = listDirectorProfessionals(false).map((p) => p.name)

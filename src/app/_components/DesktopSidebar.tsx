@@ -150,8 +150,8 @@ export function DesktopSidebar() {
       <div className="border-t border-border px-4 py-4">
         <AdminSessionBar className="mb-4" />
         <div className="flex items-center gap-3 px-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-sm font-bold text-background">
-            R
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-sm font-bold text-foreground">
+            {brand.shortMonogram}
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-gold-strong">Recepção</p>

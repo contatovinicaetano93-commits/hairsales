@@ -92,7 +92,7 @@ export default function AdminPage() {
   const [syncing, setSyncing] = useState(false)
   const [seeding, setSeeding] = useState(false)
   const [seedMsg, setSeedMsg] = useState<string | null>(null)
-  const [seedPreset, setSeedPreset] = useState<RomSeedPreset>(brand.panel)
+  const [seedPreset] = useState<RomSeedPreset>(brand.panel)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
   const [connMsg, setConnMsg] = useState<string | null>(null)
 
@@ -295,11 +295,10 @@ export default function AdminPage() {
                   <span className="text-xs text-muted">Preset do seed</span>
                   <select
                     value={seedPreset}
-                    onChange={(e) => setSeedPreset(e.target.value as RomSeedPreset)}
+                    disabled
                     className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
                   >
-                    <option value="brasil">{getBrand('brasil').displayName}</option>
-                    <option value="iguatemi">{getBrand('iguatemi').displayName}</option>
+                    <option value={brand.panel}>{brand.displayName}</option>
                   </select>
                 </label>
               </div>
@@ -484,7 +483,7 @@ export default function AdminPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{s.contact_name ?? 'Cliente'}</p>
-                    <p className="text-xs text-sky-300">{s.name}</p>
+                    <p className="text-xs text-gold-strong">{s.name}</p>
                   </div>
                   <span className="shrink-0 text-xs text-muted">{fmtIso(s.scheduled_at)}</span>
                 </Link>

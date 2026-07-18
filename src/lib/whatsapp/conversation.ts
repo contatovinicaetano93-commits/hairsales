@@ -53,12 +53,13 @@ async function isAwaitingHuman(contactId: string): Promise<boolean> {
 }
 
 function formatHistory(events: Awaited<ReturnType<typeof listEvents>>) {
+  const brand = getBrand()
   return events
     .filter((e) => typeof e.payload?.text === 'string')
     .slice(0, 12)
     .reverse()
     .map((e) => {
-      const who = e.direction === 'in' ? 'Cliente' : e.handled_by === 'human' ? 'Atendente' : 'ROM'
+      const who = e.direction === 'in' ? 'Cliente' : e.handled_by === 'human' ? 'Atendente' : brand.aiPersonaName
       return `${who}: ${String(e.payload.text)}`
     })
     .join('\n')

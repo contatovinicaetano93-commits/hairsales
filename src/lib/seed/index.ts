@@ -4,6 +4,7 @@ import { addService, scheduleService } from '@/lib/services'
 import { getDefaultSeedPreset, parseSeedPreset, type RomSeedPreset } from '@/lib/brand'
 import { brasilSeedPreset } from '@/lib/seed/presets/brasil'
 import { iguatemiSeedPreset } from '@/lib/seed/presets/iguatemi'
+import { vitriniSeedPreset } from '@/lib/seed/presets/vitrini'
 import type { SeedResult } from '@/lib/seed/types'
 
 export type { SeedResult } from '@/lib/seed/types'
@@ -11,6 +12,7 @@ export type { SeedResult } from '@/lib/seed/types'
 const PRESETS = {
   brasil: brasilSeedPreset,
   iguatemi: iguatemiSeedPreset,
+  vitrini: vitriniSeedPreset,
 } as const
 
 export function listSeedPresets() {

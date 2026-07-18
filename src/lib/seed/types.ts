@@ -1,4 +1,5 @@
 import type { ContactStatus } from '@/lib/contacts'
+import type { RomSeedPreset } from '@/lib/brand'
 
 export interface SeedServiceSpec {
   name: string
@@ -23,13 +24,13 @@ export interface SeedContactSpec {
 }
 
 export interface SeedPreset {
-  id: 'brasil' | 'iguatemi'
+  id: RomSeedPreset
   label: string
   contacts: SeedContactSpec[]
 }
 
 export interface SeedResult {
-  preset: 'brasil' | 'iguatemi'
+  preset: RomSeedPreset
   contacts: number
   services: number
   message: string

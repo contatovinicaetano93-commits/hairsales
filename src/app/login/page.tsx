@@ -55,7 +55,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6">
+    <div className="w-full max-w-sm px-1 py-6">
       <p className="text-[0.65rem] uppercase tracking-[0.25em] text-gold">{brand.displayName}</p>
       <h1 className="mt-2 text-xl font-semibold">Acesso da equipe</h1>
       <p className="mt-2 text-sm text-muted">{brand.loginSubtitle}</p>
@@ -114,7 +114,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="flex min-h-dvh w-full items-center justify-center bg-background px-5 py-8">
-      <Suspense fallback={<div className="h-72 w-full max-w-sm animate-pulse rounded-2xl bg-card" />}>
+      <Suspense fallback={<div className="h-72 w-full max-w-sm animate-pulse rounded-2xl bg-surface" />}>
         <LoginForm />
       </Suspense>
     </main>

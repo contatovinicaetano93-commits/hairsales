@@ -29,10 +29,10 @@ create index if not exists onboarding_videos_pillar_idx on onboarding_videos (pi
 
 insert into onboarding_pillars (name, description, order_index)
 select v.name, v.description, v.order_index from (values
-  ('Cultura & Padrão ROM', 'História, recorde Guinness e o que diferencia o atendimento ROM.', 1),
+  ('Cultura Gabriel Vitrini', 'História, valores e padrão de atendimento do salão.', 1),
   ('Experiência do Cliente', 'Recepção, consulta e condução do atendimento do início ao fim.', 2),
-  ('Técnica & Qualidade', 'Padrão de coloração e mechas criativas, quando escalar pra outro profissional.', 3),
-  ('Segurança & Produtos', 'Manuseio químico, EPIs e parcerias de produto.', 4),
+  ('Técnica & Qualidade', 'Protocolos técnicos e critérios para escalar o atendimento.', 3),
+  ('Segurança & Produtos', 'Manuseio químico, EPIs e produtos homologados.', 4),
   ('Políticas & Convivência', 'Escala, faltas, comissão e comunicação interna.', 5)
 ) as v(name, description, order_index)
 where not exists (select 1 from onboarding_pillars p where lower(p.name) = lower(v.name));

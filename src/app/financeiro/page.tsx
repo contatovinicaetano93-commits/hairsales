@@ -297,7 +297,7 @@ export default function FinanceiroPage() {
         <div className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-sm font-medium">Split fiscal — {kpis.current.label}</h2>
           <p className="mt-0.5 text-xs text-muted">
-            CBS/IBS retidos na liquidação (Plataforma Pública / export do PSP). O ROM só reconcilia — não processa pagamento.
+            CBS/IBS retidos na liquidação (Plataforma Pública / export do PSP). O sistema só reconcilia — não processa pagamento.
           </p>
           {kpis.current.fiscal_split.settled_count === 0 && kpis.current.fiscal_split.pending_count === 0 ? (
             <p className="mt-3 text-xs text-muted">

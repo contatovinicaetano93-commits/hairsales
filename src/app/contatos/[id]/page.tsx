@@ -98,9 +98,9 @@ const STATUS_FLOW = ['novo', 'em_atendimento', 'agendado', 'convertido', 'perdid
 const REC_TONE: Record<string, string> = {
   overdue: 'border-danger/40 bg-danger/10',
   due_soon: 'border-warning/40 bg-warning/10',
-  scheduled: 'border-sky-500/40 bg-sky-500/10',
+  scheduled: 'border-gold/40 bg-gold/10',
   upsell: 'border-gold/40 bg-gold/10',
-  crosssell: 'border-sky-500/40 bg-sky-500/10',
+  crosssell: 'border-gold/40 bg-gold/10',
 }
 
 function ServiceStateBadge({ state, days }: { state: Service['state']; days: number | null }) {
@@ -623,7 +623,7 @@ export default function ContactDetailPage() {
                 <ServiceStateBadge state={s.state} days={s.days_until} />
               </div>
               {s.scheduled_at && (
-                <p className="mt-2 inline-flex items-center gap-1 rounded-lg bg-sky-500/10 px-2 py-1 text-[0.65rem] font-medium text-sky-300">
+                <p className="mt-2 inline-flex items-center gap-1 rounded-lg bg-gold/10 px-2 py-1 text-[0.65rem] font-medium text-gold-strong">
                   <Calendar size={11} /> Agendado: {fmtSchedule(s.scheduled_at)}
                 </p>
               )}

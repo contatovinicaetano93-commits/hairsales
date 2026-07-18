@@ -1,4 +1,4 @@
-export type RomPanelId = 'brasil' | 'iguatemi'
+export type RomPanelId = 'brasil' | 'iguatemi' | 'vitrini'
 export type RomSeedPreset = RomPanelId
 
 export interface RomBrand {
@@ -42,12 +42,27 @@ const BRANDS: Record<RomPanelId, RomBrand> = {
     receptionLabel: 'ROM CLUB IGUATEMI · Operação',
     aiPersonaName: 'ROM CLUB IGUATEMI',
   },
+  vitrini: {
+    panel: 'vitrini',
+    displayName: 'GABRIEL VITRINI',
+    productName: 'GABRIEL VITRINI',
+    shortMonogram: 'GV',
+    locationSubtitle: 'CIDADE A DEFINIR',
+    tagline: 'Atendimento, contatos e gestão do salão',
+    hojeTitle: 'Hoje no GABRIEL VITRINI',
+    dashboardTitle: 'Atendimento do GABRIEL VITRINI',
+    loginSubtitle: 'Operação, relacionamento e gestão em um só lugar.',
+    receptionLabel: 'GABRIEL VITRINI · Recepção',
+    aiPersonaName: 'Assistente Vitrini',
+  },
 }
 
 export function parseRomPanelId(value: string | undefined | null): RomPanelId {
   const v = value?.toLowerCase()
+  if (v === 'brasil') return 'brasil'
   if (v === 'iguatemi' || v === 'iguatuemi') return 'iguatemi'
-  return 'brasil'
+  if (v === 'vitrini' || v === 'gabriel-vitrini') return 'vitrini'
+  return 'vitrini'
 }
 
 /** Painel ativo — `ROM_PANEL` no servidor, `NEXT_PUBLIC_ROM_PANEL` no cliente. */
@@ -79,5 +94,6 @@ export function parseSeedPreset(value: string | undefined | null): RomSeedPreset
   const v = value.toLowerCase()
   if (v === 'brasil') return 'brasil'
   if (v === 'iguatemi' || v === 'iguatuemi') return 'iguatemi'
+  if (v === 'vitrini' || v === 'gabriel-vitrini') return 'vitrini'
   return null
 }

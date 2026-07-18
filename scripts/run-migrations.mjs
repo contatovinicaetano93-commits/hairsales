@@ -2,8 +2,7 @@
 /**
  * Aplica db/migrations.json no Neon (DATABASE_URL).
  * Uso:
- *   DATABASE_URL=... ROM_PANEL=brasil npm run db:migrate
- *   DATABASE_URL=... ROM_PANEL=iguatemi npm run db:migrate
+ *   DATABASE_URL=... ROM_PANEL=vitrini npm run db:migrate
  */
 import { existsSync, readFileSync } from 'fs'
 import { basename, join, dirname } from 'path'
@@ -19,7 +18,7 @@ function assertSafeDbFileName(fileName) {
 }
 
 const cwd = join(dirname(fileURLToPath(import.meta.url)), '..')
-const panel = (process.env.ROM_PANEL || process.env.NEXT_PUBLIC_ROM_PANEL || 'brasil')
+const panel = (process.env.ROM_PANEL || process.env.NEXT_PUBLIC_ROM_PANEL || 'vitrini')
   .toLowerCase()
   .replace('iguatuemi', 'iguatemi')
 const databaseUrl = process.env.DATABASE_URL

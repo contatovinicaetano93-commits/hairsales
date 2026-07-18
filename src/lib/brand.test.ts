@@ -13,10 +13,12 @@ afterEach(() => {
 })
 
 describe('brand', () => {
-  it('brasil é o painel padrão', () => {
-    const brand = getBrand('brasil')
-    expect(brand.displayName).toBe('ROM CLUB BRASIL')
-    expect(brand.productName).toBe('ROM CLUB BRASIL')
+  it('Vitrini é o painel padrão', () => {
+    delete process.env.ROM_PANEL
+    const brand = getBrand()
+    expect(brand.panel).toBe('vitrini')
+    expect(brand.displayName).toBe('GABRIEL VITRINI')
+    expect(brand.productName).toBe('GABRIEL VITRINI')
   })
 
   it('iguatemi tem branding próprio', () => {
@@ -30,7 +32,9 @@ describe('brand', () => {
     expect(parseRomPanelId('iguatemi')).toBe('iguatemi')
     expect(parseRomPanelId('iguatuemi')).toBe('iguatemi')
     expect(parseRomPanelId('BRASIL')).toBe('brasil')
+    expect(parseRomPanelId('gabriel-vitrini')).toBe('vitrini')
     expect(parseSeedPreset('iguatemi')).toBe('iguatemi')
+    expect(parseSeedPreset('vitrini')).toBe('vitrini')
     expect(parseSeedPreset('outro')).toBeNull()
   })
 

@@ -229,7 +229,7 @@ export default function ContatosPage() {
                       </span>
                     )}
                     {c.scheduled_soon > 0 && (
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[0.6rem] font-semibold text-sky-300">
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-gold/15 px-1.5 py-0.5 text-[0.6rem] font-semibold text-gold-strong">
                         <Calendar size={10} />
                         {c.scheduled_soon}
                       </span>
