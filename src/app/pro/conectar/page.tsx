@@ -1,13 +1,63 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChevronDown } from 'lucide-react'
 import { OnboardingChecklist } from '@/app/pro/_components/OnboardingChecklist'
 
 interface ProviderOpt {
   id: string
   label: string
   available: boolean
+}
+
+function ConnectCard({
+  title,
+  summary,
+  badge,
+  defaultOpen = false,
+  children,
+}: {
+  title: string
+  summary?: string
+  badge?: string
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const panelId = useId()
+
+  return (
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card/70 shadow-[0_1px_0_rgba(26,23,20,0.04)]">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-surface/60"
+      >
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-serif text-lg leading-tight">{title}</h3>
+            {badge && (
+              <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-gold-strong">
+                {badge}
+              </span>
+            )}
+          </div>
+          {summary && <p className="mt-1 text-xs text-muted">{summary}</p>}
+        </div>
+        <ChevronDown
+          className={`mt-1 h-5 w-5 shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <div id={panelId} className="border-t border-border/70 px-4 py-4">
+          {children}
+        </div>
+      )}
+    </article>
+  )
 }
 
 export default function ProConectarPage() {
@@ -76,93 +126,105 @@ export default function ProConectarPage() {
 
   return (
     <div>
-      <h2 className="font-serif text-xl">Conectar agenda</h2>
+      <h2 className="font-serif text-xl">Conectar</h2>
       <p className="mt-2 text-sm text-muted">
-        Preencha o nome do assinante e o token da API. A ferramenta puxa apenas o que for desse
-        profissional — nunca o salão inteiro.
+        Cada card é uma conexão. Toque no título para abrir ou recolher.
       </p>
 
-      <div className="mt-6 mb-2">
+      <div className="mt-6 mb-4">
         <OnboardingChecklist />
       </div>
 
-      <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs uppercase tracking-wide text-muted">Fonte</span>
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
-          >
-            {(providers.length ? providers : [{ id: 'avec', label: 'Avec', available: true }]).map(
-              (p) => (
-                <option key={p.id} value={p.id} disabled={!p.available}>
-                  {p.label}
-                  {!p.available ? ' (em breve)' : ''}
-                </option>
-              ),
-            )}
-          </select>
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs uppercase tracking-wide text-muted">
-            Nome do assinante (igual na agenda)
-          </span>
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            required
-            placeholder="Ex.: Dani Mariniello"
-            className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs uppercase tracking-wide text-muted">Token da API</span>
-          <input
-            type="password"
-            value={apiToken}
-            onChange={(e) => setApiToken(e.target.value)}
-            required
-            placeholder="Token Avec (ou mock em dev)"
-            className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
-            autoComplete="off"
-          />
-          <span className="text-xs text-muted">
-            Em desenvolvimento com mock: use o token <code className="text-gold-strong">mock</code>.
-          </span>
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs uppercase tracking-wide text-muted">
-            {provider === 'trinks' ? 'ID do estabelecimento (Trinks)' : 'ID da unidade Avec (opcional)'}
-          </span>
-          <input
-            value={unitId}
-            onChange={(e) => setUnitId(e.target.value)}
-            placeholder={provider === 'trinks' ? 'estabelecimentoId' : 'site / unidade no Avec'}
-            required={provider === 'trinks' && apiToken !== 'mock'}
-            className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
-          />
-        </label>
-
-        {error && <p className="text-sm text-danger">{error}</p>}
-        {success && <p className="text-sm text-success">{success}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-xl bg-gold px-4 py-3 text-sm font-semibold disabled:opacity-60"
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <ConnectCard
+          title="Agenda"
+          summary="Avec ou Trinks — só os seus dados"
+          badge="obrigatório"
+          defaultOpen
         >
-          {loading ? 'Validando nome na API…' : 'Conectar meus dados'}
-        </button>
-      </form>
+          <form onSubmit={submit} className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs uppercase tracking-wide text-muted">Fonte</span>
+              <select
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
+              >
+                {(providers.length
+                  ? providers
+                  : [{ id: 'avec', label: 'Avec', available: true }]
+                ).map((p) => (
+                  <option key={p.id} value={p.id} disabled={!p.available}>
+                    {p.label}
+                    {!p.available ? ' (em breve)' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-      <PlanBlock />
-      <GoalsBlock />
-      <TelegramBlock />
-      <WhatsappBlock />
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs uppercase tracking-wide text-muted">
+                Nome do assinante (igual na agenda)
+              </span>
+              <input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+                placeholder="Ex.: Dani Mariniello"
+                className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs uppercase tracking-wide text-muted">Token da API</span>
+              <input
+                type="password"
+                value={apiToken}
+                onChange={(e) => setApiToken(e.target.value)}
+                required
+                placeholder="Token Avec (ou mock em dev)"
+                className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
+                autoComplete="off"
+              />
+              <span className="text-xs text-muted">
+                Em desenvolvimento com mock: use o token{' '}
+                <code className="text-gold-strong">mock</code>.
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs uppercase tracking-wide text-muted">
+                {provider === 'trinks'
+                  ? 'ID do estabelecimento (Trinks)'
+                  : 'ID da unidade Avec (opcional)'}
+              </span>
+              <input
+                value={unitId}
+                onChange={(e) => setUnitId(e.target.value)}
+                placeholder={provider === 'trinks' ? 'estabelecimentoId' : 'site / unidade no Avec'}
+                required={provider === 'trinks' && apiToken !== 'mock'}
+                className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
+              />
+            </label>
+
+            {error && <p className="text-sm text-danger">{error}</p>}
+            {success && <p className="text-sm text-success">{success}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-xl bg-gold px-4 py-3 text-sm font-semibold disabled:opacity-60"
+            >
+              {loading ? 'Validando nome na API…' : 'Conectar meus dados'}
+            </button>
+          </form>
+        </ConnectCard>
+
+        <PlanBlock />
+        <GoalsBlock />
+        <TelegramBlock />
+        <WhatsappBlock />
+      </div>
     </div>
   )
 }
@@ -233,13 +295,16 @@ function PlanBlock() {
   }
 
   return (
-    <section className="mt-10 border-t border-border pt-6">
-      <h3 className="font-serif text-lg">Plano</h3>
-      <p className="mt-1 text-sm text-muted">
-        Atual: <span className="font-medium text-foreground">{plan}</span>
-        {plan === 'free' ? ' · Telegram + app · sem WhatsApp Cloud' : ' · 200 utility/mês inclusos'}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+    <ConnectCard
+      title="Plano"
+      summary={
+        plan === 'free'
+          ? 'Free · Telegram + app · sem WhatsApp Cloud'
+          : 'Pro · 200 utility/mês inclusos'
+      }
+      badge={plan}
+    >
+      <div className="flex flex-wrap gap-2">
         {plan !== 'pro' && stripeEnabled && stripeProPrice && (
           <button
             type="button"
@@ -278,7 +343,7 @@ function PlanBlock() {
         )}
       </div>
       {msg && <p className="mt-2 text-xs text-muted">{msg}</p>}
-    </section>
+    </ConnectCard>
   )
 }
 
@@ -453,11 +518,19 @@ function WhatsappBlock() {
   }
 
   return (
-    <section className="mt-10 border-t border-border pt-6">
-      <h3 className="font-serif text-lg">WhatsApp Cloud (Pro)</h3>
-      <p className="mt-1 text-sm text-muted">
-        Número do assinante na Cloud API oficial. Free usa só Telegram. Em dev, token{' '}
-        <code className="text-gold-strong">mock</code>.
+    <ConnectCard
+      title="WhatsApp Cloud"
+      summary={
+        connected
+          ? 'Cloud API conectada'
+          : plan === 'pro'
+            ? 'Número do assinante na Cloud API oficial'
+            : 'Disponível no plano Pro'
+      }
+      badge={connected ? 'ativo' : plan === 'pro' ? 'pro' : 'free'}
+    >
+      <p className="text-sm text-muted">
+        Free usa só Telegram. Em dev, token <code className="text-gold-strong">mock</code>.
       </p>
       {usage && plan === 'pro' && (
         <p className="mt-2 text-xs text-muted">
@@ -544,7 +617,7 @@ function WhatsappBlock() {
       )}
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
       {msg && <p className="mt-2 text-sm text-success">{msg}</p>}
-    </section>
+    </ConnectCard>
   )
 }
 
@@ -617,12 +690,17 @@ function GoalsBlock() {
   const hasSaved = savedDaily != null || savedWeekly != null
 
   return (
-    <section className="mt-10 border-t border-border pt-6">
-      <h3 className="font-serif text-lg">Suas metas</h3>
-      <p className="mt-1 text-sm text-muted">Só as suas — não a meta do salão.</p>
-
+    <ConnectCard
+      title="Metas"
+      summary={
+        hasSaved
+          ? `Dia ${moneyBrl(savedDaily)} · Semana ${moneyBrl(savedWeekly)}`
+          : 'Só as suas — não a meta do salão'
+      }
+      badge={hasSaved ? 'salva' : undefined}
+    >
       {hasSaved && (
-        <div className="mt-4 rounded-2xl border border-gold/30 bg-gold/10 px-4 py-3">
+        <div className="mb-4 rounded-2xl border border-gold/30 bg-gold/10 px-4 py-3">
           <p className="text-[0.65rem] uppercase tracking-wide text-gold-strong">Meta salva agora</p>
           <p className="mt-1 text-sm font-medium text-foreground">
             Dia {moneyBrl(savedDaily)} · Semana {moneyBrl(savedWeekly)}
@@ -631,10 +709,10 @@ function GoalsBlock() {
       )}
 
       {!hasSaved && (
-        <p className="mt-4 text-sm text-muted">Nenhuma meta salva ainda — preencha e salve abaixo.</p>
+        <p className="mb-4 text-sm text-muted">Nenhuma meta salva ainda — preencha e salve abaixo.</p>
       )}
 
-      <form onSubmit={save} className="mt-4 flex flex-col gap-3">
+      <form onSubmit={save} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1.5">
           <span className="text-xs uppercase tracking-wide text-muted">Meta diária (R$)</span>
           <input
@@ -679,7 +757,7 @@ function GoalsBlock() {
           {saving ? 'Salvando…' : 'Salvar metas'}
         </button>
       </form>
-    </section>
+    </ConnectCard>
   )
 }
 
@@ -716,13 +794,17 @@ function TelegramBlock() {
   }
 
   return (
-    <section className="mt-10 border-t border-border pt-6">
-      <h3 className="font-serif text-lg">Telegram</h3>
-      <p className="mt-1 text-sm text-muted">
-        Canal grátis da assistente — briefing e perguntas só com os seus dados.
-      </p>
+    <ConnectCard
+      title="Telegram"
+      summary={
+        linked
+          ? 'Assistente vinculada no Telegram'
+          : 'Canal grátis — briefing e perguntas só com os seus dados'
+      }
+      badge={linked ? 'vinculado' : undefined}
+    >
       {linked ? (
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <p className="text-sm text-success">Telegram vinculado.</p>
           <button
             type="button"
@@ -733,7 +815,7 @@ function TelegramBlock() {
           </button>
         </div>
       ) : (
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <button
             type="button"
             onClick={generate}
@@ -750,6 +832,6 @@ function TelegramBlock() {
           {error && <p className="text-sm text-danger">{error}</p>}
         </div>
       )}
-    </section>
+    </ConnectCard>
   )
 }
