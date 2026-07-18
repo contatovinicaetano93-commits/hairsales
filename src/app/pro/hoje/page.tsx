@@ -138,6 +138,21 @@ export default function ProHojePage() {
         )}
       </section>
 
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/pro/assistente"
+          className="rounded-xl bg-gold/15 px-3 py-2 text-sm font-medium text-gold-strong"
+        >
+          Abrir assistente
+        </Link>
+        <Link
+          href="/pro/conectar"
+          className="rounded-xl border border-border px-3 py-2 text-sm text-muted"
+        >
+          Metas e Telegram
+        </Link>
+      </div>
+
       <section>
         <div className="mb-2 flex items-baseline justify-between">
           <h3 className="font-serif text-lg">Ações</h3>

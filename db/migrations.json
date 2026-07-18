@@ -20,6 +20,7 @@
     { "id": "017_parity_brasil", "file": "delta-parity-brasil.sql", "panels": ["iguatemi"] },
     { "id": "018_audit_alerts", "file": "delta-audit-alerts.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
     { "id": "019_vitrini_staff_links", "file": "delta-vitrini-staff-links.sql", "panels": ["vitrini"] },
-    { "id": "020_pro_subscribers", "file": "delta-pro-subscribers.sql", "panels": ["brasil", "iguatemi", "vitrini"] }
+    { "id": "020_pro_subscribers", "file": "delta-pro-subscribers.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
+    { "id": "021_pro_assistant", "file": "delta-pro-assistant.sql", "panels": ["brasil", "iguatemi", "vitrini"] }
   ]
 }

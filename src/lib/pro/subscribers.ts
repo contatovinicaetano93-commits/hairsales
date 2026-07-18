@@ -13,6 +13,7 @@ export interface SubscriberRow {
   plan: SubscriberPlan
   daily_goal_revenue: number | null
   weekly_goal_revenue: number | null
+  telegram_chat_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -81,6 +82,24 @@ export async function updateSubscriberDisplayName(id: string, displayName: strin
     set display_name = ${displayName.trim()}, updated_at = now()
     where id = ${id}
   `
+}
+
+/** Define metas; passe null para limpar. */
+export async function setSubscriberGoals(
+  id: string,
+  daily: number | null,
+  weekly: number | null,
+): Promise<SubscriberRow> {
+  const sql = getSql()
+  const rows = (await sql`
+    update subscribers set
+      daily_goal_revenue = ${daily},
+      weekly_goal_revenue = ${weekly},
+      updated_at = now()
+    where id = ${id}
+    returning *
+  `) as SubscriberRow[]
+  return rows[0]!
 }
 
 export async function getActiveConnection(

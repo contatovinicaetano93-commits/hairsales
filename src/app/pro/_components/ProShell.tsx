@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, Users, Sparkles, Link2 } from 'lucide-react'
+import { CalendarDays, Users, Sparkles, MessageCircle, Link2 } from 'lucide-react'
 import { getBrand } from '@/lib/brand'
 
 const NAV = [
   { href: '/pro/hoje', label: 'Hoje', icon: CalendarDays },
+  { href: '/pro/assistente', label: 'Assistente', icon: MessageCircle },
   { href: '/pro/clientes', label: 'Clientes', icon: Users },
   { href: '/pro/acoes', label: 'Ações', icon: Sparkles },
-  { href: '/pro/conectar', label: 'Conectar', icon: Link2 },
 ]
 
 export function ProShell({ children }: { children: React.ReactNode }) {
@@ -28,9 +28,20 @@ export function ProShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="pro-app min-h-screen bg-background text-foreground">
       <header className="border-b border-border/80 bg-[linear-gradient(165deg,#fafaf7_0%,#f3ebe0_45%,#efe4d2_100%)] px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        <p className="text-[0.65rem] uppercase tracking-[0.28em] text-gold">{brand.aiPersonaName}</p>
-        <h1 className="mt-1 font-serif text-2xl tracking-tight text-foreground">{brand.displayName}</h1>
-        <p className="mt-1 max-w-md text-sm text-muted">Sua agenda, seus clientes, suas metas.</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[0.65rem] uppercase tracking-[0.28em] text-gold">{brand.aiPersonaName}</p>
+            <h1 className="mt-1 font-serif text-2xl tracking-tight text-foreground">{brand.displayName}</h1>
+            <p className="mt-1 max-w-md text-sm text-muted">Sua agenda, seus clientes, suas metas.</p>
+          </div>
+          <Link
+            href="/pro/conectar"
+            className="mt-1 flex h-10 w-10 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-gold-strong"
+            aria-label="Conectar agenda"
+          >
+            <Link2 className="h-5 w-5" />
+          </Link>
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-lg px-4 py-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
@@ -38,7 +49,7 @@ export function ProShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
-        <ul className="mx-auto grid max-w-lg grid-cols-4 gap-1 px-2 py-2">
+        <ul className="mx-auto grid max-w-lg grid-cols-4 gap-0.5 px-1 py-2">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`)
             return (
