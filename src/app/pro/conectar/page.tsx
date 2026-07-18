@@ -135,7 +135,7 @@ export default function ProConectarPage() {
         <OnboardingChecklist />
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-3">
         <ConnectCard
           title="Agenda"
           summary="Avec ou Trinks — só os seus dados"
