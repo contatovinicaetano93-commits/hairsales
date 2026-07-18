@@ -137,7 +137,7 @@ export const SETUP_ITEMS: SetupItem[] = [
       'Gere TELEGRAM_FINANCE_WEBHOOK_SECRET (string aleatória)',
       'setWebhook: https://seu-dominio/api/webhooks/telegram-financeiro + secret_token',
       'TELEGRAM_FINANCE_CHAT_IDS = IDs de quem pode consultar financeiro/estoque pelo bot',
-      'Comandos: /financeiro (receita/despesas/margem) e /estoque (valor + alertas)',
+      'Comandos: /financeiro (faturamento Avec, resultado, saídas manuais) e /estoque (valor + alertas)',
     ],
     link: { href: 'https://t.me/BotFather', label: '@BotFather' },
   },

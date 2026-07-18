@@ -3,6 +3,7 @@ import {
   normalizeP2BirthdayRow,
   normalizeP2ChannelRow,
   normalizeP2PackageRow,
+  normalizeP2PaymentRow,
   normalizeP2RatingRow,
 } from '@/lib/avec/normalize'
 import { resolveReportId, getDailyReports } from '@/lib/avec/registry'
@@ -55,7 +56,7 @@ function resolveId(mapper: string): string | null {
 }
 
 /**
- * C — sync full: 0056, 0061, 0104, 0001 → salon_p2_daily (sem 0081)
+ * C — sync full: 0056, 0061, 0104, 0001, 0081 → salon_p2_daily
  */
 export async function syncP2Kpis(stats: SyncStatsLike, syncRunId?: string) {
   const day = todayIsoLocal()
@@ -153,6 +154,35 @@ export async function syncP2Kpis(stats: SyncStatsLike, syncRunId?: string) {
     }
   }
 
+  const payment_mix: { method: string; amount: number; share: number }[] = []
+  let paymentMixOk = false
+  const id0081 = resolveId('payment_mix')
+  if (id0081) {
+    try {
+      const rows = asRows(await fetchAllAvecReport(id0081, params))
+      await snapshotSafe(id0081, params, rows, stats, syncRunId)
+      const byMethod = new Map<string, number>()
+      for (const row of rows) {
+        const p = normalizeP2PaymentRow(row)
+        if (!p) continue
+        stats.p2_rows = (stats.p2_rows ?? 0) + 1
+        byMethod.set(p.method, (byMethod.get(p.method) ?? 0) + p.amount)
+      }
+      const total = [...byMethod.values()].reduce((a, b) => a + b, 0)
+      for (const [method, amount] of byMethod) {
+        payment_mix.push({
+          method,
+          amount: Math.round(amount * 100) / 100,
+          share: total > 0 ? Math.round((amount / total) * 1000) / 10 : 0,
+        })
+      }
+      payment_mix.sort((a, b) => b.amount - a.amount)
+      paymentMixOk = true
+    } catch (e) {
+      stats.errors.push(`P2 0081: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
   // Só escreve os campos cujo relatório teve sucesso — evita apagar dados
   // válidos do dia quando outro relatório falha parcialmente.
   const patch: {
@@ -162,6 +192,7 @@ export async function syncP2Kpis(stats: SyncStatsLike, syncRunId?: string) {
     ratings_avg?: number
     ratings_count?: number
     birthday_count?: number
+    payment_mix?: { method: string; amount: number; share: number }[]
   } = {}
   if (bookingChannelsOk) patch.booking_channels = booking_channels.slice(0, 8)
   if (packagesOk) {
@@ -173,6 +204,7 @@ export async function syncP2Kpis(stats: SyncStatsLike, syncRunId?: string) {
     patch.ratings_count = ratings_count
   }
   if (birthdaysOk) patch.birthday_count = birthday_count
+  if (paymentMixOk) patch.payment_mix = payment_mix
 
   if (Object.keys(patch).length > 0) {
     try {

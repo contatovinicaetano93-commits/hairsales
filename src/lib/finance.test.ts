@@ -82,15 +82,17 @@ describe('finance', () => {
   })
 
   describe('computeFinanceKpis', () => {
-    it('calcula margem bruta e fluxo de caixa do mês corrente e anterior', async () => {
-      // current bucket: revenue, expenses, payment_mix; previous bucket: idem
+    it('calcula margem bruta e resultado do mês corrente e anterior', async () => {
+      // current: revenue, expenses, curve, payment_mix; previous: idem
       sqlMock
-        .mockResolvedValueOnce([{ revenue: '10000' }]) // current revenue
-        .mockResolvedValueOnce([{ total: '4000' }]) // current expenses
-        .mockResolvedValueOnce([]) // current payment_mix
-        .mockResolvedValueOnce([{ revenue: '8000' }]) // previous revenue
-        .mockResolvedValueOnce([{ total: '2000' }]) // previous expenses
-        .mockResolvedValueOnce([]) // previous payment_mix
+        .mockResolvedValueOnce([{ revenue: '10000' }])
+        .mockResolvedValueOnce([{ total: '4000' }])
+        .mockResolvedValueOnce([{ day: '2026-07-01', revenue: 10000 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ revenue: '8000' }])
+        .mockResolvedValueOnce([{ total: '2000' }])
+        .mockResolvedValueOnce([{ day: '2026-06-01', revenue: 8000 }])
+        .mockResolvedValueOnce([])
 
       const { computeFinanceKpis } = await import('@/lib/finance')
       const result = await computeFinanceKpis({ month: '2026-07' })
@@ -100,6 +102,7 @@ describe('finance', () => {
       expect(result.current.expenses).toBe(4000)
       expect(result.current.gross_margin).toBe(60)
       expect(result.current.cash_flow).toBe(6000)
+      expect(result.current.revenue_curve).toEqual([{ day: '2026-07-01', revenue: 10000 }])
 
       expect(result.previous.month).toBe('2026-06')
       expect(result.previous.gross_margin).toBe(75)
@@ -110,8 +113,10 @@ describe('finance', () => {
         .mockResolvedValueOnce([{ revenue: '0' }])
         .mockResolvedValueOnce([{ total: '500' }])
         .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ revenue: '0' }])
         .mockResolvedValueOnce([{ total: '0' }])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
 
       const { computeFinanceKpis } = await import('@/lib/finance')
@@ -126,8 +131,10 @@ describe('finance', () => {
         .mockResolvedValueOnce([{ revenue: '1000' }])
         .mockResolvedValueOnce([{ total: '100' }])
         .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ revenue: '900' }])
         .mockResolvedValueOnce([{ total: '90' }])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
 
       const { computeFinanceKpis } = await import('@/lib/finance')
@@ -140,12 +147,14 @@ describe('finance', () => {
       sqlMock
         .mockResolvedValueOnce([{ revenue: '1000' }])
         .mockResolvedValueOnce([{ total: '0' }])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([
           { payment_mix: [{ method: 'Pix', amount: 300, share: 0 }, { method: 'Cartão', amount: 100, share: 0 }] },
           { payment_mix: [{ method: 'Pix', amount: 200, share: 0 }] },
         ])
         .mockResolvedValueOnce([{ revenue: '0' }])
         .mockResolvedValueOnce([{ total: '0' }])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
 
       const { computeFinanceKpis } = await import('@/lib/finance')

@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Plus, X, Trash2, Download, Camera, Paperclip } from 'lucide-react'
 import { upload } from '@vercel/blob/client'
+import { Area, AreaChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { PrimaryButton } from '../_components/ui'
 import { apiFetch } from '@/lib/api-client'
 import { formatCurrency, todayIso } from '@/lib/salon/format'
@@ -25,6 +26,7 @@ interface FinanceKpiBucket {
   expenses: number
   gross_margin: number | null
   cash_flow: number
+  revenue_curve: { day: string; revenue: number }[]
   payment_mix: { method: string; amount: number; share: number }[]
   fiscal_split: FiscalSplitSummary
 }
@@ -63,12 +65,14 @@ function FinanceKpiCard({
   delta,
   positive,
   loading,
+  hint,
 }: {
   label: string
   value: string
   delta: string | null
   positive: boolean | null
   loading: boolean
+  hint?: string
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
@@ -87,10 +91,16 @@ function FinanceKpiCard({
               {delta} vs. mês anterior
             </p>
           )}
+          {hint && <p className="mt-1 text-[0.65rem] text-muted">{hint}</p>}
         </>
       )}
     </div>
   )
+}
+
+function curveDayLabel(iso: string) {
+  const [, m, d] = iso.split('-')
+  return `${d}/${m}`
 }
 
 function currentMonthKey() {
@@ -164,20 +174,32 @@ export default function FinanceiroPage() {
     load()
   }, [load])
 
+  const chartData = useMemo(() => {
+    const curve = kpis?.current.revenue_curve ?? []
+    return curve.map((p) => ({
+      day: curveDayLabel(p.day),
+      revenue: p.revenue,
+    }))
+  }, [kpis])
+
   function downloadReport() {
     if (!kpis) return
     const lines = [
       ['Métrica', kpis.current.label, kpis.previous.label].map(csvEscape).join(';'),
-      ['Receita', kpis.current.revenue, kpis.previous.revenue].map(csvEscape).join(';'),
-      ['Despesas', kpis.current.expenses, kpis.previous.expenses].map(csvEscape).join(';'),
-      ['Margem bruta (%)', kpis.current.gross_margin ?? '', kpis.previous.gross_margin ?? ''].map(csvEscape).join(';'),
-      ['Fluxo (receita - despesas)', kpis.current.cash_flow, kpis.previous.cash_flow].map(csvEscape).join(';'),
+      ['Faturamento (Avec)', kpis.current.revenue, kpis.previous.revenue].map(csvEscape).join(';'),
+      ['Saídas manuais (fora da Avec)', kpis.current.expenses, kpis.previous.expenses].map(csvEscape).join(';'),
+      ['Margem (%)', kpis.current.gross_margin ?? '', kpis.previous.gross_margin ?? ''].map(csvEscape).join(';'),
+      ['Resultado do mês', kpis.current.cash_flow, kpis.previous.cash_flow].map(csvEscape).join(';'),
       '',
-      ['Formas de pagamento — ' + kpis.current.label].map(csvEscape).join(';'),
+      ['Faturamento por dia — ' + kpis.current.label].map(csvEscape).join(';'),
+      ['Dia', 'Valor'].map(csvEscape).join(';'),
+      ...kpis.current.revenue_curve.map((p) => [p.day, p.revenue].map(csvEscape).join(';')),
+      '',
+      ['Formas de pagamento (Avec) — ' + kpis.current.label].map(csvEscape).join(';'),
       ['Método', 'Valor', '% do total'].map(csvEscape).join(';'),
       ...kpis.current.payment_mix.map((p) => [p.method, p.amount, p.share].map(csvEscape).join(';')),
       '',
-      ['Despesas de ' + kpis.current.label].map(csvEscape).join(';'),
+      ['Saídas manuais (fora da Avec) — ' + kpis.current.label].map(csvEscape).join(';'),
       ['Data', 'Descrição', 'Categoria', 'Valor'].map(csvEscape).join(';'),
       ...expenses.map((e) =>
         [e.expense_date, e.description, categoryName(e.category_id), e.amount].map(csvEscape).join(';')
@@ -203,6 +225,8 @@ export default function FinanceiroPage() {
   }
 
   const noRevenueYet = Boolean(kpis && kpis.current.revenue === 0)
+  const revenueDelta = kpis ? fmtDelta(kpis.current.revenue, kpis.previous.revenue) : null
+  const revenueUp = kpis ? kpis.current.revenue >= kpis.previous.revenue : null
 
   return (
     <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 px-5 py-6 lg:px-8 lg:py-8">
@@ -210,6 +234,7 @@ export default function FinanceiroPage() {
         <div>
           <p className="text-[0.65rem] uppercase tracking-[0.25em] text-gold">Financeiro</p>
           <h1 className="mt-1 text-xl font-semibold lg:text-2xl">{kpis ? kpis.current.label : 'Este mês'}</h1>
+          <p className="mt-1 text-xs text-muted">Leitura do faturamento Avec · saídas manuais à parte</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
@@ -248,23 +273,52 @@ export default function FinanceiroPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* Hero Avec */}
+      <section className="rounded-2xl border border-gold/25 bg-gradient-to-b from-gold/10 to-card p-5 lg:p-6">
+        <p className="text-[0.65rem] uppercase tracking-wide text-muted">Faturamento · Avec</p>
+        {loading || !kpis ? (
+          <div className="mt-2 h-10 w-40 animate-pulse rounded-lg bg-border" />
+        ) : (
+          <>
+            <p className="mt-1 text-3xl font-semibold tabular-nums lg:text-4xl">
+              {formatCurrency(kpis.current.revenue)}
+            </p>
+            {revenueDelta && (
+              <p
+                className={`mt-1 text-sm font-medium ${
+                  revenueUp == null ? 'text-muted' : revenueUp ? 'text-success' : 'text-warning'
+                }`}
+              >
+                {revenueDelta} vs. mês anterior
+              </p>
+            )}
+          </>
+        )}
+        {noRevenueYet && !loading && (
+          <p className="mt-2 text-xs text-muted">Ainda sem faturamento sincronizado pela Avec neste mês.</p>
+        )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/15 px-3 py-1.5 text-xs font-medium text-gold"
+          >
+            <Plus size={14} /> Registrar saída manual
+          </button>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <FinanceKpiCard
-          label="Receita"
-          value={loading || !kpis ? '—' : formatCurrency(kpis.current.revenue)}
-          delta={kpis ? fmtDelta(kpis.current.revenue, kpis.previous.revenue) : null}
-          positive={kpis ? kpis.current.revenue >= kpis.previous.revenue : null}
+          label="Resultado do mês"
+          value={loading || !kpis ? '—' : formatCurrency(kpis.current.cash_flow)}
+          delta={kpis ? fmtDelta(kpis.current.cash_flow, kpis.previous.cash_flow) : null}
+          positive={kpis ? kpis.current.cash_flow >= kpis.previous.cash_flow : null}
           loading={loading}
+          hint="Avec − saídas manuais"
         />
         <FinanceKpiCard
-          label="Despesas"
-          value={loading || !kpis ? '—' : formatCurrency(kpis.current.expenses)}
-          delta={kpis ? fmtDelta(kpis.current.expenses, kpis.previous.expenses) : null}
-          positive={kpis ? kpis.current.expenses <= kpis.previous.expenses : null}
-          loading={loading}
-        />
-        <FinanceKpiCard
-          label="Margem bruta"
+          label="Margem"
           value={loading || !kpis ? '—' : kpis.current.gross_margin != null ? `${kpis.current.gross_margin}%` : '—'}
           delta={
             kpis && kpis.current.gross_margin != null && kpis.previous.gross_margin != null
@@ -277,27 +331,169 @@ export default function FinanceiroPage() {
               : null
           }
           loading={loading}
+          hint="Não é margem contábil (CMV)"
         />
         <FinanceKpiCard
-          label="Fluxo (receita − despesas)"
-          value={loading || !kpis ? '—' : formatCurrency(kpis.current.cash_flow)}
-          delta={kpis ? fmtDelta(kpis.current.cash_flow, kpis.previous.cash_flow) : null}
-          positive={kpis ? kpis.current.cash_flow >= kpis.previous.cash_flow : null}
+          label="Saídas manuais"
+          value={loading || !kpis ? '—' : formatCurrency(kpis.current.expenses)}
+          delta={kpis ? fmtDelta(kpis.current.expenses, kpis.previous.expenses) : null}
+          positive={kpis ? kpis.current.expenses <= kpis.previous.expenses : null}
           loading={loading}
+          hint="Fora da Avec"
         />
       </div>
 
-      {!loading && noRevenueYet && (
-        <p className="-mt-3 text-xs text-muted">
-          Margem bruta e fluxo dependem do faturamento sincronizado pela Avec — ainda sem dado esse mês.
-        </p>
+      {/* Curva diária Avec */}
+      {!loading && kpis && (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="text-sm font-medium">Faturamento por dia · Avec</h2>
+          <p className="mt-0.5 text-xs text-muted">Entradas diárias sincronizadas ({kpis.current.label})</p>
+          {chartData.length === 0 ? (
+            <p className="mt-3 text-xs text-muted">Sem curva diária ainda — aguarde a sync de faturamento.</p>
+          ) : (
+            <div className="mt-3 h-48 lg:h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="financeRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="day" stroke="var(--muted)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis
+                    stroke="var(--muted)"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    width={48}
+                    tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
+                  />
+                  <Tooltip
+                    formatter={(value) => [formatCurrency(Number(value ?? 0)), 'Faturamento']}
+                    contentStyle={{
+                      background: 'var(--card-elevated)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 12,
+                      color: 'var(--foreground)',
+                      fontSize: 12,
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="var(--gold)"
+                    strokeWidth={2.5}
+                    fill="url(#financeRevenue)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </section>
       )}
 
+      {/* Mix de pagamento Avec */}
       {!loading && kpis && (
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="text-sm font-medium">Split fiscal — {kpis.current.label}</h2>
-          <p className="mt-0.5 text-xs text-muted">
-            CBS/IBS retidos na liquidação (Plataforma Pública / export do PSP). O sistema só reconcilia — não processa pagamento.
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="text-sm font-medium">Formas de pagamento · Avec</h2>
+          <p className="mt-0.5 text-xs text-muted">Relatório 0081 — Pix, cartão, dinheiro etc.</p>
+          {kpis.current.payment_mix.length === 0 ? (
+            <p className="mt-3 text-xs text-muted">
+              Sem dado de pagamento ainda. Após a próxima sync full com AVEC_REPORT_PAYMENT_MIX (ou id 0081), o mix
+              aparece aqui.
+            </p>
+          ) : (
+            <div className="mt-3 flex flex-col gap-2.5">
+              {kpis.current.payment_mix.map((p) => (
+                <div key={p.method} className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{p.method}</span>
+                    <span className="tabular-nums text-muted">
+                      {formatCurrency(p.amount)} · {p.share}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+                    <div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, p.share)}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Saídas manuais — fora da Avec */}
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-medium">Saídas manuais</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Fora da Avec · {kpis?.current.label ?? 'este mês'}
+              {kpis ? ` · total ${formatCurrency(kpis.current.expenses)}` : ''}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground/90 hover:bg-card"
+          >
+            <Plus size={14} /> Nova saída
+          </button>
+        </div>
+
+        {loading &&
+          Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-card" />)}
+
+        {!loading && expenses.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-border bg-card/50 p-4 text-sm text-muted">
+            Nenhuma saída manual neste mês. Estes lançamentos não vêm da Avec.
+          </div>
+        )}
+
+        {!loading &&
+          expenses.map((e) => (
+            <div key={e.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{e.description}</p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {categoryName(e.category_id)} · {new Date(`${e.expense_date}T12:00:00`).toLocaleDateString('pt-BR')}
+                  <span className="ml-1.5 text-muted/80">· manual</span>
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-3">
+                {e.receipt_url && (
+                  <a
+                    href={e.receipt_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Ver nota fiscal"
+                    className="text-muted transition-colors hover:text-gold"
+                  >
+                    <Paperclip size={16} />
+                  </a>
+                )}
+                <span className="text-sm font-semibold tabular-nums">{formatCurrency(e.amount)}</span>
+                <button
+                  type="button"
+                  onClick={() => removeExpense(e.id)}
+                  aria-label="Excluir despesa"
+                  className="text-muted transition-colors hover:text-danger"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+      </section>
+
+      {/* Split fiscal — secundário */}
+      {!loading && kpis && (
+        <details className="rounded-2xl border border-border bg-card p-4">
+          <summary className="cursor-pointer text-sm font-medium">Split fiscal (opcional)</summary>
+          <p className="mt-1 text-xs text-muted">
+            CBS/IBS retidos na liquidação. O sistema só reconcilia — não processa pagamento.
           </p>
           {kpis.current.fiscal_split.settled_count === 0 && kpis.current.fiscal_split.pending_count === 0 ? (
             <p className="mt-3 text-xs text-muted">
@@ -339,90 +535,8 @@ export default function FinanceiroPage() {
               </div>
             </div>
           )}
-        </div>
+        </details>
       )}
-
-      {!loading && kpis && (
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="text-sm font-medium">Formas de pagamento — {kpis.current.label}</h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Reconciliação com o relatório de pagamentos da Avec (dinheiro, Pix, cartão etc.)
-          </p>
-          {kpis.current.payment_mix.length === 0 ? (
-            <p className="mt-3 text-xs text-muted">Sem dado de pagamento sincronizado pela Avec esse mês.</p>
-          ) : (
-            <div className="mt-3 flex flex-col gap-2.5">
-              {kpis.current.payment_mix.map((p) => (
-                <div key={p.method} className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{p.method}</span>
-                    <span className="tabular-nums text-muted">
-                      {formatCurrency(p.amount)} · {p.share}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
-                    <div className="h-full rounded-full bg-gold" style={{ width: `${p.share}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium">Despesas de {kpis?.current.label ?? 'este mês'}</h2>
-        <button
-          type="button"
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold"
-        >
-          <Plus size={14} /> Nova despesa
-        </button>
-      </div>
-
-      {loading &&
-        Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-card" />)}
-
-      {!loading && expenses.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-4 text-sm text-muted">
-          Nenhuma despesa cadastrada esse mês.
-        </div>
-      )}
-
-      {!loading &&
-        expenses.map((e) => (
-          <div key={e.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{e.description}</p>
-              <p className="mt-0.5 text-xs text-muted">
-                {categoryName(e.category_id)} · {new Date(`${e.expense_date}T12:00:00`).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-3">
-              {e.receipt_url && (
-                <a
-                  href={e.receipt_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Ver nota fiscal"
-                  className="text-muted transition-colors hover:text-gold"
-                >
-                  <Paperclip size={16} />
-                </a>
-              )}
-              <span className="text-sm font-semibold tabular-nums">{formatCurrency(e.amount)}</span>
-              <button
-                type="button"
-                onClick={() => removeExpense(e.id)}
-                aria-label="Excluir despesa"
-                className="text-muted transition-colors hover:text-danger"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
 
       {showAdd && (
         <AddExpenseSheet
@@ -538,7 +652,10 @@ function AddExpenseSheet({
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Nova despesa</h2>
+          <div>
+            <h2 className="text-base font-semibold">Nova saída manual</h2>
+            <p className="mt-0.5 text-xs text-muted">Fora da Avec — não altera o faturamento sincronizado</p>
+          </div>
           <button type="button" onClick={onClose} aria-label="Fechar" className="text-muted active:text-foreground">
             <X size={22} />
           </button>
@@ -696,7 +813,7 @@ function AddExpenseSheet({
           </label>
           {err && <p className="text-sm text-danger">{err}</p>}
           <PrimaryButton type="submit" disabled={submitting}>
-            {submitting ? 'Salvando…' : 'Salvar despesa'}
+            {submitting ? 'Salvando…' : 'Salvar saída'}
           </PrimaryButton>
         </form>
       </div>
