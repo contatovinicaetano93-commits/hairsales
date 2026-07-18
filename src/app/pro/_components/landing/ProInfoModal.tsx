@@ -46,7 +46,7 @@ export function ProInfoModal({
     produtos: 'Nossos produtos',
     contato: 'Contato',
     duvidas: 'Dúvidas',
-    sobre: 'Quem é o Vitrini',
+    sobre: 'Sobre',
   }
 
   return (
@@ -152,7 +152,7 @@ function ProductsBody({
         </div>
       )}
       <p className="text-center text-[0.7rem] font-medium text-muted">
-        Assistente Vitrini · Gabriel Vitrini · um profissional por conta
+        HairSales · um profissional por conta
       </p>
     </div>
   )

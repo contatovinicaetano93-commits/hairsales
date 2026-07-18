@@ -1,6 +1,6 @@
 {
-  "name": "Assistente Vitrini",
-  "short_name": "Vitrini Pro",
+  "name": "HairSales",
+  "short_name": "HairSales",
   "description": "App do profissional — agenda, clientes e metas",
   "start_url": "/pro/hoje",
   "display": "standalone",

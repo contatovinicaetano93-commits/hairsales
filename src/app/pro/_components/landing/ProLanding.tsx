@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CalendarDays, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react'
-import { getBrand } from '@/lib/brand'
+import { getProBrand } from '@/lib/pro/brand'
 import { HERO_CARDS, LANDING_NAV, type LandingModalId } from './landing-content'
 import { ProInfoModal } from './ProInfoModal'
 
 type AuthMode = 'login' | 'register'
 
 export function ProLanding() {
-  const brand = getBrand()
+  const brand = getProBrand()
   const formRef = useRef<HTMLDivElement>(null)
   const [modal, setModal] = useState<LandingModalId | null>(null)
   const [mode, setMode] = useState<AuthMode>('login')
@@ -92,7 +92,7 @@ export function ProLanding() {
         <div className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border border-border/80 bg-card/90 px-3 py-2 shadow-[0_12px_40px_-24px_rgba(26,23,20,0.45)] backdrop-blur-md animate-rise sm:gap-3 sm:px-4 sm:py-2.5">
           <div className="min-w-0 shrink-0 px-1">
             <p className="truncate font-serif text-lg font-bold tracking-tight sm:text-xl">
-              {brand.shortMonogram === 'GV' ? 'vitrini' : brand.shortMonogram.toLowerCase()}
+              {brand.shortName}
             </p>
           </div>
           <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
@@ -142,15 +142,14 @@ export function ProLanding() {
       <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
         <section className="flex flex-col items-center text-center animate-rise">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.28em] text-gold-strong">
-            {brand.aiPersonaName}
+            {brand.name}
           </p>
           <h1 className="mt-3 max-w-3xl font-serif text-[2.35rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-[3.35rem]">
             Seu dia no salão,{' '}
             <span className="text-gold-strong">organizado</span> pela assistente
           </h1>
           <p className="mt-4 max-w-xl text-base font-medium leading-relaxed text-muted sm:text-lg">
-            Agenda, clientes, meta e ações — só os seus dados. App + Telegram no Free; WhatsApp
-            Cloud no Pro.
+            {brand.tagline} App + Telegram no Free; WhatsApp Cloud no Pro.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-muted">
             <span className="inline-flex items-center gap-1.5">
@@ -285,7 +284,7 @@ export function ProLanding() {
         </section>
 
         <p className="mt-10 text-center text-xs font-medium text-muted">
-          {brand.displayName} · {brand.aiPersonaName} · um assinante = um profissional
+          {brand.name} · {brand.productLine} · um assinante = um profissional
         </p>
       </main>
 

@@ -1,13 +1,13 @@
 import { askAI, isAiConfigured } from '@/lib/ai/client'
-import { getBrand } from '@/lib/brand'
+import { getProBrand } from '@/lib/pro/brand'
 import { buildProHoje } from '@/lib/pro/hoje'
 import { getSql } from '@/lib/db'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
 import { consumeAiUnits, QuotaExceededError } from '@/lib/pro/quotas'
 
 function assistantSystemPrompt(displayName: string) {
-  const brand = getBrand()
-  return `Você é ${brand.aiPersonaName}, assistente de gestão do profissional ${displayName}.
+  const brand = getProBrand()
+  return `Você é ${brand.name}, assistente de gestão do profissional ${displayName}.
 Responda só com base nos DADOS DO PROFISSIONAL fornecidos (agenda, faturamento, ticket, clientes, reativação, upsell).
 Nunca invente números do salão inteiro nem de outros profissionais.
 Seja direta, em português, no máximo 5 linhas. Foque em ação prática.

@@ -10,7 +10,7 @@ import {
   Link2,
   LogOut,
 } from 'lucide-react'
-import { getBrand } from '@/lib/brand'
+import { getProBrand } from '@/lib/pro/brand'
 
 const NAV = [
   { href: '/pro/hoje', label: 'Hoje', icon: CalendarDays },
@@ -80,11 +80,11 @@ function NavLinks({
 
 export function ProShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const brand = getBrand()
+  const brand = getProBrand()
   const isAuthPage = pathname === '/pro/login'
   const pageTitle =
     Object.entries(PAGE_TITLE).find(([path]) => pathname === path || pathname.startsWith(`${path}/`))?.[1] ??
-    brand.displayName
+    brand.name
 
   if (isAuthPage) {
     return <div className="pro-app min-h-screen bg-background">{children}</div>
@@ -95,9 +95,9 @@ export function ProShell({ children }: { children: React.ReactNode }) {
       <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-border lg:bg-card/80 lg:shadow-[8px_0_32px_-24px_rgba(26,23,20,0.45)] lg:backdrop-blur-md">
         <div className="border-b border-border px-5 py-6">
           <p className="text-[0.65rem] font-bold uppercase tracking-[0.28em] text-gold-strong">
-            {brand.aiPersonaName}
+            {brand.productLine}
           </p>
-          <h1 className="mt-2 font-serif text-2xl font-bold tracking-tight">{brand.displayName}</h1>
+          <h1 className="mt-2 font-serif text-2xl font-bold tracking-tight">{brand.name}</h1>
           <p className="mt-2 text-xs font-semibold text-muted">Só os seus dados.</p>
         </div>
         <nav className="flex-1 py-3">
@@ -120,11 +120,10 @@ export function ProShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto flex w-full max-w-lg items-start justify-between gap-3 lg:max-w-4xl">
             <div>
               <p className="text-[0.65rem] font-bold uppercase tracking-[0.28em] text-gold-strong lg:hidden">
-                {brand.aiPersonaName}
+                {brand.name}
               </p>
               <h1 className="mt-1 font-serif text-2xl font-bold tracking-tight text-foreground lg:mt-0 lg:text-[1.85rem]">
-                <span className="lg:hidden">{brand.displayName}</span>
-                <span className="hidden lg:inline">{pageTitle}</span>
+                {pageTitle}
               </h1>
               <p className="mt-1 max-w-md text-sm font-medium text-muted lg:hidden">
                 Sua agenda, seus clientes, suas metas.

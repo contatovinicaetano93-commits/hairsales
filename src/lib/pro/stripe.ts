@@ -229,7 +229,7 @@ export async function fulfillProSubscription(session: Stripe.Checkout.Session) {
   return { upgraded: true, subscriber_id: subscriberId }
 }
 
-/** Features padrão do Customer Portal (Assistente Vitrini / Pro). */
+/** Features padrão do Customer Portal (HairSales / Pro). */
 export function defaultBillingPortalFeatures(): Stripe.BillingPortal.ConfigurationCreateParams.Features {
   return {
     customer_update: {
@@ -267,7 +267,7 @@ export async function ensureDefaultBillingPortalConfiguration(): Promise<{
   const returnUrl = `${appBaseUrl()}/pro/conectar`
   const features = defaultBillingPortalFeatures()
   const business_profile = {
-    headline: 'Assistente Vitrini — gerencie sua assinatura Pro',
+    headline: 'HairSales — gerencie sua assinatura Pro',
   }
 
   const configuredId = process.env.STRIPE_PORTAL_CONFIGURATION_ID?.trim()

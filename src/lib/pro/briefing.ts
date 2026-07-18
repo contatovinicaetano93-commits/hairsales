@@ -1,12 +1,12 @@
 import { askAI, isAiConfigured } from '@/lib/ai/client'
-import { getBrand } from '@/lib/brand'
+import { getProBrand } from '@/lib/pro/brand'
 import { buildProHoje } from '@/lib/pro/hoje'
 import { consumeAiUnits, getQuotaStatus, QuotaExceededError } from '@/lib/pro/quotas'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
 
 function briefingPrompt(name: string) {
-  const brand = getBrand()
-  return `Você é ${brand.aiPersonaName}. Gere o briefing da manhã para o profissional ${name}.
+  const brand = getProBrand()
+  return `Você é ${brand.name}. Gere o briefing da manhã para o profissional ${name}.
 Use SOMENTE os dados fornecidos. Máx. 6 linhas. Formato:
 1) Como está o dia (agenda + meta)
 2) 1–3 ações prioritárias (reativação/upsell/risco)

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Fraunces } from 'next/font/google'
-import { getBrand } from '@/lib/brand'
+import { getProBrand } from '@/lib/pro/brand'
 import { ProShell } from './_components/ProShell'
 
 const fraunces = Fraunces({
@@ -9,16 +9,16 @@ const fraunces = Fraunces({
   weight: ['500', '600', '700'],
 })
 
-const brand = getBrand()
+const brand = getProBrand()
 
 export const metadata: Metadata = {
-  title: `${brand.aiPersonaName} · App do profissional`,
-  description: 'Assistente do profissional: agenda, clientes, metas e ações — só os seus dados.',
+  title: `${brand.name} · ${brand.productLine}`,
+  description: brand.tagline,
   manifest: '/pro/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: brand.aiPersonaName,
+    title: brand.name,
   },
 }
 

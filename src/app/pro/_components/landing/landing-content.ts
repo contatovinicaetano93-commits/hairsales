@@ -33,7 +33,7 @@ export const LANDING_NAV: LandingNavItem[] = [
   { id: 'produtos', label: 'Produtos' },
   { id: 'contato', label: 'Contato' },
   { id: 'duvidas', label: 'Dúvidas' },
-  { id: 'sobre', label: 'Quem é o Vitrini' },
+  { id: 'sobre', label: 'Sobre' },
 ]
 
 export const PRODUCT_TABS: ProductTab[] = [
@@ -180,7 +180,7 @@ export const PRODUCT_TABS: ProductTab[] = [
     footer: {
       badge: 'Privacidade',
       title: 'Só os seus dados',
-      body: 'O Assistente Vitrini é do profissional individual — não é o painel da unidade (ROM).',
+      body: 'HairSales é o app do profissional individual — separado do painel da equipe da unidade.',
     },
   },
 ]
@@ -210,8 +210,8 @@ export const COMO_FUNCIONA_STEPS = [
 
 export const DUVIDAS = [
   {
-    q: 'Isso substitui o painel do salão?',
-    a: 'Não. O ROM continua para a equipe da unidade. O Assistente Vitrini é o app do profissional individual.',
+    q: 'Isso substitui o painel da unidade?',
+    a: 'Não. O painel da equipe continua separado. HairSales é o app do profissional individual.',
   },
   {
     q: 'Quem vê meus dados?',
@@ -242,13 +242,13 @@ export const CONTATO = {
 }
 
 export const SOBRE = {
-  title: 'Gabriel Vitrini',
-  body: 'Assistente Vitrini é o produto B2C do profissional — empilhado na marca Gabriel Vitrini, sem apagar o ROM da operação.',
+  title: 'HairSales',
+  body: 'HairSales é o app do profissional de beleza: agenda, clientes, metas e ações do dia — com assistente e canais (Telegram no Free, WhatsApp Cloud no Pro).',
   points: [
-    'Marca: Gabriel Vitrini',
-    'Produto: Assistente Vitrini',
-    'Foco: agenda, clientes, metas e ações do dia',
+    'Produto: HairSales',
+    'Foco: profissional individual',
     'Princípio: um assinante = um profissional',
+    'Privacidade: só os seus dados da agenda',
   ],
 }
 
