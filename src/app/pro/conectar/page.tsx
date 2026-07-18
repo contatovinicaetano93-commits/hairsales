@@ -548,41 +548,92 @@ function WhatsappBlock() {
   )
 }
 
+function moneyBrl(n: number | null) {
+  if (n == null || !Number.isFinite(n)) return '—'
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 function GoalsBlock() {
   const [daily, setDaily] = useState('')
   const [weekly, setWeekly] = useState('')
-  const [msg, setMsg] = useState<string | null>(null)
+  const [savedDaily, setSavedDaily] = useState<number | null>(null)
+  const [savedWeekly, setSavedWeekly] = useState<number | null>(null)
+  const [justSaved, setJustSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     fetch('/api/me/goals', { credentials: 'include' })
       .then((r) => r.json())
       .then((json) => {
-        if (json.data?.daily_goal_revenue != null) setDaily(String(json.data.daily_goal_revenue))
-        if (json.data?.weekly_goal_revenue != null) setWeekly(String(json.data.weekly_goal_revenue))
+        const d =
+          json.data?.daily_goal_revenue != null ? Number(json.data.daily_goal_revenue) : null
+        const w =
+          json.data?.weekly_goal_revenue != null ? Number(json.data.weekly_goal_revenue) : null
+        setSavedDaily(d)
+        setSavedWeekly(w)
+        if (d != null) setDaily(String(d))
+        if (w != null) setWeekly(String(w))
       })
       .catch(() => {})
   }, [])
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
-    setMsg(null)
-    const res = await fetch('/api/me/goals', {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        daily_goal_revenue: daily === '' ? null : Number(daily),
-        weekly_goal_revenue: weekly === '' ? null : Number(weekly),
-      }),
-    })
-    const json = await res.json()
-    setMsg(res.ok ? 'Metas salvas.' : json.error ?? 'Erro')
+    setError(null)
+    setJustSaved(false)
+    setSaving(true)
+    try {
+      const nextDaily = daily === '' ? null : Number(daily)
+      const nextWeekly = weekly === '' ? null : Number(weekly)
+      const res = await fetch('/api/me/goals', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          daily_goal_revenue: nextDaily,
+          weekly_goal_revenue: nextWeekly,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error ?? 'Erro ao salvar metas')
+        return
+      }
+      const d =
+        json.data?.daily_goal_revenue != null ? Number(json.data.daily_goal_revenue) : nextDaily
+      const w =
+        json.data?.weekly_goal_revenue != null ? Number(json.data.weekly_goal_revenue) : nextWeekly
+      setSavedDaily(d)
+      setSavedWeekly(w)
+      setJustSaved(true)
+    } catch (err) {
+      setError(String(err))
+    } finally {
+      setSaving(false)
+    }
   }
+
+  const hasSaved = savedDaily != null || savedWeekly != null
 
   return (
     <section className="mt-10 border-t border-border pt-6">
       <h3 className="font-serif text-lg">Suas metas</h3>
       <p className="mt-1 text-sm text-muted">Só as suas — não a meta do salão.</p>
+
+      {hasSaved && (
+        <div className="mt-4 rounded-2xl border border-gold/30 bg-gold/10 px-4 py-3">
+          <p className="text-[0.65rem] uppercase tracking-wide text-gold-strong">Meta salva agora</p>
+          <p className="mt-1 text-sm font-medium text-foreground">
+            Dia {moneyBrl(savedDaily)} · Semana {moneyBrl(savedWeekly)}
+          </p>
+        </div>
+      )}
+
+      {!hasSaved && (
+        <p className="mt-4 text-sm text-muted">Nenhuma meta salva ainda — preencha e salve abaixo.</p>
+      )}
+
       <form onSubmit={save} className="mt-4 flex flex-col gap-3">
         <label className="flex flex-col gap-1.5">
           <span className="text-xs uppercase tracking-wide text-muted">Meta diária (R$)</span>
@@ -591,7 +642,10 @@ function GoalsBlock() {
             min={0}
             step={50}
             value={daily}
-            onChange={(e) => setDaily(e.target.value)}
+            onChange={(e) => {
+              setDaily(e.target.value)
+              setJustSaved(false)
+            }}
             className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
           />
         </label>
@@ -602,13 +656,27 @@ function GoalsBlock() {
             min={0}
             step={100}
             value={weekly}
-            onChange={(e) => setWeekly(e.target.value)}
+            onChange={(e) => {
+              setWeekly(e.target.value)
+              setJustSaved(false)
+            }}
             className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
           />
         </label>
-        {msg && <p className="text-sm text-muted">{msg}</p>}
-        <button type="submit" className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">
-          Salvar metas
+
+        {justSaved && (
+          <p className="rounded-xl border border-success/30 bg-success/10 px-3 py-2.5 text-sm text-success">
+            Meta salva: dia {moneyBrl(savedDaily)} · semana {moneyBrl(savedWeekly)}
+          </p>
+        )}
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium disabled:opacity-60"
+        >
+          {saving ? 'Salvando…' : 'Salvar metas'}
         </button>
       </form>
     </section>
