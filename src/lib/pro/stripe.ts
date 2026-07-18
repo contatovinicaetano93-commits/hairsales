@@ -229,6 +229,88 @@ export async function fulfillProSubscription(session: Stripe.Checkout.Session) {
   return { upgraded: true, subscriber_id: subscriberId }
 }
 
+/** Features padrão do Customer Portal (Assistente Vitrini / Pro). */
+export function defaultBillingPortalFeatures(): Stripe.BillingPortal.ConfigurationCreateParams.Features {
+  return {
+    customer_update: {
+      enabled: true,
+      allowed_updates: ['email', 'name', 'address', 'phone', 'tax_id'],
+    },
+    invoice_history: { enabled: true },
+    payment_method_update: { enabled: true },
+    subscription_cancel: {
+      enabled: true,
+      mode: 'at_period_end',
+      cancellation_reason: {
+        enabled: true,
+        options: ['too_expensive', 'missing_features', 'unused', 'switched_service', 'other'],
+      },
+    },
+    subscription_update: { enabled: false },
+  }
+}
+
+/**
+ * Garante uma configuração de Customer Portal com return URL e features Pro.
+ * Preferência: STRIPE_PORTAL_CONFIGURATION_ID → default da conta → cria nova.
+ */
+export async function ensureDefaultBillingPortalConfiguration(): Promise<{
+  id: string
+  created: boolean
+  default_return_url: string | null
+}> {
+  if (!isStripeConfigured()) {
+    throw new Error('Stripe não configurado')
+  }
+
+  const stripe = getStripe()
+  const returnUrl = `${appBaseUrl()}/pro/conectar`
+  const features = defaultBillingPortalFeatures()
+  const business_profile = {
+    headline: 'Assistente Vitrini — gerencie sua assinatura Pro',
+  }
+
+  const configuredId = process.env.STRIPE_PORTAL_CONFIGURATION_ID?.trim()
+  if (configuredId) {
+    const updated = await stripe.billingPortal.configurations.update(configuredId, {
+      default_return_url: returnUrl,
+      business_profile,
+      features,
+    })
+    return {
+      id: updated.id,
+      created: false,
+      default_return_url: updated.default_return_url,
+    }
+  }
+
+  const listed = await stripe.billingPortal.configurations.list({ limit: 20 })
+  const existing = listed.data.find((c) => c.is_default) ?? listed.data[0]
+  if (existing) {
+    const updated = await stripe.billingPortal.configurations.update(existing.id, {
+      default_return_url: returnUrl,
+      business_profile,
+      features,
+    })
+    return {
+      id: updated.id,
+      created: false,
+      default_return_url: updated.default_return_url,
+    }
+  }
+
+  const created = await stripe.billingPortal.configurations.create({
+    default_return_url: returnUrl,
+    business_profile,
+    features,
+  })
+  return {
+    id: created.id,
+    created: true,
+    default_return_url: created.default_return_url,
+  }
+}
+
 /** Customer Portal — faturas, cartão, cancelar assinatura. */
 export async function createBillingPortalSession(
   subscriber: SubscriberRow,
@@ -242,9 +324,13 @@ export async function createBillingPortalSession(
 
   const stripe = getStripe()
   const base = appBaseUrl()
+  const configuration =
+    process.env.STRIPE_PORTAL_CONFIGURATION_ID?.trim() || undefined
+
   const portal = await stripe.billingPortal.sessions.create({
     customer: subscriber.stripe_customer_id,
     return_url: `${base}/pro/conectar`,
+    ...(configuration ? { configuration } : {}),
   })
   if (!portal.url) throw new Error('Stripe Portal sem URL')
   return { url: portal.url }

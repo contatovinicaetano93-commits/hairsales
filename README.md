@@ -61,6 +61,37 @@ O Neon e o projeto Vercel devem ser exclusivos desta instância. Siga
    (funcionário: painel sem faturamento), `CRON_SECRET`, `WHATSAPP_WEBHOOK_SECRET`
    e `TELEGRAM_STAFF_CHAT_IDS` — sem eles, webhooks e sync ficam bloqueados em produção.
 
+## App Pro (assinante B2C)
+
+Path `/pro/*` — profissional individual (não o salão). Conectar agenda (Avec/Trinks),
+assistente com cotas, Telegram no Free, WhatsApp Cloud no Pro.
+
+### Stripe Customer Portal
+
+1. Crie produto/preço da assinatura Pro e defina `STRIPE_PRICE_PRO`.
+2. Webhook `checkout.session.completed` → `/api/webhooks/stripe` (`STRIPE_WEBHOOK_SECRET`).
+3. Configure o portal (return URL `{NEXT_PUBLIC_APP_URL}/pro/conectar`):
+
+```bash
+STRIPE_SECRET_KEY=sk_test_... NEXT_PUBLIC_APP_URL=http://localhost:3000 npm run stripe:portal
+```
+
+4. Salve o `STRIPE_PORTAL_CONFIGURATION_ID` impresso no `.env` / Vercel.
+5. Branding/legal opcional no Dashboard:
+   [Settings → Billing → Customer portal](https://dashboard.stripe.com/test/settings/billing/portal).
+
+Botão **Gerenciar cobrança** em `/pro/conectar` após a primeira compra (quando há `stripe_customer_id`).
+
+### E2E do setup Pro
+
+Com `npm run dev` + Neon migrado (`020`–`024`):
+
+```bash
+npm test -- src/__tests__/e2e-pro-onboarding.test.ts
+```
+
+Sem servidor/DB o teste faz skip. Unitário do checklist: `src/lib/pro/onboarding.test.ts`.
+
 ## Rodando local
 
 ```bash

@@ -34,17 +34,31 @@ export interface OnboardingStatus {
   has_stripe_customer: boolean
 }
 
-export async function buildOnboardingStatus(subscriber: SubscriberRow): Promise<OnboardingStatus> {
-  const [conn, wa, quotas, usage] = await Promise.all([
-    getActiveConnection(subscriber.id),
-    getSubscriberWhatsapp(subscriber.id),
-    getQuotaStatus(subscriber.id, subscriber.plan),
-    getWhatsappUsage(subscriber.id, subscriber.plan),
-  ])
+export interface OnboardingComputeInput {
+  email: string
+  plan: string
+  daily_goal_revenue: number | null
+  weekly_goal_revenue: number | null
+  telegram_chat_id?: string | null
+  stripe_customer_id?: string | null
+  connection: {
+    status: string
+    provider: string
+    professional_name_matched: string | null
+  } | null
+  whatsapp_active: boolean
+  utility_sent: number
+  utility_included: number
+  marketing_remaining: number
+  embedded_enabled: boolean
+  stripe_enabled: boolean
+  ai_daily_remaining: number
+}
 
-  const embedded = getEmbeddedSignupConfig()
-  const hasGoals =
-    subscriber.daily_goal_revenue != null || subscriber.weekly_goal_revenue != null
+/** Pure — usado por testes e por `buildOnboardingStatus`. */
+export function computeOnboardingStatus(input: OnboardingComputeInput): OnboardingStatus {
+  const hasGoals = input.daily_goal_revenue != null || input.weekly_goal_revenue != null
+  const agendaActive = input.connection?.status === 'active'
 
   const steps: OnboardingStep[] = [
     {
@@ -53,18 +67,17 @@ export async function buildOnboardingStatus(subscriber: SubscriberRow): Promise<
       done: true,
       required: true,
       href: '/pro/conectar',
-      detail: subscriber.email,
+      detail: input.email,
     },
     {
       id: 'agenda',
       title: 'Conectar agenda (Avec/Trinks)',
-      done: conn?.status === 'active',
+      done: agendaActive,
       required: true,
       href: '/pro/conectar',
-      detail:
-        conn?.status === 'active'
-          ? `${conn.provider} · ${conn.professional_name_matched}`
-          : 'Obrigatório para ver seus dados',
+      detail: agendaActive
+        ? `${input.connection!.provider} · ${input.connection!.professional_name_matched}`
+        : 'Obrigatório para ver seus dados',
     },
     {
       id: 'goals',
@@ -73,44 +86,43 @@ export async function buildOnboardingStatus(subscriber: SubscriberRow): Promise<
       required: false,
       href: '/pro/conectar',
       detail: hasGoals
-        ? `Dia R$ ${subscriber.daily_goal_revenue ?? '—'} · Semana R$ ${subscriber.weekly_goal_revenue ?? '—'}`
+        ? `Dia R$ ${input.daily_goal_revenue ?? '—'} · Semana R$ ${input.weekly_goal_revenue ?? '—'}`
         : 'Opcional — acompanha progresso no Hoje',
     },
     {
       id: 'telegram',
       title: 'Vincular Telegram',
-      done: Boolean(subscriber.telegram_chat_id),
+      done: Boolean(input.telegram_chat_id),
       required: false,
       href: '/pro/conectar',
-      detail: subscriber.telegram_chat_id
+      detail: input.telegram_chat_id
         ? 'Assistente no Telegram ativo'
         : 'Canal grátis da assistente',
     },
     {
       id: 'plan_pro',
       title: 'Plano Pro',
-      done: subscriber.plan === 'pro',
+      done: input.plan === 'pro',
       required: false,
       href: '/pro/conectar',
       detail:
-        subscriber.plan === 'pro'
+        input.plan === 'pro'
           ? 'WhatsApp Cloud e packs liberados'
           : 'Necessário para WhatsApp Cloud',
     },
     {
       id: 'whatsapp',
       title: 'WhatsApp Cloud',
-      done: Boolean(wa && wa.status === 'active'),
+      done: input.whatsapp_active,
       required: false,
       href: '/pro/conectar',
-      detail:
-        wa?.status === 'active'
-          ? `Utility ${usage.utility_sent}/${usage.utility_included} · mkt ${usage.marketing_remaining}`
-          : subscriber.plan === 'pro'
-            ? embedded.enabled
-              ? 'Conectar com Meta ou token manual'
-              : 'Cole phone_number_id + token'
-            : 'Disponível no Pro',
+      detail: input.whatsapp_active
+        ? `Utility ${input.utility_sent}/${input.utility_included} · mkt ${input.marketing_remaining}`
+        : input.plan === 'pro'
+          ? input.embedded_enabled
+            ? 'Conectar com Meta ou token manual'
+            : 'Cole phone_number_id + token'
+          : 'Disponível no Pro',
     },
   ]
 
@@ -124,10 +136,44 @@ export async function buildOnboardingStatus(subscriber: SubscriberRow): Promise<
     percent: Math.round((completed / steps.length) * 100),
     ready_for_day: completedRequired === required.length,
     steps,
-    plan: subscriber.plan,
-    stripe_enabled: isStripeConfigured(),
-    embedded_signup_enabled: embedded.enabled,
-    ai_daily_remaining: quotas.daily_remaining,
-    has_stripe_customer: Boolean(subscriber.stripe_customer_id),
+    plan: input.plan,
+    stripe_enabled: input.stripe_enabled,
+    embedded_signup_enabled: input.embedded_enabled,
+    ai_daily_remaining: input.ai_daily_remaining,
+    has_stripe_customer: Boolean(input.stripe_customer_id),
   }
+}
+
+export async function buildOnboardingStatus(subscriber: SubscriberRow): Promise<OnboardingStatus> {
+  const [conn, wa, quotas, usage] = await Promise.all([
+    getActiveConnection(subscriber.id),
+    getSubscriberWhatsapp(subscriber.id),
+    getQuotaStatus(subscriber.id, subscriber.plan),
+    getWhatsappUsage(subscriber.id, subscriber.plan),
+  ])
+
+  const embedded = getEmbeddedSignupConfig()
+
+  return computeOnboardingStatus({
+    email: subscriber.email,
+    plan: subscriber.plan,
+    daily_goal_revenue: subscriber.daily_goal_revenue,
+    weekly_goal_revenue: subscriber.weekly_goal_revenue,
+    telegram_chat_id: subscriber.telegram_chat_id,
+    stripe_customer_id: subscriber.stripe_customer_id,
+    connection: conn
+      ? {
+          status: conn.status,
+          provider: conn.provider,
+          professional_name_matched: conn.professional_name_matched,
+        }
+      : null,
+    whatsapp_active: Boolean(wa && wa.status === 'active'),
+    utility_sent: usage.utility_sent,
+    utility_included: usage.utility_included,
+    marketing_remaining: usage.marketing_remaining,
+    embedded_enabled: embedded.enabled,
+    stripe_enabled: isStripeConfigured(),
+    ai_daily_remaining: quotas.daily_remaining,
+  })
 }
