@@ -165,29 +165,44 @@ export default function ProConectarPage() {
 function PlanBlock() {
   const [plan, setPlan] = useState('free')
   const [allowed, setAllowed] = useState(false)
+  const [stripeEnabled, setStripeEnabled] = useState(false)
+  const [stripeProPrice, setStripeProPrice] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('plan') === 'success') setMsg('Pagamento Pro recebido — atualizando plano…')
+    if (params.get('plan') === 'cancel') setMsg('Checkout Pro cancelado.')
+
     fetch('/api/me/plan', { credentials: 'include' })
       .then((r) => r.json())
       .then((json) => {
         if (json.data?.plan) setPlan(json.data.plan)
         setAllowed(Boolean(json.data?.self_upgrade_allowed))
+        setStripeEnabled(Boolean(json.data?.stripe_enabled))
+        setStripeProPrice(Boolean(json.data?.stripe_pro_price_configured))
+        if (params.get('plan') === 'success' && json.data?.plan === 'pro') {
+          setMsg('Plano Pro ativo via Stripe.')
+        }
       })
       .catch(() => {})
   }, [])
 
-  async function setTo(next: 'free' | 'pro') {
+  async function setTo(next: 'free' | 'pro', checkout = false) {
     setMsg(null)
     const res = await fetch('/api/me/plan', {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: next }),
+      body: JSON.stringify({ plan: next, checkout }),
     })
     const json = await res.json()
     if (!res.ok) {
       setMsg(json.error ?? 'Erro')
+      return
+    }
+    if (json.data?.mode === 'stripe' && json.data.checkout_url) {
+      window.location.assign(json.data.checkout_url)
       return
     }
     setPlan(json.data.plan)
@@ -201,28 +216,35 @@ function PlanBlock() {
         Atual: <span className="font-medium text-foreground">{plan}</span>
         {plan === 'free' ? ' · Telegram + app · sem WhatsApp Cloud' : ' · 200 utility/mês inclusos'}
       </p>
-      {allowed && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {plan !== 'pro' && (
-            <button
-              type="button"
-              onClick={() => setTo('pro')}
-              className="rounded-xl bg-gold/15 px-3 py-2 text-sm font-medium text-gold-strong"
-            >
-              Ativar Pro (demo)
-            </button>
-          )}
-          {plan === 'pro' && (
-            <button
-              type="button"
-              onClick={() => setTo('free')}
-              className="rounded-xl border border-border px-3 py-2 text-sm"
-            >
-              Voltar Free
-            </button>
-          )}
-        </div>
-      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {plan !== 'pro' && stripeEnabled && stripeProPrice && (
+          <button
+            type="button"
+            onClick={() => setTo('pro', true)}
+            className="rounded-xl bg-gold px-3 py-2 text-sm font-semibold"
+          >
+            Assinar Pro (Stripe)
+          </button>
+        )}
+        {plan !== 'pro' && allowed && (
+          <button
+            type="button"
+            onClick={() => setTo('pro', false)}
+            className="rounded-xl bg-gold/15 px-3 py-2 text-sm font-medium text-gold-strong"
+          >
+            Ativar Pro (demo)
+          </button>
+        )}
+        {plan === 'pro' && allowed && (
+          <button
+            type="button"
+            onClick={() => setTo('free', false)}
+            className="rounded-xl border border-border px-3 py-2 text-sm"
+          >
+            Voltar Free
+          </button>
+        )}
+      </div>
       {msg && <p className="mt-2 text-xs text-muted">{msg}</p>}
     </section>
   )
@@ -246,6 +268,7 @@ function WhatsappBlock() {
     enabled: boolean
     app_id: string | null
     config_id: string | null
+    setup_hint?: string
   } | null>(null)
   const [phoneNumberId, setPhoneNumberId] = useState('')
   const [accessToken, setAccessToken] = useState('')
@@ -263,12 +286,18 @@ function WhatsappBlock() {
           setUsage(json.data.usage)
           setPacks(json.data.packs ?? [])
           setEmbedded(json.data.embedded_signup ?? null)
+          if (json.data.embedded_signup && !json.data.embedded_signup.enabled) {
+            // hint available via setup_hint when user clicks
+          }
         }
       })
       .catch(() => {})
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('pack') === 'success') setMsg('Pagamento do pack confirmado — créditos em breve/já creditados.')
+    if (params.get('pack') === 'cancel') setMsg('Checkout do pack cancelado.')
     reload()
   }, [])
 
@@ -316,14 +345,21 @@ function WhatsappBlock() {
       setError(json.error ?? 'Falha na compra')
       return
     }
-    setMsg(`Pack +${json.data.credits_added} créditos de marketing.`)
+    if (json.data?.mode === 'stripe' && json.data.checkout_url) {
+      window.location.assign(json.data.checkout_url)
+      return
+    }
+    setMsg(`Pack +${json.data.credits_added} créditos de marketing (demo).`)
     reload()
   }
 
   async function launchEmbeddedSignup() {
     setError(null)
     if (!embedded?.enabled || !embedded.app_id || !embedded.config_id) {
-      setError('Embedded Signup não configurado (META_APP_ID / META_EMBEDDED_SIGNUP_CONFIG_ID).')
+      setError(
+        embedded?.setup_hint ||
+          'Embedded Signup não configurado (META_APP_ID / META_EMBEDDED_SIGNUP_CONFIG_ID / META_APP_SECRET).',
+      )
       return
     }
 

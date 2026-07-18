@@ -15,6 +15,7 @@ export interface SubscriberRow {
   weekly_goal_revenue: number | null
   telegram_chat_id?: string | null
   marketing_credits?: number | null
+  stripe_customer_id?: string | null
   created_at: string
   updated_at: string
 }

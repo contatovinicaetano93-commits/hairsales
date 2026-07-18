@@ -9,7 +9,13 @@ const GRAPH = 'https://graph.facebook.com/v21.0'
 export function getEmbeddedSignupConfig() {
   const appId = process.env.META_APP_ID?.trim() || process.env.NEXT_PUBLIC_META_APP_ID?.trim()
   const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID?.trim()
-  const enabled = Boolean(appId && configId)
+  const appSecret = Boolean(process.env.META_APP_SECRET?.trim())
+  const enabled = Boolean(appId && configId && appSecret)
+
+  const missing: string[] = []
+  if (!appId) missing.push('META_APP_ID')
+  if (!configId) missing.push('META_EMBEDDED_SIGNUP_CONFIG_ID')
+  if (!appSecret) missing.push('META_APP_SECRET')
 
   return {
     enabled,
@@ -17,6 +23,11 @@ export function getEmbeddedSignupConfig() {
     config_id: configId || null,
     graph_version: 'v21.0',
     feature_type: 'whatsapp_business_app_onboarding',
+    missing_env: missing,
+    setup_hint:
+      missing.length === 0
+        ? 'Pronto — use o botão Conectar com Meta.'
+        : `Configure no ambiente: ${missing.join(', ')}. Enquanto isso, use phone_number_id + token manual.`,
   }
 }
 

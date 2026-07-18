@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getMarketingPack, listMarketingPacks } from './whatsapp-packs'
+import { getMarketingPack, listMarketingPacks } from './pack-catalog'
 
 describe('marketing packs', () => {
   it('oferece 50/100/250', () => {

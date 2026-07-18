@@ -1,27 +1,14 @@
 import { getSql } from '@/lib/db'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
+import { createMarketingPackCheckout, isStripeConfigured } from '@/lib/pro/stripe'
+import {
+  getMarketingPack,
+  listMarketingPacks,
+  type MarketingPack,
+} from '@/lib/pro/pack-catalog'
 
-export interface MarketingPack {
-  id: string
-  credits: number
-  label: string
-  /** Preço demo em centavos BRL — billing real depois. */
-  amount_cents: number
-}
-
-export const MARKETING_PACKS: MarketingPack[] = [
-  { id: 'mkt_50', credits: 50, label: '50 mensagens', amount_cents: 2900 },
-  { id: 'mkt_100', credits: 100, label: '100 mensagens', amount_cents: 4900 },
-  { id: 'mkt_250', credits: 250, label: '250 mensagens', amount_cents: 9900 },
-]
-
-export function listMarketingPacks() {
-  return MARKETING_PACKS
-}
-
-export function getMarketingPack(packId: string): MarketingPack | null {
-  return MARKETING_PACKS.find((p) => p.id === packId) ?? null
-}
+export type { MarketingPack }
+export { getMarketingPack, listMarketingPacks }
 
 function allowDemoPurchase() {
   return (
@@ -32,21 +19,52 @@ function allowDemoPurchase() {
   )
 }
 
-/** Compra demo de pack — sem Stripe ainda; em prod exige flag. */
+export type PurchaseResult =
+  | {
+      mode: 'stripe'
+      checkout_url: string
+      session_id: string
+      pack: MarketingPack
+    }
+  | {
+      mode: 'demo'
+      credits_added: number
+      marketing_credits: number
+      pack: MarketingPack
+    }
+
+/**
+ * Compra pack: Stripe Checkout se STRIPE_SECRET_KEY; senão demo (dev / flag).
+ */
 export async function purchaseMarketingPack(
   subscriber: SubscriberRow,
   packId: string,
-): Promise<{ credits_added: number; marketing_credits: number; pack: MarketingPack }> {
+): Promise<PurchaseResult> {
   if (subscriber.plan !== 'pro') {
     throw new Error('Packs de marketing estão no plano Pro.')
-  }
-  if (!allowDemoPurchase()) {
-    throw new Error('Compra de packs indisponível neste ambiente')
   }
 
   const pack = getMarketingPack(packId)
   if (!pack) throw new Error('Pack inválido')
 
+  if (isStripeConfigured()) {
+    const checkout = await createMarketingPackCheckout(subscriber, packId)
+    return {
+      mode: 'stripe',
+      checkout_url: checkout.url,
+      session_id: checkout.session_id,
+      pack: checkout.pack,
+    }
+  }
+
+  if (!allowDemoPurchase()) {
+    throw new Error('Configure STRIPE_SECRET_KEY ou PRO_ALLOW_PACK_PURCHASE para comprar packs')
+  }
+
+  return creditDemoPack(subscriber, pack)
+}
+
+async function creditDemoPack(subscriber: SubscriberRow, pack: MarketingPack) {
   const sql = getSql()
   const updated = (await sql`
     update subscribers
@@ -58,13 +76,14 @@ export async function purchaseMarketingPack(
 
   await sql`
     insert into subscriber_whatsapp_pack_purchases (
-      subscriber_id, pack_id, credits, amount_cents, status
+      subscriber_id, pack_id, credits, amount_cents, status, provider
     ) values (
-      ${subscriber.id}, ${pack.id}, ${pack.credits}, ${pack.amount_cents}, 'completed'
+      ${subscriber.id}, ${pack.id}, ${pack.credits}, ${pack.amount_cents}, 'completed', 'demo'
     )
   `
 
   return {
+    mode: 'demo' as const,
     credits_added: pack.credits,
     marketing_credits: updated[0]?.marketing_credits ?? pack.credits,
     pack,
@@ -74,7 +93,7 @@ export async function purchaseMarketingPack(
 export async function listPackPurchases(subscriberId: string) {
   const sql = getSql()
   return (await sql`
-    select id, pack_id, credits, amount_cents, status, created_at
+    select id, pack_id, credits, amount_cents, status, provider, stripe_session_id, created_at
     from subscriber_whatsapp_pack_purchases
     where subscriber_id = ${subscriberId}
     order by created_at desc
@@ -85,6 +104,8 @@ export async function listPackPurchases(subscriberId: string) {
     credits: number
     amount_cents: number | null
     status: string
+    provider: string
+    stripe_session_id: string | null
     created_at: string
   }>
 }

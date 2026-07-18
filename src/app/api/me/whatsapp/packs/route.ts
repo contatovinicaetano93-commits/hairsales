@@ -7,6 +7,7 @@ import {
   purchaseMarketingPack,
 } from '@/lib/pro/whatsapp-packs'
 import { getWhatsappUsage } from '@/lib/pro/whatsapp-cloud'
+import { isStripeConfigured } from '@/lib/pro/stripe'
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
       packs: listMarketingPacks(),
       usage,
       purchases,
+      stripe_enabled: isStripeConfigured(),
     })
   } catch (e) {
     return handleError(e)
