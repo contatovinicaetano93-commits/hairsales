@@ -87,11 +87,7 @@ export function ProShell({ children }: { children: React.ReactNode }) {
     brand.displayName
 
   if (isAuthPage) {
-    return (
-      <div className="pro-app min-h-screen bg-[linear-gradient(165deg,#f7efe3_0%,#fafaf7_45%,#efe4d2_100%)] px-4 py-10 lg:flex lg:items-center lg:justify-center">
-        <div className="w-full lg:max-w-md">{children}</div>
-      </div>
-    )
+    return <div className="pro-app min-h-screen bg-background">{children}</div>
   }
 
   return (
