@@ -130,11 +130,14 @@ export default function ProConectarPage() {
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs uppercase tracking-wide text-muted">ID da unidade (opcional)</span>
+          <span className="text-xs uppercase tracking-wide text-muted">
+            {provider === 'trinks' ? 'ID do estabelecimento (Trinks)' : 'ID da unidade Avec (opcional)'}
+          </span>
           <input
             value={unitId}
             onChange={(e) => setUnitId(e.target.value)}
-            placeholder="site / unidade no Avec"
+            placeholder={provider === 'trinks' ? 'estabelecimentoId' : 'site / unidade no Avec'}
+            required={provider === 'trinks' && apiToken !== 'mock'}
             className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
           />
         </label>
@@ -151,9 +154,201 @@ export default function ProConectarPage() {
         </button>
       </form>
 
+      <PlanBlock />
       <GoalsBlock />
       <TelegramBlock />
+      <WhatsappBlock />
     </div>
+  )
+}
+
+function PlanBlock() {
+  const [plan, setPlan] = useState('free')
+  const [allowed, setAllowed] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/me/plan', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.data?.plan) setPlan(json.data.plan)
+        setAllowed(Boolean(json.data?.self_upgrade_allowed))
+      })
+      .catch(() => {})
+  }, [])
+
+  async function setTo(next: 'free' | 'pro') {
+    setMsg(null)
+    const res = await fetch('/api/me/plan', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: next }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      setMsg(json.error ?? 'Erro')
+      return
+    }
+    setPlan(json.data.plan)
+    setMsg(next === 'pro' ? 'Plano Pro ativo — WhatsApp Cloud liberado.' : 'Voltou para Free.')
+  }
+
+  return (
+    <section className="mt-10 border-t border-border pt-6">
+      <h3 className="font-serif text-lg">Plano</h3>
+      <p className="mt-1 text-sm text-muted">
+        Atual: <span className="font-medium text-foreground">{plan}</span>
+        {plan === 'free' ? ' · Telegram + app · sem WhatsApp Cloud' : ' · 200 utility/mês inclusos'}
+      </p>
+      {allowed && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {plan !== 'pro' && (
+            <button
+              type="button"
+              onClick={() => setTo('pro')}
+              className="rounded-xl bg-gold/15 px-3 py-2 text-sm font-medium text-gold-strong"
+            >
+              Ativar Pro (demo)
+            </button>
+          )}
+          {plan === 'pro' && (
+            <button
+              type="button"
+              onClick={() => setTo('free')}
+              className="rounded-xl border border-border px-3 py-2 text-sm"
+            >
+              Voltar Free
+            </button>
+          )}
+        </div>
+      )}
+      {msg && <p className="mt-2 text-xs text-muted">{msg}</p>}
+    </section>
+  )
+}
+
+function WhatsappBlock() {
+  const [plan, setPlan] = useState('free')
+  const [connected, setConnected] = useState(false)
+  const [usage, setUsage] = useState<{
+    utility_sent: number
+    utility_included: number
+    marketing_sent: number
+    marketing_included: number
+  } | null>(null)
+  const [phoneNumberId, setPhoneNumberId] = useState('')
+  const [accessToken, setAccessToken] = useState('')
+  const [displayPhone, setDisplayPhone] = useState('')
+  const [msg, setMsg] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  function reload() {
+    fetch('/api/me/whatsapp', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.data) {
+          setPlan(json.data.plan)
+          setConnected(Boolean(json.data.connected))
+          setUsage(json.data.usage)
+        }
+      })
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    reload()
+  }, [])
+
+  async function connect(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setMsg(null)
+    const res = await fetch('/api/me/whatsapp', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone_number_id: phoneNumberId,
+        access_token: accessToken,
+        display_phone: displayPhone || null,
+      }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      setError(json.error ?? 'Erro')
+      return
+    }
+    setMsg('WhatsApp Cloud conectado.')
+    setAccessToken('')
+    reload()
+  }
+
+  async function disconnect() {
+    await fetch('/api/me/whatsapp', { method: 'DELETE', credentials: 'include' })
+    setConnected(false)
+    reload()
+  }
+
+  return (
+    <section className="mt-10 border-t border-border pt-6">
+      <h3 className="font-serif text-lg">WhatsApp Cloud (Pro)</h3>
+      <p className="mt-1 text-sm text-muted">
+        Número do assinante na Cloud API oficial. Free usa só Telegram. Em dev, token{' '}
+        <code className="text-gold-strong">mock</code>.
+      </p>
+      {usage && plan === 'pro' && (
+        <p className="mt-2 text-xs text-muted">
+          Utility: {usage.utility_sent}/{usage.utility_included} · Marketing:{' '}
+          {usage.marketing_sent}/{usage.marketing_included}
+        </p>
+      )}
+      {connected ? (
+        <div className="mt-4 flex flex-col gap-2">
+          <p className="text-sm text-success">Cloud API conectada.</p>
+          <button
+            type="button"
+            onClick={disconnect}
+            className="rounded-xl border border-border px-4 py-2.5 text-sm"
+          >
+            Desconectar
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={connect} className="mt-4 flex flex-col gap-3">
+          <input
+            value={phoneNumberId}
+            onChange={(e) => setPhoneNumberId(e.target.value)}
+            required
+            placeholder="Phone number ID"
+            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
+          />
+          <input
+            type="password"
+            value={accessToken}
+            onChange={(e) => setAccessToken(e.target.value)}
+            required
+            placeholder="Access token (ou mock)"
+            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
+            autoComplete="off"
+          />
+          <input
+            value={displayPhone}
+            onChange={(e) => setDisplayPhone(e.target.value)}
+            placeholder="Número exibido (opcional)"
+            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
+          />
+          {error && <p className="text-sm text-danger">{error}</p>}
+          {msg && <p className="text-sm text-success">{msg}</p>}
+          <button
+            type="submit"
+            className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm font-medium text-gold-strong"
+          >
+            Conectar WhatsApp Cloud
+          </button>
+        </form>
+      )}
+    </section>
   )
 }
 
