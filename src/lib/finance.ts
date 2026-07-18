@@ -145,6 +145,26 @@ async function sumExpenses(from: string, to: string): Promise<number> {
   return Number(rows[0]?.total ?? 0) || 0
 }
 
+export interface FinanceRevenuePoint {
+  day: string
+  revenue: number
+}
+
+/** Curva diária do mês a partir de salon_daily_metrics (Avec). Cobre o mês selecionado (melhor que o rolling 0088 em p3). */
+async function getRevenueCurve(from: string, to: string): Promise<FinanceRevenuePoint[]> {
+  const sql = getSql()
+  const rows = (await sql`
+    select day::text as day, coalesce(revenue, 0)::float as revenue
+    from salon_daily_metrics
+    where day >= ${from}::date and day <= ${to}::date
+    order by day asc
+  `) as { day: string; revenue: string | number }[]
+  return rows.map((r) => ({
+    day: r.day.slice(0, 10),
+    revenue: Math.round(Number(r.revenue) * 100) / 100,
+  }))
+}
+
 export interface FinanceKpiBucket {
   month: string
   label: string
@@ -154,7 +174,10 @@ export interface FinanceKpiBucket {
   expenses: number
   /** (receita - despesas) / receita, em % — null se não houver receita no período (Avec ainda não sincronizou). */
   gross_margin: number | null
+  /** Resultado do mês = receita Avec − saídas manuais (não é DFC contábil). */
   cash_flow: number
+  /** Faturamento por dia no período (Avec / salon_daily_metrics). */
+  revenue_curve: FinanceRevenuePoint[]
   /** Breakdown por forma de pagamento (relatório 0081 da Avec) — reconciliação. */
   payment_mix: P2PaymentRow[]
   /** Conciliação CBS/IBS retidos no split fiscal (Plataforma Pública / export PSP). */
@@ -168,9 +191,10 @@ export interface FinanceKpis {
 
 async function buildBucket(monthKey: string): Promise<FinanceKpiBucket> {
   const { from, to } = monthRange(monthKey)
-  const [revenue, expenses, payment_mix, fiscal_split] = await Promise.all([
+  const [revenue, expenses, revenue_curve, payment_mix, fiscal_split] = await Promise.all([
     sumRevenue(from, to),
     sumExpenses(from, to),
+    getRevenueCurve(from, to),
     getPaymentMixRange(from, to),
     getFiscalSplitSummary(from, to),
   ])
@@ -184,12 +208,13 @@ async function buildBucket(monthKey: string): Promise<FinanceKpiBucket> {
     expenses: Math.round(expenses * 100) / 100,
     gross_margin,
     cash_flow: Math.round((revenue - expenses) * 100) / 100,
+    revenue_curve,
     payment_mix,
     fiscal_split,
   }
 }
 
-/** KPIs do Financeiro (Sprint 4). Receita vem de salon_daily_metrics (Avec); despesas são cadastro manual. */
+/** KPIs do Financeiro. Receita/curva/mix via Avec; despesas são cadastro manual (fora da Avec). */
 export async function computeFinanceKpis(opts?: { month?: string; compareMonth?: string }): Promise<FinanceKpis> {
   // Uma vez por request (memoizado no módulo) — evita DDL paralelo nos dois buckets.
   await ensureFiscalSplitTable().catch(() => undefined)

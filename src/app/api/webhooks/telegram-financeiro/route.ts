@@ -19,7 +19,7 @@ function welcomeMessage() {
   return `Oi! 👋 Sou o bot financeiro do ${brand.displayName}.
 
 Comandos:
-/financeiro — receita, despesas, margem e formas de pagamento do mês
+/financeiro — faturamento Avec, resultado, saídas manuais e formas de pagamento
 /estoque — valor em estoque, alertas de reposição ativos`
 }
 
@@ -32,13 +32,20 @@ async function financeSummary(): Promise<string> {
   const c = kpis.current
   const lines = [
     `💰 *Financeiro — ${c.label}*`,
-    `Receita: ${formatCurrency(c.revenue)}`,
-    `Despesas: ${formatCurrency(c.expenses)}`,
-    `Margem bruta: ${c.gross_margin != null ? `${c.gross_margin}%` : '—'}`,
-    `Fluxo: ${formatCurrency(c.cash_flow)}`,
+    `Faturamento (Avec): ${formatCurrency(c.revenue)}`,
+    `Saídas manuais (fora da Avec): ${formatCurrency(c.expenses)}`,
+    `Margem: ${c.gross_margin != null ? `${c.gross_margin}%` : '—'}`,
+    `Resultado do mês: ${formatCurrency(c.cash_flow)}`,
   ]
+  if (c.payment_mix.length > 0) {
+    lines.push(
+      '',
+      '*Formas de pagamento (Avec):*',
+      ...c.payment_mix.slice(0, 5).map((p) => `• ${p.method}: ${formatCurrency(p.amount)} (${p.share}%)`),
+    )
+  }
   if (c.revenue === 0) {
-    lines.push('', '_Receita ainda não sincronizada pela Avec esse mês._')
+    lines.push('', '_Faturamento ainda não sincronizado pela Avec esse mês._')
   }
   return lines.join('\n')
 }
