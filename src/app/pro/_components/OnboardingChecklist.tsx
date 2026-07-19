@@ -25,12 +25,12 @@ export function OnboardingChecklist({ compact = false }: { compact?: boolean }) 
     <section
       className={
         compact
-          ? 'rounded-2xl border border-border bg-surface/60 px-3 py-3'
-          : 'rounded-2xl border border-gold/25 bg-gold/5 px-4 py-4'
+          ? 'w-full rounded-3xl border border-border bg-surface/60 px-4 py-3'
+          : 'w-full rounded-3xl border border-gold/25 bg-gold/5 px-5 py-4 sm:px-6'
       }
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-serif text-lg">Setup</h3>
+        <h3 className="font-serif text-lg font-bold">Setup</h3>
         <span className="text-xs text-muted">{data.percent}%</span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">

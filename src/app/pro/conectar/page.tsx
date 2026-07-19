@@ -29,35 +29,35 @@ function ConnectCard({
   const panelId = useId()
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_8px_28px_-18px_rgba(26,23,20,0.35)]">
+    <article className="w-full overflow-hidden rounded-3xl border border-border/90 bg-card shadow-[0_10px_32px_-22px_rgba(26,23,20,0.4)]">
       <button
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-start justify-between gap-3 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] px-4 py-3.5 text-left transition hover:bg-surface/60"
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface/50 sm:px-6 sm:py-5"
       >
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-serif text-xl font-semibold leading-tight tracking-tight">{title}</h3>
+            <h3 className="font-serif text-lg font-bold leading-tight tracking-tight sm:text-xl">
+              {title}
+            </h3>
             {badge && (
-              <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-gold-strong">
+              <span className="rounded-full border border-gold/35 bg-gold/12 px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-gold-strong">
                 {badge}
               </span>
             )}
           </div>
           {summary && (
-            <p className="mt-1 text-xs font-medium text-[color:color-mix(in_srgb,var(--muted)_85%,var(--foreground))]">
-              {summary}
-            </p>
+            <p className="mt-1 text-sm font-medium text-muted">{summary}</p>
           )}
         </div>
         <ChevronDown
-          className={`mt-1 h-5 w-5 shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`h-5 w-5 shrink-0 text-muted transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open && (
-        <div id={panelId} className="border-t border-border/70 px-4 py-4">
+        <div id={panelId} className="border-t border-border/70 px-5 py-5 sm:px-6">
           {children}
         </div>
       )}
@@ -130,17 +130,15 @@ export default function ProConectarPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="-mx-0 flex w-full flex-col gap-4">
       <ProPageHeader
         title="Conectar"
-        subtitle="Cada bloco é uma conexão. Toque no título para abrir ou recolher."
+        subtitle="Toque em um card para abrir ou recolher."
       />
 
-      <div>
-        <OnboardingChecklist />
-      </div>
+      <OnboardingChecklist />
 
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-3">
+      <div className="flex w-full flex-col gap-3">
         <ConnectCard
           title="Agenda"
           summary="Avec ou Trinks"
