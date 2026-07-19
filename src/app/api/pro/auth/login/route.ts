@@ -5,10 +5,22 @@ import {
   createProSessionToken,
   proSessionCookieOptions,
 } from '@/lib/pro/auth'
+import { checkProRateLimit } from '@/lib/pro/rate-limit'
 import { authenticateSubscriber } from '@/lib/pro/subscribers'
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = checkProRateLimit(req, {
+      route: 'pro-auth-login',
+      limit: 10,
+      windowMs: 60_000,
+    })
+    if (!rateLimit.allowed) {
+      const res = err('Muitas tentativas de login. Aguarde um minuto e tente novamente.', 429)
+      res.headers.set('Retry-After', String(rateLimit.retryAfterSeconds))
+      return res
+    }
+
     const body = await req.json().catch(() => null)
     const email = typeof body?.email === 'string' ? body.email.trim() : ''
     const password = typeof body?.password === 'string' ? body.password : ''
@@ -24,7 +36,11 @@ export async function POST(req: NextRequest) {
       plan: subscriber.plan,
       subscription_status: subscriber.subscription_status,
     })
-    res.cookies.set(PRO_AUTH_COOKIE, createProSessionToken(subscriber.id), proSessionCookieOptions())
+    res.cookies.set(
+      PRO_AUTH_COOKIE,
+      createProSessionToken(subscriber.id, subscriber.session_version),
+      proSessionCookieOptions(),
+    )
     return res
   } catch (e) {
     return handleError(e)

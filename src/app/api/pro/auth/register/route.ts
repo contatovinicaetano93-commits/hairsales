@@ -5,6 +5,7 @@ import {
   createProSessionToken,
   proSessionCookieOptions,
 } from '@/lib/pro/auth'
+import { checkProRateLimit } from '@/lib/pro/rate-limit'
 import { createSubscriber, findSubscriberByEmail } from '@/lib/pro/subscribers'
 import { isStripeConfigured } from '@/lib/pro/stripe'
 
@@ -22,6 +23,17 @@ function allowDemoRegister() {
  */
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = checkProRateLimit(req, {
+      route: 'pro-auth-register',
+      limit: 5,
+      windowMs: 60_000,
+    })
+    if (!rateLimit.allowed) {
+      const res = err('Muitas tentativas de cadastro. Aguarde um minuto e tente novamente.', 429)
+      res.headers.set('Retry-After', String(rateLimit.retryAfterSeconds))
+      return res
+    }
+
     if (isStripeConfigured() && !allowDemoRegister()) {
       return err(
         'Assine Standard (R$ 29,90) ou Pro (R$ 199,90) na landing antes de criar a conta.',
@@ -57,7 +69,11 @@ export async function POST(req: NextRequest) {
       subscription_status: subscriber.subscription_status,
       demo: true,
     })
-    res.cookies.set(PRO_AUTH_COOKIE, createProSessionToken(subscriber.id), proSessionCookieOptions())
+    res.cookies.set(
+      PRO_AUTH_COOKIE,
+      createProSessionToken(subscriber.id, subscriber.session_version),
+      proSessionCookieOptions(),
+    )
     return res
   } catch (e) {
     return handleError(e)

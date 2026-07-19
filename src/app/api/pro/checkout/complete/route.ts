@@ -67,7 +67,11 @@ export async function POST(req: NextRequest) {
       subscription_status: subscriber.subscription_status,
       plan_label: labelForDbPlan(subscriber.plan),
     })
-    res.cookies.set(PRO_AUTH_COOKIE, createProSessionToken(subscriber.id), proSessionCookieOptions())
+    res.cookies.set(
+      PRO_AUTH_COOKIE,
+      createProSessionToken(subscriber.id, subscriber.session_version),
+      proSessionCookieOptions(),
+    )
     return res
   } catch (e) {
     captureHairsalesException(e, subscriber, {
