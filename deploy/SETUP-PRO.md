@@ -75,6 +75,12 @@ Stripe (obrigatório para cobrar assinaturas — pagar antes do cadastro):
 Fluxo: landing → Checkout Stripe → `/pro/completar-cadastro` → conta ativa.  
 Painel da equipe (`/login`) continua com acesso normal (sem estes planos).
 
+Sentry (opcional, recomendado no projeto Vercel HairSales):
+
+| Var | Uso |
+|-----|-----|
+| `SENTRY_PROJECT` | Projeto Sentry para uploads/eventos; use `hairsales` (ou o slug escolhido). Sem essa var, o build mantém o fallback `rom-brasil`. |
+
 WhatsApp Cloud (só Pro):
 
 | Var | Uso |

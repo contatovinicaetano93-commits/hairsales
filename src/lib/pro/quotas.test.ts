@@ -4,6 +4,7 @@ import {
   consumeAiUnits,
   isProAiDisabled,
   QuotaExceededError,
+  refundAiUnits,
 } from './quotas'
 
 type UsageRow = {
@@ -112,6 +113,22 @@ function installSqlMock(): void {
       })
     }
 
+    if (query.includes('update subscriber_ai_usage') && query.includes('greatest(0')) {
+      return runSerial(() => {
+        const units = values[0] as number
+        const subscriberId = values[1] as string
+        const day = values[2] as string
+        const existing = getUsage(subscriberId, day)
+        if (!existing) return []
+
+        setUsage(subscriberId, day, {
+          ...existing,
+          units_used: Math.max(0, existing.units_used - units),
+        })
+        return []
+      })
+    }
+
     if (query.includes('select units_used, briefing_done')) {
       const subscriberId = values[0] as string
       const day = values[1] as string
@@ -142,6 +159,26 @@ describe('AI_UNIT_COST', () => {
     expect(AI_UNIT_COST.question).toBe(1)
     expect(AI_UNIT_COST.client_brief).toBe(2)
     expect(AI_UNIT_COST.briefing).toBe(5)
+  })
+})
+
+describe('refundAiUnits', () => {
+  it('devolve unidades sem deixar o uso diário negativo', async () => {
+    setUsage(SUBSCRIBER_ID, TODAY, { units_used: 3, briefing_done: false })
+
+    await refundAiUnits(SUBSCRIBER_ID, 5)
+
+    expect(getUsage(SUBSCRIBER_ID, TODAY)).toEqual({
+      units_used: 0,
+      briefing_done: false,
+    })
+  })
+
+  it('não toca no banco para valores inválidos ou zerados', async () => {
+    await refundAiUnits(SUBSCRIBER_ID, 0)
+    await refundAiUnits(SUBSCRIBER_ID, Number.NaN)
+
+    expect(sqlMock).not.toHaveBeenCalled()
   })
 })
 

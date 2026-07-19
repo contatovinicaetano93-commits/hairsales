@@ -4,7 +4,7 @@ import { buildProHoje } from '@/lib/pro/hoje'
 import { getSql } from '@/lib/db'
 import { assertCan } from '@/lib/pro/entitlements'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
-import { consumeAiUnits, QuotaExceededError } from '@/lib/pro/quotas'
+import { consumeAiUnits, QuotaExceededError, refundAiUnits } from '@/lib/pro/quotas'
 
 function assistantSystemPrompt(displayName: string) {
   const brand = getProBrand()
@@ -104,8 +104,9 @@ export async function askSubscriberAssistant(
   }
 
   const answer = rulesAnswer(question, context)
-  await logAssistantMessage(subscriber.id, question, answer, units)
-  return { answer, source: 'rules', units }
+  await refundAiUnits(subscriber.id, units)
+  await logAssistantMessage(subscriber.id, question, answer, 0)
+  return { answer, source: 'rules', units: 0 }
 }
 
 async function logAssistantMessage(

@@ -158,3 +158,22 @@ export async function consumeAiUnits(
 
   return { units, status: await getQuotaStatus(subscriberId, plan) }
 }
+
+/** Devolve unidades reservadas quando o caminho de IA não gera resposta. */
+export async function refundAiUnits(
+  subscriberId: string,
+  units: number,
+  day = todayIso(),
+): Promise<void> {
+  const refundUnits = Math.floor(units)
+  if (!Number.isFinite(refundUnits) || refundUnits <= 0) return
+
+  const sql = getSql()
+  await sql`
+    update subscriber_ai_usage
+    set units_used = greatest(0, units_used - ${refundUnits}),
+        updated_at = now()
+    where subscriber_id = ${subscriberId}
+      and day = ${day}
+  `
+}

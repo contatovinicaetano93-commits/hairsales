@@ -9,6 +9,7 @@ import {
   createSubscriber,
   findSubscriberByEmail,
   hasActiveSubscription,
+  type SubscriberPlan,
   type SubscriberRow,
   type SubscriptionStatus,
 } from '@/lib/pro/subscribers'
@@ -51,6 +52,51 @@ export function subscriptionStatusFromStripe(
       throw new Error(`Status Stripe inválido: ${exhaustive}`)
     }
   }
+}
+
+function stripeObjectId(value: string | { id?: string } | null | undefined): string | null {
+  if (!value) return null
+  return typeof value === 'string' ? value : value.id ?? null
+}
+
+export function planFromStripeSubscription(
+  subscription: Stripe.Subscription,
+): SubscriberPlan | null {
+  const priceIds = new Set(subscription.items.data.map((item) => item.price.id))
+  const proPrice = stripePriceIdForPlan('pro')
+  if (proPrice && priceIds.has(proPrice)) return 'pro'
+
+  const standardPrice = stripePriceIdForPlan('standard')
+  if (standardPrice && priceIds.has(standardPrice)) return 'standard'
+
+  return null
+}
+
+export async function resolveSubscriberIdForFailedInvoice(
+  invoice: Stripe.Invoice,
+): Promise<string | null> {
+  const subscriptionDetails = invoice.parent?.subscription_details
+  const metadataSubscriberId = subscriptionDetails?.metadata?.subscriber_id?.trim()
+  if (metadataSubscriberId) return metadataSubscriberId
+
+  const subscriptionId = stripeObjectId(subscriptionDetails?.subscription)
+  if (subscriptionId) {
+    const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
+    const subscriberId = subscription.metadata?.subscriber_id?.trim()
+    if (subscriberId) return subscriberId
+  }
+
+  const customerId = stripeObjectId(invoice.customer)
+  if (!customerId) return null
+
+  const sql = getSql()
+  const rows = (await sql`
+    select id
+    from subscribers
+    where stripe_customer_id = ${customerId}
+    limit 1
+  `) as { id: string }[]
+  return rows[0]?.id ?? null
 }
 
 function appBaseUrl() {
