@@ -1,74 +1,95 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
-const HERO_VIDEOS = [
-  '/landing/hero-1.mp4',
-  '/landing/hero-2.mp4',
-  '/landing/hero-3.mp4',
-] as const
+const COLUMNS: { id: string; images: string[] }[] = [
+  {
+    id: 'nails',
+    images: [
+      '/landing/slides/nails/frame-01.jpg',
+      '/landing/slides/nails/frame-02.jpg',
+      '/landing/slides/nails/frame-03.jpg',
+      '/landing/slides/nails/frame-04.jpg',
+      '/landing/slides/nails/frame-05.jpg',
+      '/landing/slides/nails/frame-06.jpg',
+      '/landing/slides/nails/frame-07.jpg',
+      '/landing/slides/nails/frame-08.jpg',
+      '/landing/slides/nails/frame-09.jpg',
+    ],
+  },
+  {
+    id: 'hair',
+    images: [
+      '/landing/slides/hair/frame-01.jpg',
+      '/landing/slides/hair/frame-02.jpg',
+      '/landing/slides/hair/frame-03.jpg',
+      '/landing/slides/hair/frame-04.jpg',
+      '/landing/slides/hair/frame-05.jpg',
+      '/landing/slides/hair/frame-06.jpg',
+      '/landing/slides/hair/frame-07.jpg',
+    ],
+  },
+  {
+    id: 'barber',
+    images: [
+      '/landing/slides/barber/frame-01.jpg',
+      '/landing/slides/barber/frame-03.jpg',
+      '/landing/slides/barber/frame-05.jpg',
+      '/landing/slides/barber/frame-07.jpg',
+      '/landing/slides/barber/frame-09.jpg',
+      '/landing/slides/barber/frame-11.jpg',
+      '/landing/slides/barber/frame-13.jpg',
+      '/landing/slides/barber/frame-15.jpg',
+    ],
+  },
+]
 
-function forcePlay(video: HTMLVideoElement) {
-  video.muted = true
-  video.defaultMuted = true
-  video.playsInline = true
-  video.setAttribute('muted', '')
-  video.setAttribute('playsinline', '')
-  video.setAttribute('webkit-playsinline', '')
-  const play = () => {
-    void video.play().catch(() => {
-      // Safari pode adiar; tenta de novo no próximo frame
-      requestAnimationFrame(() => {
-        void video.play().catch(() => {})
-      })
-    })
-  }
-  if (video.readyState >= 2) play()
-  else {
-    video.addEventListener('loadeddata', play, { once: true })
-    video.addEventListener('canplay', play, { once: true })
-  }
-}
+const INTERVAL_MS = 3200
 
-/** Três vídeos em grade full-bleed, mute/loop/autoplay, atrás do texto do hero. */
-export function HeroVideoBackdrop() {
-  const refs = useRef<(HTMLVideoElement | null)[]>([])
+function PhotoColumn({ images, offsetMs }: { images: string[]; offsetMs: number }) {
+  const [index, setIndex] = useState(0)
 
   useEffect(() => {
-    const videos = refs.current.filter(Boolean) as HTMLVideoElement[]
-    for (const video of videos) forcePlay(video)
-
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        for (const video of videos) forcePlay(video)
-      }
+    if (images.length <= 1) return
+    let timer: ReturnType<typeof setInterval> | undefined
+    const start = window.setTimeout(() => {
+      timer = setInterval(() => {
+        setIndex((i) => (i + 1) % images.length)
+      }, INTERVAL_MS)
+    }, offsetMs)
+    return () => {
+      window.clearTimeout(start)
+      if (timer) clearInterval(timer)
     }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [])
+  }, [images.length, offsetMs])
 
+  return (
+    <div className="relative min-h-0 overflow-hidden bg-surface">
+      {images.map((src, i) => (
+        <Image
+          key={src}
+          src={src}
+          alt=""
+          fill
+          sizes="33vw"
+          priority={i === 0}
+          className={`object-cover transition-opacity duration-1000 ease-out ${
+            i === index ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** Três colunas de fotos em sequência (estilo vitrine), atrás do texto do hero. */
+export function HeroVideoBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <div className="absolute inset-0 grid grid-cols-3">
-        {HERO_VIDEOS.map((src, i) => (
-          <div key={src} className="relative min-h-0 overflow-hidden bg-surface">
-            <video
-              ref={(el) => {
-                refs.current[i] = el
-              }}
-              className="h-full w-full object-cover"
-              src={src}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              controls={false}
-              disablePictureInPicture
-              onLoadedData={(e) => forcePlay(e.currentTarget)}
-              onCanPlay={(e) => forcePlay(e.currentTarget)}
-            />
-          </div>
+        {COLUMNS.map((col, i) => (
+          <PhotoColumn key={col.id} images={col.images} offsetMs={i * 700} />
         ))}
       </div>
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(250,250,247,0.72)_0%,rgba(250,250,247,0.55)_40%,rgba(250,250,247,0.88)_100%)]" />
