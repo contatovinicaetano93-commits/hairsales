@@ -36,7 +36,7 @@ Obrigatórias em **production**:
 | Var | Uso |
 |-----|-----|
 | `DATABASE_URL` | Neon |
-| `PRO_DATA_SECRET` | Cookie de sessão + criptografia do token da agenda (`openssl rand -hex 32`) |
+| `PRO_DATA_SECRET` | Cookie de sessão + criptografia do token da agenda (`openssl rand -hex 32`); deve ser único e nunca o `CRON_SECRET` |
 | `NEXT_PUBLIC_APP_URL` | Return URLs Stripe / links absolutos |
 | `ANTHROPIC_API_KEY` | Assistente / briefing |
 
@@ -66,6 +66,7 @@ WhatsApp Cloud (só Pro):
 | Var | Uso |
 |-----|-----|
 | `WHATSAPP_PRO_VERIFY_TOKEN` | Verify do webhook Meta |
+| `WHATSAPP_PRO_APP_SECRET` | Verificação HMAC `X-Hub-Signature-256` do POST do webhook Meta |
 | `META_APP_ID` / `META_APP_SECRET` / `META_EMBEDDED_SIGNUP_CONFIG_ID` | Embedded Signup (opcional) |
 
 **Não** ligar em production sem necessidade:
