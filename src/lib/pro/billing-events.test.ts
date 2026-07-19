@@ -12,8 +12,8 @@ describe('billing events', () => {
     vi.resetModules()
   })
 
-  it('claims a new Stripe event', async () => {
-    sqlMock.mockResolvedValueOnce([{ stripe_event_id: 'evt_1' }])
+  it('claims a new Stripe event as pending', async () => {
+    sqlMock.mockResolvedValueOnce([{ claimed: true, reason: null }])
 
     const { claimBillingEvent } = await import('./billing-events')
     const result = await claimBillingEvent('evt_1', 'checkout.session.completed', 'sub-1', {
@@ -22,15 +22,29 @@ describe('billing events', () => {
 
     expect(result).toEqual({ claimed: true })
     expect(sqlMock).toHaveBeenCalledTimes(1)
+    expect(sqlMock.mock.calls[0]).toContain('pending')
   })
 
   it('returns claimed false for duplicate Stripe events', async () => {
-    sqlMock.mockResolvedValueOnce([])
+    sqlMock.mockResolvedValueOnce([{ claimed: false, reason: 'duplicate' }])
 
     const { claimBillingEvent } = await import('./billing-events')
     const result = await claimBillingEvent('evt_1', 'checkout.session.completed')
 
-    expect(result).toEqual({ claimed: false })
+    expect(result).toEqual({ claimed: false, reason: 'duplicate' })
+  })
+
+  it('allows error and stale pending events to be reclaimed', async () => {
+    sqlMock.mockResolvedValueOnce([{ claimed: true, reason: null }])
+
+    const { claimBillingEvent } = await import('./billing-events')
+    const result = await claimBillingEvent('evt_1', 'checkout.session.completed')
+    const sqlText = sqlMock.mock.calls[0][0].join('')
+
+    expect(result).toEqual({ claimed: true })
+    expect(sqlText).toContain("subscriber_billing_events.status = 'error'")
+    expect(sqlText).toContain("subscriber_billing_events.status = 'pending'")
+    expect(sqlText).toContain("interval '5 minutes'")
   })
 
   it('marks and deletes billing event rows', async () => {
