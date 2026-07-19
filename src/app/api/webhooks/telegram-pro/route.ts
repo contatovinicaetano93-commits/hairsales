@@ -1,15 +1,16 @@
 import { NextRequest } from 'next/server'
 import { ok, err } from '@/lib/api-response'
 import { sendTelegramMessage } from '@/lib/telegram/bot'
-import { verifyTelegramWebhook } from '@/lib/webhooks'
+import { isProduction } from '@/lib/env'
 import {
   findSubscriberByTelegramChat,
   linkTelegramByCode,
 } from '@/lib/pro/telegram'
+import { getTelegramProBotToken, getTelegramProWebhookSecret } from '@/lib/pro/secrets'
 import { askSubscriberAssistant } from '@/lib/pro/assistant'
 import { generateMorningBriefing } from '@/lib/pro/briefing'
 import { buildProHoje } from '@/lib/pro/hoje'
-import { getBrand } from '@/lib/brand'
+import { getProBrand } from '@/lib/pro/brand'
 
 interface TelegramUpdate {
   message?: {
@@ -19,7 +20,7 @@ interface TelegramUpdate {
 }
 
 function proBotToken() {
-  return process.env.TELEGRAM_PRO_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN
+  return getTelegramProBotToken()
 }
 
 async function reply(chatId: number, text: string) {
@@ -29,13 +30,12 @@ async function reply(chatId: number, text: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const secret = process.env.TELEGRAM_PRO_WEBHOOK_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET
+  const secret = getTelegramProWebhookSecret()
   if (secret) {
     const header = req.headers.get('x-telegram-bot-api-secret-token')
     if (header !== secret) return err('Não autorizado', 401)
-  } else {
-    const webhook = verifyTelegramWebhook(req)
-    if (!webhook.ok) return err(webhook.reason, 401)
+  } else if (isProduction()) {
+    return err('TELEGRAM_PRO_WEBHOOK_SECRET não configurado', 401)
   }
 
   const update = (await req.json().catch(() => null)) as TelegramUpdate | null
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const text = update?.message?.text?.trim()
   if (!chatId || !text) return ok({ ignored: true })
 
-  const brand = getBrand()
+  const brand = getProBrand()
   const start = text.match(/^\/start(?:\s+([a-f0-9]{6}))?/i)
   if (start) {
     const code = start[1]
@@ -55,13 +55,13 @@ export async function POST(req: NextRequest) {
       }
       await reply(
         chatId,
-        `Pronto, ${sub.display_name}! Sou ${brand.aiPersonaName}.\nPergunte sobre sua agenda, meta ou reativação.\nComandos: /hoje · /briefing`,
+        `Pronto, ${sub.display_name}! Sou o ${brand.name}.\nPergunte sobre sua agenda, meta ou reativação.\nComandos: /hoje · /briefing`,
       )
       return ok({ replied: true, mode: 'linked' })
     }
     await reply(
       chatId,
-      `Oi! Sou ${brand.aiPersonaName} — assistente do profissional.\nPara vincular sua conta, gere um código em /pro/conectar e envie:\n/start SEUCODIGO`,
+      `Oi! Sou o ${brand.name} — assistente do profissional.\nPara vincular sua conta, gere um código em /pro/conectar e envie:\n/start SEUCODIGO`,
     )
     return ok({ replied: true, mode: 'start' })
   }

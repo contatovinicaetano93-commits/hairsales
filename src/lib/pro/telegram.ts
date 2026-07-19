@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto'
 import { getSql } from '@/lib/db'
 import { sendTelegramMessage } from '@/lib/telegram/bot'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
+import { getTelegramProBotToken } from '@/lib/pro/secrets'
 
 export async function createTelegramLinkCode(subscriberId: string): Promise<{
   code: string
@@ -72,7 +73,7 @@ export async function unlinkTelegram(subscriberId: string) {
 
 export async function pushBriefingToTelegram(subscriber: SubscriberRow, text: string) {
   if (!subscriber.telegram_chat_id) return { sent: false as const, reason: 'no_chat' }
-  const token = process.env.TELEGRAM_PRO_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN
+  const token = getTelegramProBotToken()
   if (!token) return { sent: false as const, reason: 'no_token' }
   await sendTelegramMessage(subscriber.telegram_chat_id, text, token)
   return { sent: true as const }
