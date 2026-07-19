@@ -12,17 +12,13 @@ import {
   pbkdf2 as nodePbkdf2,
 } from 'crypto'
 import { promisify } from 'util'
+import { getProDataSecret } from '@/lib/pro/secrets'
 
 const ALGO = 'aes-256-gcm'
 const pbkdf2Async = promisify(nodePbkdf2)
 
 function getSecret() {
-  const secret = process.env.PRO_DATA_SECRET?.trim() || process.env.CRON_SECRET?.trim()
-  if (secret) return secret
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('PRO_DATA_SECRET é obrigatório em produção para o app do profissional')
-  }
-  return 'dev-pro-data-secret-not-for-production'
+  return getProDataSecret()
 }
 
 function deriveKey(): Buffer {

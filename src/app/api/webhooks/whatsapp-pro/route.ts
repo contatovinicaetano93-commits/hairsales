@@ -7,6 +7,8 @@ import {
 } from '@/lib/pro/whatsapp-cloud'
 import { askSubscriberAssistant } from '@/lib/pro/assistant'
 import { getSql } from '@/lib/db'
+import { getWhatsAppProAppSecret } from '@/lib/pro/secrets'
+import { verifyMetaWebhookSignature } from '@/lib/pro/whatsapp-signature'
 
 /**
  * Webhook Cloud API do número do assinante Pro.
@@ -27,7 +29,22 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null)
+  const rawBody = Buffer.from(await req.arrayBuffer())
+  const appSecret = getWhatsAppProAppSecret()
+
+  if (appSecret) {
+    const verified = verifyMetaWebhookSignature(
+      rawBody,
+      req.headers.get('x-hub-signature-256'),
+      appSecret,
+    )
+    if (!verified) return err('Assinatura inválida', 401)
+  } else if (process.env.NODE_ENV === 'production') {
+    // Meta signs Cloud API webhooks with the app secret; fail closed if it was not configured.
+    return err('WHATSAPP_PRO_APP_SECRET não configurado', 401)
+  }
+
+  const body = parseWebhookBody(rawBody)
   if (!body) return ok({ ignored: true })
 
   try {
@@ -92,5 +109,13 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('[whatsapp-pro webhook]', e)
     return ok({ replied: false, error: e instanceof Error ? e.message : String(e) })
+  }
+}
+
+function parseWebhookBody(rawBody: Buffer) {
+  try {
+    return JSON.parse(rawBody.toString('utf8') || 'null')
+  } catch {
+    return null
   }
 }

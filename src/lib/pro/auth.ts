@@ -1,16 +1,13 @@
 import type { NextRequest } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { findSubscriberById, type SubscriberRow } from '@/lib/pro/subscribers'
+import { getProDataSecret } from '@/lib/pro/secrets'
 
 export const PRO_AUTH_COOKIE = 'vitrini_pro_session'
+const PRO_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 
 function sessionSecret() {
-  const secret = process.env.PRO_DATA_SECRET?.trim() || process.env.CRON_SECRET?.trim()
-  if (secret) return secret
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('PRO_DATA_SECRET é obrigatório em produção')
-  }
-  return 'dev-pro-session-secret'
+  return getProDataSecret()
 }
 
 function sign(payload: string) {
@@ -18,7 +15,8 @@ function sign(payload: string) {
 }
 
 export function createProSessionToken(subscriberId: string) {
-  const payload = Buffer.from(JSON.stringify({ sid: subscriberId, v: 1 }), 'utf8').toString('base64url')
+  const exp = Math.floor(Date.now() / 1000) + PRO_SESSION_MAX_AGE_SECONDS
+  const payload = Buffer.from(JSON.stringify({ sid: subscriberId, v: 1, exp }), 'utf8').toString('base64url')
   return `${payload}.${sign(payload)}`
 }
 
@@ -30,7 +28,14 @@ export function parseProSessionToken(token: string): string | null {
   const b = Buffer.from(expected)
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null
   try {
-    const json = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { sid?: string }
+    const json = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
+      sid?: string
+      exp?: unknown
+    }
+    if (json.exp !== undefined) {
+      if (typeof json.exp !== 'number' || !Number.isFinite(json.exp)) return null
+      if (json.exp < Math.floor(Date.now() / 1000)) return null
+    }
     return typeof json.sid === 'string' ? json.sid : null
   } catch {
     return null
@@ -59,7 +64,7 @@ export async function requireProSession(req: NextRequest) {
   return { ok: true as const, session }
 }
 
-export function proSessionCookieOptions(maxAge = 60 * 60 * 24 * 30) {
+export function proSessionCookieOptions(maxAge = PRO_SESSION_MAX_AGE_SECONDS) {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
