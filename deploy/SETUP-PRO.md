@@ -81,6 +81,12 @@ Fluxo: landing → Checkout Stripe → `/pro/completar-cadastro` → conta ativa
 Painel da equipe (`/login`) continua com acesso normal (sem estes planos).
 Em `APP_SURFACE=hairsales`, `/login` e as rotas ROM redirecionam para `/pro/login`; em `APP_SURFACE=rom`, `/pro/*`, `/api/me/*`, `/api/pro/*` e webhooks Pro ficam bloqueados.
 
+Sentry (opcional, recomendado no projeto Vercel HairSales):
+
+| Var | Uso |
+|-----|-----|
+| `SENTRY_PROJECT` | Projeto Sentry para uploads/eventos; use `hairsales` (ou o slug escolhido). Sem essa var, o build mantém o fallback `rom-brasil`. |
+
 WhatsApp Cloud (só Pro):
 
 | Var | Uso |

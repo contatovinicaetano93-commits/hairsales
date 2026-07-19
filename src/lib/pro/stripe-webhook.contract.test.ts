@@ -12,6 +12,7 @@ describe('Stripe webhook contract', () => {
     expect(routeSource).toContain("case 'checkout.session.completed'")
     expect(routeSource).toContain("case 'customer.subscription.deleted'")
     expect(routeSource).toContain("case 'customer.subscription.updated'")
+    expect(routeSource).toContain("case 'invoice.payment_failed'")
   })
 
   it('maps Stripe subscription statuses into persisted subscriber statuses', () => {

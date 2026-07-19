@@ -2,7 +2,7 @@ import { askAI, isAiConfigured } from '@/lib/ai/client'
 import { getProBrand } from '@/lib/pro/brand'
 import { buildProHoje } from '@/lib/pro/hoje'
 import { assertCan } from '@/lib/pro/entitlements'
-import { consumeAiUnits, getQuotaStatus, QuotaExceededError } from '@/lib/pro/quotas'
+import { consumeAiUnits, getQuotaStatus, QuotaExceededError, refundAiUnits } from '@/lib/pro/quotas'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
 
 function briefingPrompt(name: string) {
@@ -96,5 +96,6 @@ export async function generateMorningBriefing(subscriber: SubscriberRow): Promis
     }
   }
 
-  return { briefing: rule, source: 'rules', units, already_done: false }
+  await refundAiUnits(subscriber.id, units)
+  return { briefing: rule, source: 'rules', units: 0, already_done: false }
 }

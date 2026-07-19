@@ -29,9 +29,11 @@ export class EntitlementError extends Error {
 }
 
 function hasActiveOrDemoStatus(subscriber: EntitledSubscriber): boolean {
+  if (subscriber.subscription_status === 'active') return true
+  if (subscriber.subscription_status !== 'none') return false
   return (
-    subscriber.subscription_status === 'active' ||
-    subscriber.subscription_status === 'none'
+    process.env.NODE_ENV !== 'production' ||
+    process.env.PRO_ALLOW_DEMO_ENTITLEMENTS?.trim() === '1'
   )
 }
 

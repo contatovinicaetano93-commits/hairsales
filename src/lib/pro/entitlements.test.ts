@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   EntitlementError,
   assertCan,
@@ -29,6 +29,29 @@ describe('entitlements', () => {
           expect(can(subscriber({ plan, subscription_status }), capability)).toBe(true)
         }
       }
+    }
+  })
+
+  it('blocks demo-only core capabilities in production unless explicitly enabled', () => {
+    const prevAllowDemo = process.env.PRO_ALLOW_DEMO_ENTITLEMENTS
+
+    try {
+      vi.stubEnv('NODE_ENV', 'production')
+      delete process.env.PRO_ALLOW_DEMO_ENTITLEMENTS
+
+      const demo = subscriber({ subscription_status: 'none' })
+      expect(can(demo, 'assistant')).toBe(false)
+      expect(can(demo, 'telegram')).toBe(false)
+      expect(can(demo, 'agenda_sync')).toBe(false)
+
+      process.env.PRO_ALLOW_DEMO_ENTITLEMENTS = '1'
+      expect(can(demo, 'assistant')).toBe(true)
+      expect(can(demo, 'telegram')).toBe(true)
+      expect(can(demo, 'agenda_sync')).toBe(true)
+    } finally {
+      vi.unstubAllEnvs()
+      if (prevAllowDemo === undefined) delete process.env.PRO_ALLOW_DEMO_ENTITLEMENTS
+      else process.env.PRO_ALLOW_DEMO_ENTITLEMENTS = prevAllowDemo
     }
   })
 
