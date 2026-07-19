@@ -18,6 +18,7 @@ const ENV_KEYS = [
   'ROM_STOCK_PASSWORD',
   'ROM_PANEL',
   'NEXT_PUBLIC_ROM_PANEL',
+  'VERCEL_ENV',
 ] as const
 
 const snapshot = new Map<string, string | undefined>()
@@ -92,6 +93,27 @@ describe('auth dual login', () => {
       user: 'EQUIPE-VITRINI',
       role: 'staff',
     })
+  })
+
+  it('não usa senha compartilhada como fallback em produção', async () => {
+    setEnv({
+      ROM_ADMIN_USER: undefined,
+      ROM_ADMIN_PASSWORD: '   ',
+      ROM_ACCESS_TOKEN: undefined,
+      ROM_STAFF_USER: undefined,
+      ROM_STAFF_PASSWORD: undefined,
+      ROM_FINANCE_PASSWORD: undefined,
+      ROM_STOCK_PASSWORD: undefined,
+      ROM_PANEL: 'vitrini',
+      NEXT_PUBLIC_ROM_PANEL: 'vitrini',
+      VERCEL_ENV: 'production',
+    })
+
+    expect(isAuthEnabled()).toBe(false)
+    expect(isStaffAuthConfigured()).toBe(false)
+    expect(validateCredentials('ADMIN-VITRINI', DEFAULT_SHARED_PASSWORD)).toBeNull()
+    expect(validateCredentials('EQUIPE-VITRINI', DEFAULT_SHARED_PASSWORD)).toBeNull()
+    await expect(createSessionToken('ADMIN-VITRINI', 'admin')).resolves.toBe('')
   })
 
   it('valida admin e staff com roles distintas', () => {
