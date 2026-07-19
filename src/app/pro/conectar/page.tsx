@@ -244,8 +244,8 @@ function PlanBlock() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('plan') === 'success') setMsg('Pagamento Pro recebido — atualizando plano…')
-    if (params.get('plan') === 'cancel') setMsg('Checkout Pro cancelado.')
+    if (params.get('plan') === 'success') setMsg('Pagamento recebido — atualizando plano…')
+    if (params.get('plan') === 'cancel') setMsg('Checkout cancelado.')
 
     Promise.all([
       fetch('/api/me/plan', { credentials: 'include' }).then((r) => r.json()),
@@ -296,7 +296,11 @@ function PlanBlock() {
       return
     }
     setPlan(json.data.plan)
-    setMsg(next === 'pro' ? 'Plano Pro ativo — WhatsApp Cloud liberado.' : 'Voltou para Free.')
+    setMsg(
+      next === 'pro'
+        ? 'Plano Pro ativo — WhatsApp Cloud liberado.'
+        : 'Voltou para Standard.',
+    )
   }
 
   return (
@@ -304,10 +308,10 @@ function PlanBlock() {
       title="Plano"
       summary={
         plan === 'free'
-          ? 'Free · Telegram + app · sem WhatsApp Cloud'
-          : 'Pro · 200 utility/mês inclusos'
+          ? 'Standard · R$ 29,90 · App + Telegram'
+          : 'Pro · R$ 199,90 · WhatsApp Cloud incluso'
       }
-      badge={plan}
+      badge={plan === 'free' ? 'standard' : 'pro'}
     >
       <div className="flex flex-wrap gap-2">
         {plan !== 'pro' && stripeEnabled && stripeProPrice && (
@@ -316,7 +320,7 @@ function PlanBlock() {
             onClick={() => setTo('pro', true)}
             className="rounded-xl bg-gold px-3 py-2 text-sm font-semibold"
           >
-            Assinar Pro (Stripe)
+            Upgrade Pro · R$ 199,90
           </button>
         )}
         {plan !== 'pro' && allowed && (
@@ -334,7 +338,7 @@ function PlanBlock() {
             onClick={() => setTo('free', false)}
             className="rounded-xl border border-border px-3 py-2 text-sm"
           >
-            Voltar Free
+            Voltar Standard (demo)
           </button>
         )}
         {stripeEnabled && hasCustomer && (
@@ -347,6 +351,9 @@ function PlanBlock() {
           </button>
         )}
       </div>
+      <p className="mt-3 text-xs font-medium text-muted">
+        Standard R$ 29,90/mês · Pro R$ 199,90/mês. Painel da equipe não usa estes planos.
+      </p>
       {msg && <p className="mt-2 text-xs text-muted">{msg}</p>}
     </ConnectCard>
   )
@@ -535,7 +542,7 @@ function WhatsappBlock() {
       badge={connected ? 'ativo' : plan === 'pro' ? 'pro' : 'free'}
     >
       <p className="text-sm text-muted">
-        Free usa só Telegram. Em dev, token <code className="text-gold-strong">mock</code>.
+        Standard usa Telegram. Em dev, token <code className="text-gold-strong">mock</code>.
       </p>
       {usage && plan === 'pro' && (
         <p className="mt-2 text-xs text-muted">
@@ -804,7 +811,7 @@ function TelegramBlock() {
       summary={
         linked
           ? 'Assistente vinculada no Telegram'
-          : 'Canal grátis — briefing e perguntas no Telegram'
+          : 'Canal incluso no Standard — briefing e perguntas no Telegram'
       }
       badge={linked ? 'vinculado' : undefined}
     >

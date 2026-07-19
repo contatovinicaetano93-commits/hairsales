@@ -4,35 +4,52 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CalendarDays, MessageCircle, Sparkles } from 'lucide-react'
 import { getProBrand } from '@/lib/pro/brand'
+import type { ProPublicPlanId } from '@/lib/pro/plan-catalog'
 import { HERO_CARDS, LANDING_NAV, type LandingModalId } from './landing-content'
 import { ProInfoModal } from './ProInfoModal'
 
-type AuthMode = 'login' | 'register'
+type AuthMode = 'login' | 'subscribe'
 
 export function ProLanding() {
   const brand = getProBrand()
   const formRef = useRef<HTMLDivElement>(null)
   const [modal, setModal] = useState<LandingModalId | null>(null)
   const [mode, setMode] = useState<AuthMode>('login')
-  const [displayName, setDisplayName] = useState('')
+  const [subscribePlan, setSubscribePlan] = useState<ProPublicPlanId>('standard')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [selectedCard, setSelectedCard] = useState<'login' | 'register'>('login')
+  const [selectedCard, setSelectedCard] = useState<string>('login')
 
-  function openAuth(next: AuthMode) {
-    setMode(next)
-    setSelectedCard(next)
-    setError(null)
+  function scrollToForm() {
     requestAnimationFrame(() => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
   }
 
+  function openLogin() {
+    setMode('login')
+    setSelectedCard('login')
+    setError(null)
+    scrollToForm()
+  }
+
+  function openSubscribe(plan: ProPublicPlanId) {
+    setMode('subscribe')
+    setSubscribePlan(plan)
+    setSelectedCard(plan)
+    setError(null)
+    scrollToForm()
+  }
+
   function onHeroCard(id: (typeof HERO_CARDS)[number]['id']) {
-    if (id === 'login' || id === 'register') {
-      openAuth(id)
+    if (id === 'login') {
+      openLogin()
+      return
+    }
+    if (id === 'standard' || id === 'pro') {
+      openSubscribe(id)
       return
     }
     setModal(id)
@@ -43,23 +60,37 @@ export function ProLanding() {
     setLoading(true)
     setError(null)
     try {
-      const path = mode === 'login' ? '/api/pro/auth/login' : '/api/pro/auth/register'
-      const body =
-        mode === 'login'
-          ? { email, password }
-          : { display_name: displayName, email, password }
-      const res = await fetch(path, {
+      if (mode === 'login') {
+        const res = await fetch('/api/pro/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          credentials: 'include',
+        })
+        const json = await res.json()
+        if (!res.ok || json.error) {
+          setError(json.error ?? 'Falha no acesso')
+          return
+        }
+        window.location.assign('/pro/hoje')
+        return
+      }
+
+      const res = await fetch('/api/pro/checkout/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        credentials: 'include',
+        body: JSON.stringify({ email, plan: subscribePlan }),
       })
       const json = await res.json()
       if (!res.ok || json.error) {
-        setError(json.error ?? 'Falha no acesso')
+        setError(json.error ?? 'Falha ao iniciar pagamento')
         return
       }
-      window.location.assign(mode === 'register' ? '/pro/conectar' : '/pro/hoje')
+      if (json.data?.checkout_url) {
+        window.location.assign(json.data.checkout_url)
+        return
+      }
+      setError('Checkout sem URL')
     } catch (err) {
       setError(String(err))
     } finally {
@@ -68,10 +99,21 @@ export function ProLanding() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('checkout') === 'cancel') {
+      setError('Checkout cancelado. Escolha o plano quando quiser.')
+      const plan = params.get('plan')
+      if (plan === 'pro' || plan === 'standard') openSubscribe(plan)
+      else openSubscribe('standard')
+    }
     const hash = window.location.hash.replace('#', '')
-    if (hash === 'entrar' || hash === 'login') openAuth('login')
-    if (hash === 'criar' || hash === 'register') openAuth('register')
+    if (hash === 'entrar' || hash === 'login') openLogin()
+    if (hash === 'standard' || hash === 'assinar') openSubscribe('standard')
+    if (hash === 'pro') openSubscribe('pro')
   }, [])
+
+  const planPrice = subscribePlan === 'pro' ? 'R$ 199,90/mês' : 'R$ 29,90/mês'
+  const planLabel = subscribePlan === 'pro' ? 'Pro' : 'Standard'
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -117,7 +159,7 @@ export function ProLanding() {
             </button>
             <button
               type="button"
-              onClick={() => openAuth('login')}
+              onClick={openLogin}
               className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3.5 py-2 text-sm font-bold text-background transition hover:bg-foreground/90"
             >
               Entrar
@@ -149,7 +191,7 @@ export function ProLanding() {
             <span className="text-gold-strong">organizado</span> pela assistente
           </h1>
           <p className="mt-4 max-w-xl text-base font-medium leading-relaxed text-muted sm:text-lg">
-            {brand.tagline} App + Telegram no Free; WhatsApp Cloud no Pro.
+            {brand.tagline} Standard R$ 29,90 · Pro R$ 199,90.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-muted">
             <span className="inline-flex items-center gap-1.5">
@@ -159,15 +201,14 @@ export function ProLanding() {
               <CalendarDays className="h-4 w-4 text-gold-strong" /> Avec · Trinks
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <MessageCircle className="h-4 w-4 text-gold-strong" /> Telegram incluso
+              <MessageCircle className="h-4 w-4 text-gold-strong" /> Telegram no Standard
             </span>
           </div>
         </section>
 
         <section className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Começar">
           {HERO_CARDS.map((card, i) => {
-            const active =
-              (card.id === 'login' || card.id === 'register') && selectedCard === card.id
+            const active = selectedCard === card.id
             return (
               <button
                 key={card.id}
@@ -203,33 +244,48 @@ export function ProLanding() {
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-gold-strong">
-                Acesso
+                {mode === 'login' ? 'Acesso' : 'Assinatura'}
               </p>
               <h2 className="mt-1 font-serif text-2xl font-bold tracking-tight">
-                {mode === 'login' ? 'Entrar' : 'Criar conta'}
+                {mode === 'login' ? 'Entrar' : `Assinar ${planLabel}`}
               </h2>
             </div>
             <Sparkles className="h-5 w-5 text-gold-strong" />
           </div>
           <p className="mt-2 text-sm font-medium text-muted">
-            Conta do profissional — entre ou crie a sua.
+            {mode === 'login'
+              ? 'Conta do profissional — entre com e-mail e senha.'
+              : `${planPrice}. Pague no Stripe e depois conclua nome e senha.`}
           </p>
 
+          {mode === 'subscribe' && (
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSubscribePlan('standard')}
+                className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold transition ${
+                  subscribePlan === 'standard'
+                    ? 'border-gold bg-gold/15 text-gold-strong'
+                    : 'border-border text-muted'
+                }`}
+              >
+                Standard
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubscribePlan('pro')}
+                className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold transition ${
+                  subscribePlan === 'pro'
+                    ? 'border-gold bg-gold/15 text-gold-strong'
+                    : 'border-border text-muted'
+                }`}
+              >
+                Pro
+              </button>
+            </div>
+          )}
+
           <form onSubmit={submit} className="mt-5 flex flex-col gap-3">
-            {mode === 'register' && (
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[0.7rem] font-bold uppercase tracking-[0.14em] text-muted">
-                  Seu nome na agenda
-                </span>
-                <input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  required
-                  placeholder="Como está no Avec / Trinks"
-                  className="rounded-2xl border border-border bg-surface px-4 py-3.5 text-sm font-medium outline-none focus:border-gold"
-                />
-              </label>
-            )}
             <label className="flex flex-col gap-1.5">
               <span className="text-[0.7rem] font-bold uppercase tracking-[0.14em] text-muted">
                 E-mail
@@ -243,36 +299,42 @@ export function ProLanding() {
                 className="rounded-2xl border border-border bg-surface px-4 py-3.5 text-sm font-medium outline-none focus:border-gold"
               />
             </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[0.7rem] font-bold uppercase tracking-[0.14em] text-muted">
-                Senha
-              </span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                className="rounded-2xl border border-border bg-surface px-4 py-3.5 text-sm font-medium outline-none focus:border-gold"
-              />
-            </label>
+            {mode === 'login' && (
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[0.7rem] font-bold uppercase tracking-[0.14em] text-muted">
+                  Senha
+                </span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  autoComplete="current-password"
+                  className="rounded-2xl border border-border bg-surface px-4 py-3.5 text-sm font-medium outline-none focus:border-gold"
+                />
+              </label>
+            )}
             {error && <p className="text-sm font-medium text-danger">{error}</p>}
             <button
               type="submit"
               disabled={loading}
               className="mt-1 rounded-2xl bg-gold px-4 py-3.5 text-sm font-bold text-foreground disabled:opacity-60"
             >
-              {loading ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Criar e conectar agenda'}
+              {loading
+                ? 'Aguarde…'
+                : mode === 'login'
+                  ? 'Entrar'
+                  : `Ir para pagamento · ${planPrice}`}
             </button>
           </form>
 
           <button
             type="button"
-            onClick={() => openAuth(mode === 'login' ? 'register' : 'login')}
+            onClick={() => (mode === 'login' ? openSubscribe('standard') : openLogin())}
             className="mt-4 text-sm font-semibold text-gold-strong underline-offset-2 hover:underline"
           >
-            {mode === 'login' ? 'Ainda não tenho conta' : 'Já tenho conta'}
+            {mode === 'login' ? 'Ainda não tenho conta — ver planos' : 'Já tenho conta — entrar'}
           </button>
 
           <p className="mt-6 text-xs font-medium text-muted">
@@ -284,7 +346,7 @@ export function ProLanding() {
         </section>
 
         <p className="mt-10 text-center text-xs font-medium text-muted">
-          {brand.name} · {brand.productLine} · um assinante = um profissional
+          {brand.name} · Standard R$ 29,90 · Pro R$ 199,90
         </p>
       </main>
 

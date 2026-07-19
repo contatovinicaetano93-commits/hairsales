@@ -19,10 +19,10 @@ export function ProInfoModal({
   onClose: () => void
 }) {
   const titleId = useId()
-  const [productTab, setProductTab] = useState(PRODUCT_TABS[0]?.id ?? 'free')
+  const [productTab, setProductTab] = useState(PRODUCT_TABS[0]?.id ?? 'standard')
 
   useEffect(() => {
-    if (openId === 'produtos') setProductTab('free')
+    if (openId === 'produtos') setProductTab('standard')
   }, [openId])
 
   useEffect(() => {

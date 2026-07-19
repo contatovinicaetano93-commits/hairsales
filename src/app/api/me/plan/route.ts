@@ -3,6 +3,7 @@ import { ok, err, handleError } from '@/lib/api-response'
 import { getSql } from '@/lib/db'
 import { requireProSession } from '@/lib/pro/auth'
 import { findSubscriberById, type SubscriberPlan } from '@/lib/pro/subscribers'
+import { labelForDbPlan, listProPlanOffers, stripePriceIdForPlan } from '@/lib/pro/plan-catalog'
 import { createProSubscriptionCheckout, isStripeConfigured } from '@/lib/pro/stripe'
 
 function allowSelfUpgrade() {
@@ -19,9 +20,17 @@ export async function GET(req: NextRequest) {
     if (!auth.ok) return err(auth.message, auth.status)
     return ok({
       plan: auth.session.subscriber.plan,
+      plan_label: labelForDbPlan(auth.session.subscriber.plan),
       self_upgrade_allowed: allowSelfUpgrade(),
       stripe_enabled: isStripeConfigured(),
-      stripe_pro_price_configured: Boolean(process.env.STRIPE_PRICE_PRO?.trim()),
+      stripe_standard_price_configured: Boolean(stripePriceIdForPlan('standard')),
+      stripe_pro_price_configured: Boolean(stripePriceIdForPlan('pro')),
+      offers: listProPlanOffers().map((p) => ({
+        id: p.id,
+        label: p.label,
+        amount_cents: p.amountCents,
+        price_label: p.priceLabel,
+      })),
     })
   } catch (e) {
     return handleError(e)

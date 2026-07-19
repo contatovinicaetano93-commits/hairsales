@@ -81,7 +81,7 @@ function NavLinks({
 export function ProShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const brand = getProBrand()
-  const isAuthPage = pathname === '/pro/login'
+  const isAuthPage = pathname === '/pro/login' || pathname === '/pro/completar-cadastro'
   const pageTitle =
     Object.entries(PAGE_TITLE).find(([path]) => pathname === path || pathname.startsWith(`${path}/`))?.[1] ??
     brand.name

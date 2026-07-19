@@ -40,12 +40,22 @@ export async function createSubscriber(input: {
   displayName: string
   email: string
   password: string
+  plan?: SubscriberPlan
+  stripeCustomerId?: string | null
 }): Promise<SubscriberRow> {
   const sql = getSql()
   const passwordHash = await hashPassword(input.password)
+  const plan = input.plan ?? 'free'
+  const stripeCustomerId = input.stripeCustomerId?.trim() || null
   const rows = (await sql`
-    insert into subscribers (display_name, email, password_hash)
-    values (${input.displayName.trim()}, ${input.email.trim().toLowerCase()}, ${passwordHash})
+    insert into subscribers (display_name, email, password_hash, plan, stripe_customer_id)
+    values (
+      ${input.displayName.trim()},
+      ${input.email.trim().toLowerCase()},
+      ${passwordHash},
+      ${plan},
+      ${stripeCustomerId}
+    )
     returning *
   `) as SubscriberRow[]
   return rows[0]!

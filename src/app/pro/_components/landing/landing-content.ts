@@ -38,10 +38,9 @@ export const LANDING_NAV: LandingNavItem[] = [
 
 export const PRODUCT_TABS: ProductTab[] = [
   {
-    id: 'free',
-    label: 'Plano Free',
-    description:
-      'App + Telegram para o profissional individual.',
+    id: 'standard',
+    label: 'Standard · R$ 29,90',
+    description: 'App + Telegram para o profissional individual. Assinatura mensal.',
     cards: [
       {
         title: 'App Hoje',
@@ -63,11 +62,11 @@ export const PRODUCT_TABS: ProductTab[] = [
       },
       {
         title: 'Telegram',
-        accent: 'Canal grátis incluso',
+        accent: 'Incluso no Standard',
         points: [
           'Vínculo com código no app',
           'Briefing e alertas no celular',
-          'Sem WhatsApp Cloud no Free',
+          'Sem WhatsApp Cloud',
         ],
       },
       {
@@ -81,16 +80,15 @@ export const PRODUCT_TABS: ProductTab[] = [
       },
     ],
     footer: {
-      badge: 'Comece agora',
-      title: 'Crie a conta e conecte Avec ou Trinks',
-      body: 'Validamos o seu nome na agenda. Um assinante = um profissional.',
+      badge: 'R$ 29,90/mês',
+      title: 'Pague e depois complete o cadastro',
+      body: 'Checkout Stripe → criar senha e conectar Avec ou Trinks.',
     },
   },
   {
     id: 'pro',
-    label: 'Plano Pro',
-    description:
-      'Tudo do Free com WhatsApp Cloud, mais cota de IA e packs de marketing.',
+    label: 'Pro · R$ 199,90',
+    description: 'Tudo do Standard + WhatsApp Cloud, mais cota de IA e packs de marketing.',
     cards: [
       {
         title: 'WhatsApp Cloud',
@@ -121,18 +119,18 @@ export const PRODUCT_TABS: ProductTab[] = [
       },
       {
         title: 'Assinatura',
-        accent: 'Stripe Checkout + Portal',
+        accent: 'R$ 199,90/mês',
         points: [
-          'Upgrade na aba Conectar',
-          'Cancelamento e faturas no Portal',
-          'Gestão da assinatura no app',
+          'Checkout antes do cadastro',
+          'Upgrade a partir do Standard',
+          'Portal Stripe para faturas e cancelamento',
         ],
       },
     ],
     footer: {
       badge: 'Pro',
-      title: 'WhatsApp Cloud liberado após o upgrade',
-      body: 'Free continua com App + Telegram. Pro adiciona o canal oficial da Meta.',
+      title: 'WhatsApp Cloud incluso na mensalidade',
+      body: 'Standard continua com App + Telegram. Pro adiciona o canal oficial da Meta.',
     },
   },
   {
@@ -171,9 +169,9 @@ export const PRODUCT_TABS: ProductTab[] = [
         title: 'Onboarding',
         accent: 'Checklist guiado',
         points: [
-          'Conta → agenda → meta',
-          'Telegram opcional',
-          'Pro + WhatsApp quando quiser',
+          'Pagamento → conta → agenda',
+          'Telegram no Standard',
+          'WhatsApp no Pro',
         ],
       },
     ],
@@ -188,23 +186,23 @@ export const PRODUCT_TABS: ProductTab[] = [
 export const COMO_FUNCIONA_STEPS = [
   {
     step: '01',
-    title: 'Crie sua conta',
-    body: 'E-mail e senha do profissional.',
+    title: 'Escolha o plano',
+    body: 'Standard (R$ 29,90) ou Pro (R$ 199,90) — mensal via Stripe.',
   },
   {
     step: '02',
-    title: 'Conecte a agenda',
-    body: 'Cole o token Avec (ou Trinks) e confirme o nome como está no sistema.',
+    title: 'Pague e complete o cadastro',
+    body: 'Após o checkout, defina senha e o nome como está na agenda.',
   },
   {
     step: '03',
-    title: 'Defina a meta',
-    body: 'Meta diária e semanal — o Hoje mostra o quanto falta.',
+    title: 'Conecte a agenda',
+    body: 'Cole o token Avec (ou Trinks) e confirme o match do nome.',
   },
   {
     step: '04',
     title: 'Use a assistente',
-    body: 'App, Telegram (Free) ou WhatsApp Cloud (Pro).',
+    body: 'App e Telegram no Standard; WhatsApp Cloud no Pro.',
   },
 ]
 
@@ -214,41 +212,41 @@ export const DUVIDAS = [
     a: 'Só você. A agenda conecta no seu nome e o app mostra clientes, horários e ações do seu perfil.',
   },
   {
-    q: 'Isso substitui o painel da unidade?',
-    a: 'Não. HairSales é o app do profissional. O painel da equipe da unidade continua em /login.',
+    q: 'Qual a diferença entre Standard e Pro?',
+    a: 'Standard (R$ 29,90): App + Telegram + IA. Pro (R$ 199,90): tudo isso + WhatsApp Cloud, mais cota de IA e packs de marketing.',
   },
   {
-    q: 'Preciso do Pro para começar?',
-    a: 'Não. Free inclui App + Telegram + assistente com cota diária. Pro libera WhatsApp Cloud e mais IA.',
+    q: 'Preciso pagar antes de criar a conta?',
+    a: 'Sim, no app do profissional. Você assina na landing, paga no Stripe e só então conclui nome e senha.',
+  },
+  {
+    q: 'Isso substitui o painel da unidade?',
+    a: 'Não. HairSales é o app do profissional. O painel da equipe da unidade continua em /login, com acesso normal.',
   },
   {
     q: 'Quais agendas funcionam?',
     a: 'Avec primeiro; Trinks também. O match é pelo nome profissional cadastrado na agenda.',
   },
-  {
-    q: 'E o WhatsApp?',
-    a: 'No Free você usa Telegram. WhatsApp Cloud (API oficial Meta) está no Plano Pro, com token por assinante.',
-  },
 ]
 
 export const CONTATO = {
   title: 'Fale com a gente',
-  body: 'Dúvidas de onboarding, agenda ou plano Pro — use o e-mail da sua conta ou o suporte do projeto.',
+  body: 'Dúvidas de onboarding, agenda ou plano — use o e-mail da sua conta ou o suporte do projeto.',
   points: [
     'Suporte de produto: pelo e-mail usado no cadastro',
     'Painel da unidade (equipe): acesse /login',
-    'Cobrança Pro: Stripe Customer Portal na aba Conectar',
+    'Cobrança: Stripe Customer Portal na aba Conectar',
   ],
 }
 
 export const SOBRE = {
   title: 'HairSales',
-  body: 'HairSales é o app do profissional de beleza: agenda, clientes, metas e ações do dia — com assistente e canais (Telegram no Free, WhatsApp Cloud no Pro).',
+  body: 'HairSales é o app do profissional de beleza: agenda, clientes, metas e ações do dia — com assistente e canais (Telegram no Standard, WhatsApp Cloud no Pro).',
   points: [
     'Produto: HairSales',
-    'Foco: profissional individual',
-    'Princípio: um assinante = um profissional',
-    'Canais: App, Telegram e WhatsApp Cloud (Pro)',
+    'Standard: R$ 29,90/mês',
+    'Pro: R$ 199,90/mês',
+    'Painel da equipe: acesso separado em /login',
   ],
 }
 
@@ -260,21 +258,21 @@ export const HERO_CARDS = [
     detail: 'Acesse Hoje, Assistente e Ações',
   },
   {
-    id: 'register' as const,
-    title: 'Criar conta',
-    subtitle: 'Começar no Free',
-    detail: 'App + Telegram no Free',
+    id: 'standard' as const,
+    title: 'Standard',
+    subtitle: 'R$ 29,90/mês',
+    detail: 'App + Telegram + assistente',
   },
   {
-    id: 'produtos' as const,
-    title: 'Planos',
-    subtitle: 'Free e Pro',
-    detail: 'Compare cotas e WhatsApp Cloud',
+    id: 'pro' as const,
+    title: 'Pro',
+    subtitle: 'R$ 199,90/mês',
+    detail: 'WhatsApp Cloud + mais IA',
   },
   {
     id: 'como-funciona' as const,
     title: 'Como funciona',
     subtitle: '4 passos',
-    detail: 'Conta → agenda → meta → assistente',
+    detail: 'Plano → pagamento → conta → agenda',
   },
 ]

@@ -1,6 +1,11 @@
 import Stripe from 'stripe'
 import { getSql } from '@/lib/db'
-import type { SubscriberRow } from '@/lib/pro/subscribers'
+import {
+  getProPlanOffer,
+  stripePriceIdForPlan,
+  type ProPublicPlanId,
+} from '@/lib/pro/plan-catalog'
+import { createSubscriber, findSubscriberByEmail, type SubscriberRow } from '@/lib/pro/subscribers'
 import { getMarketingPack, type MarketingPack } from '@/lib/pro/pack-catalog'
 
 let stripeClient: Stripe | null = null
@@ -178,13 +183,20 @@ export async function fulfillStripePackSession(session: Stripe.Checkout.Session)
   return { credited: true, subscriber_id: subscriberId, credits }
 }
 
+/** Upgrade de assinante já logado (Standard → Pro). */
 export async function createProSubscriptionCheckout(
   subscriber: SubscriberRow,
+  targetPublicPlan: ProPublicPlanId = 'pro',
 ): Promise<{ url: string; session_id: string } | null> {
-  const priceId = process.env.STRIPE_PRICE_PRO?.trim()
+  const offer = getProPlanOffer(targetPublicPlan)
+  if (!offer) return null
+  const priceId = stripePriceIdForPlan(offer.id)
   if (!priceId || !isStripeConfigured()) return null
-  if (subscriber.plan === 'pro') {
-    throw new Error('Você já está no plano Pro')
+  if (subscriber.plan === offer.dbPlan) {
+    throw new Error(`Você já está no plano ${offer.label}`)
+  }
+  if (offer.id === 'standard' && subscriber.plan === 'pro') {
+    throw new Error('Para mudar de Pro para Standard, use o Portal de cobrança')
   }
 
   const stripe = getStripe()
@@ -201,11 +213,15 @@ export async function createProSubscriptionCheckout(
     metadata: {
       subscriber_id: subscriber.id,
       kind: 'pro_subscription',
+      public_plan: offer.id,
+      db_plan: offer.dbPlan,
     },
     subscription_data: {
       metadata: {
         subscriber_id: subscriber.id,
         kind: 'pro_subscription',
+        public_plan: offer.id,
+        db_plan: offer.dbPlan,
       },
     },
   })
@@ -221,12 +237,185 @@ export async function fulfillProSubscription(session: Stripe.Checkout.Session) {
   const subscriberId = session.metadata?.subscriber_id || session.client_reference_id
   if (!subscriberId) return { upgraded: false }
 
+  const offer = getProPlanOffer(session.metadata?.public_plan) ?? getProPlanOffer('pro')!
   const sql = getSql()
   await sql`
-    update subscribers set plan = 'pro', updated_at = now()
+    update subscribers set plan = ${offer.dbPlan}, updated_at = now()
     where id = ${subscriberId}
   `
-  return { upgraded: true, subscriber_id: subscriberId }
+  return { upgraded: true, subscriber_id: subscriberId, plan: offer.dbPlan }
+}
+
+/**
+ * Checkout público: paga Standard ou Pro antes de criar a conta.
+ * success → /pro/completar-cadastro?session_id=…
+ */
+export async function createSignupCheckout(input: {
+  email: string
+  publicPlan: ProPublicPlanId
+}): Promise<{ url: string; session_id: string }> {
+  const offer = getProPlanOffer(input.publicPlan)
+  if (!offer) throw new Error('Plano inválido')
+  const priceId = stripePriceIdForPlan(offer.id)
+  if (!isStripeConfigured() || !priceId) {
+    throw new Error(
+      offer.id === 'pro'
+        ? 'STRIPE_PRICE_PRO não configurado'
+        : 'STRIPE_PRICE_STANDARD não configurado',
+    )
+  }
+
+  const email = input.email.trim().toLowerCase()
+  if (!email.includes('@')) throw new Error('E-mail inválido')
+  if (await findSubscriberByEmail(email)) {
+    throw new Error('Já existe conta com este e-mail. Faça login e gerencie o plano em Conectar.')
+  }
+
+  const stripe = getStripe()
+  const base = appBaseUrl()
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    customer_email: email,
+    success_url: `${base}/pro/completar-cadastro?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}/pro/login?checkout=cancel&plan=${offer.id}`,
+    line_items: [{ price: priceId, quantity: 1 }],
+    metadata: {
+      kind: 'pro_signup',
+      public_plan: offer.id,
+      db_plan: offer.dbPlan,
+      email,
+    },
+    subscription_data: {
+      metadata: {
+        kind: 'pro_signup',
+        public_plan: offer.id,
+        db_plan: offer.dbPlan,
+        email,
+      },
+    },
+  })
+
+  if (!session.url) throw new Error('Stripe não retornou URL de checkout')
+
+  const sql = getSql()
+  await sql`
+    insert into subscriber_pending_signups (email, plan, stripe_session_id, status)
+    values (${email}, ${offer.dbPlan}, ${session.id}, 'awaiting_payment')
+    on conflict (stripe_session_id) do nothing
+  `
+
+  return { url: session.url, session_id: session.id }
+}
+
+export async function markSignupCheckoutPaid(session: Stripe.Checkout.Session) {
+  if (session.metadata?.kind !== 'pro_signup') return { marked: false }
+  const customerId =
+    typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null
+  const sql = getSql()
+  await sql`
+    update subscriber_pending_signups
+    set status = 'paid',
+        stripe_customer_id = coalesce(${customerId}, stripe_customer_id),
+        paid_at = coalesce(paid_at, now())
+    where stripe_session_id = ${session.id}
+      and status in ('awaiting_payment', 'paid')
+  `
+  return { marked: true }
+}
+
+/** Valida session paga e cria o assinante (completa o cadastro). */
+export async function completeSignupFromCheckout(input: {
+  sessionId: string
+  displayName: string
+  password: string
+}): Promise<SubscriberRow> {
+  if (!isStripeConfigured()) throw new Error('Stripe não configurado')
+  const stripe = getStripe()
+  const session = await stripe.checkout.sessions.retrieve(input.sessionId)
+
+  if (session.metadata?.kind !== 'pro_signup') {
+    throw new Error('Sessão de checkout inválida')
+  }
+  if (session.payment_status !== 'paid' && session.status !== 'complete') {
+    throw new Error('Pagamento ainda não confirmado')
+  }
+
+  const email = (session.metadata.email || session.customer_details?.email || '').trim().toLowerCase()
+  if (!email.includes('@')) throw new Error('E-mail ausente no checkout')
+
+  const existing = await findSubscriberByEmail(email)
+  if (existing) {
+    throw new Error('Conta já criada com este e-mail. Faça login.')
+  }
+
+  const offer = getProPlanOffer(session.metadata.public_plan) ?? getProPlanOffer('standard')!
+  const customerId =
+    typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null
+
+  const subscriber = await createSubscriber({
+    displayName: input.displayName,
+    email,
+    password: input.password,
+    plan: offer.dbPlan,
+    stripeCustomerId: customerId,
+  })
+
+  if (customerId) {
+    await stripe.customers.update(customerId, {
+      metadata: { subscriber_id: subscriber.id },
+    })
+  }
+
+  const sql = getSql()
+  await sql`
+    update subscriber_pending_signups
+    set status = 'completed',
+        subscriber_id = ${subscriber.id},
+        stripe_customer_id = coalesce(${customerId}, stripe_customer_id),
+        completed_at = now(),
+        paid_at = coalesce(paid_at, now())
+    where stripe_session_id = ${session.id}
+  `
+
+  // Liga metadata da subscription ao subscriber (upgrade futuro / cancelamento)
+  const subRef = session.subscription
+  const subId = typeof subRef === 'string' ? subRef : subRef?.id
+  if (subId) {
+    await stripe.subscriptions.update(subId, {
+      metadata: {
+        kind: 'pro_subscription',
+        subscriber_id: subscriber.id,
+        public_plan: offer.id,
+        db_plan: offer.dbPlan,
+      },
+    })
+  }
+
+  return subscriber
+}
+
+export async function getSignupCheckoutPreview(sessionId: string): Promise<{
+  email: string
+  plan: ProPublicPlanId
+  plan_label: string
+  price_label: string
+  paid: boolean
+}> {
+  const stripe = getStripe()
+  const session = await stripe.checkout.sessions.retrieve(sessionId)
+  if (session.metadata?.kind !== 'pro_signup') {
+    throw new Error('Sessão inválida')
+  }
+  const offer = getProPlanOffer(session.metadata.public_plan) ?? getProPlanOffer('standard')!
+  const email = (session.metadata.email || session.customer_details?.email || '').trim().toLowerCase()
+  const paid = session.payment_status === 'paid' || session.status === 'complete'
+  return {
+    email,
+    plan: offer.id,
+    plan_label: offer.label,
+    price_label: offer.priceLabel,
+    paid,
+  }
 }
 
 /** Features padrão do Customer Portal (HairSales / Pro). */
@@ -267,7 +456,7 @@ export async function ensureDefaultBillingPortalConfiguration(): Promise<{
   const returnUrl = `${appBaseUrl()}/pro/conectar`
   const features = defaultBillingPortalFeatures()
   const business_profile = {
-    headline: 'HairSales — gerencie sua assinatura Pro',
+    headline: 'HairSales — gerencie sua assinatura',
   }
 
   const configuredId = process.env.STRIPE_PORTAL_CONFIGURATION_ID?.trim()

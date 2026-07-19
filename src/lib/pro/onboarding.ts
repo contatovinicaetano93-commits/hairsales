@@ -97,7 +97,7 @@ export function computeOnboardingStatus(input: OnboardingComputeInput): Onboardi
       href: '/pro/conectar',
       detail: input.telegram_chat_id
         ? 'Assistente no Telegram ativo'
-        : 'Canal grátis da assistente',
+        : 'Canal incluso no Standard',
     },
     {
       id: 'plan_pro',
@@ -107,8 +107,8 @@ export function computeOnboardingStatus(input: OnboardingComputeInput): Onboardi
       href: '/pro/conectar',
       detail:
         input.plan === 'pro'
-          ? 'WhatsApp Cloud e packs liberados'
-          : 'Necessário para WhatsApp Cloud',
+          ? 'Pro R$ 199,90 — WhatsApp Cloud liberado'
+          : 'Standard R$ 29,90 — upgrade para WhatsApp Cloud',
     },
     {
       id: 'whatsapp',
@@ -122,7 +122,7 @@ export function computeOnboardingStatus(input: OnboardingComputeInput): Onboardi
           ? input.embedded_enabled
             ? 'Conectar com Meta ou token manual'
             : 'Cole phone_number_id + token'
-          : 'Disponível no Pro',
+          : 'Incluso no Pro (R$ 199,90)',
     },
   ]
 

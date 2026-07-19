@@ -40,22 +40,26 @@ Obrigatórias em **production**:
 | `NEXT_PUBLIC_APP_URL` | Return URLs Stripe / links absolutos |
 | `ANTHROPIC_API_KEY` | Assistente / briefing |
 
-Recomendadas no primeiro go-live Free:
+Recomendadas no go-live HairSales (Standard / Pro):
 
 | Var | Uso |
 |-----|-----|
-| `TELEGRAM_PRO_BOT_TOKEN` | Bot do assinante |
+| `TELEGRAM_PRO_BOT_TOKEN` | Bot do assinante (Standard+) |
 | `TELEGRAM_PRO_WEBHOOK_SECRET` | Webhook `/api/webhooks/telegram-pro` |
 | `TELEGRAM_PRO_BOT_USERNAME` | Deep link no Conectar |
 
-Stripe (quando for cobrar):
+Stripe (obrigatório para cobrar assinaturas — pagar antes do cadastro):
 
 | Var | Uso |
 |-----|-----|
 | `STRIPE_SECRET_KEY` | Checkout + Portal |
 | `STRIPE_WEBHOOK_SECRET` | `/api/webhooks/stripe` |
-| `STRIPE_PRICE_PRO` | Assinatura Pro |
+| `STRIPE_PRICE_STANDARD` | Assinatura Standard (R$ 29,90/mês) |
+| `STRIPE_PRICE_PRO` | Assinatura Pro (R$ 199,90/mês) |
 | `STRIPE_PORTAL_CONFIGURATION_ID` | Saída de `npm run stripe:portal` |
+
+Fluxo: landing → Checkout Stripe → `/pro/completar-cadastro` → conta ativa.  
+Painel da equipe (`/login`) continua com acesso normal (sem estes planos).
 
 WhatsApp Cloud (só Pro):
 

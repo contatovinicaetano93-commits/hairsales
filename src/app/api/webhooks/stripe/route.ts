@@ -7,6 +7,7 @@ import {
   fulfillStripePackSession,
   getStripe,
   isStripeConfigured,
+  markSignupCheckoutPaid,
 } from '@/lib/pro/stripe'
 
 export const runtime = 'nodejs'
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
         }
         if (session.metadata?.kind === 'pro_subscription') {
           await fulfillProSubscription(session)
+        }
+        if (session.metadata?.kind === 'pro_signup') {
+          await markSignupCheckoutPaid(session)
         }
         break
       }
