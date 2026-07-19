@@ -1,0 +1,24 @@
+plano,uso,unidades_ia_mes,preco_brl,stripe_pct,stripe_fixo_brl,custo_ia_por_un_brl,taxa_stripe_brl,custo_ia_brl,lucro_por_user_brl,margem_pct
+Standard,baixo,150,29.90,3.99,0.39,0.04,1.58,6.00,22.32,74.6
+Standard,medio,400,29.90,3.99,0.39,0.04,1.58,16.00,12.32,41.2
+Standard,alto,900,29.90,3.99,0.39,0.04,1.58,36.00,-7.68,-25.7
+Pro,baixo,300,199.90,3.99,0.39,0.04,8.37,12.00,179.53,89.8
+Pro,medio,1200,199.90,3.99,0.39,0.04,8.37,48.00,143.53,71.8
+Pro,alto,3000,199.90,3.99,0.39,0.04,8.37,120.00,71.53,35.8
+
+cenario,std_qtd,pro_qtd,receita_bruta,taxa_stripe,receita_liquida,custo_ia_mix,infra_fixa,lucro_mes
+agora_exemplo,20,5,1597.50,70.65,1526.85,528.00,150.00,848.85
+10std_2pro,10,2,698.80,31.54,667.26,256.00,150.00,261.26
+50std_10pro,50,10,3993.00,176.63,3816.37,1320.00,150.00,2346.37
+100std_25pro,100,25,7987.50,353.65,7633.85,2760.00,150.00,4723.85
+
+premissas,valor,nota
+stripe_pct,3.99,Stripe BR cartão doméstico (aprox)
+stripe_fixo,0.39,R$ por cobrança
+ai_unit_brl,0.04,Calibrar com fatura Anthropic / unidades consumidas
+infra_fixa_mes,150,"Vercel+Neon+Sentry — ajustar"
+std_teto_mes,1000,Código quotas.ts free
+pro_teto_mes,4000,Código quotas.ts pro
+whatsapp_meta,0,"Custo no WABA do profissional (token por assinante)"
+mix_std_default,50/40/10,baixo/medio/alto %
+mix_pro_default,40/45/15,baixo/medio/alto %

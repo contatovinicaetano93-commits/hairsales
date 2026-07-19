@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HairSales · Unit Economics</title>
+  <style>
+    :root {
+      --bg: #fafaf7;
+      --card: #fff;
+      --border: #e4dac2;
+      --fg: #1a1714;
+      --muted: #5c554c;
+      --gold: #c9a227;
+      --gold-strong: #8a6a12;
+      --ok: #287654;
+      --bad: #b33b46;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: linear-gradient(165deg, #f7efe3 0%, #fafaf7 45%, #ebe2d4 100%);
+      color: var(--fg);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    h1 { font-size: 1.85rem; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); font-family: system-ui, sans-serif; font-size: 0.95rem; margin-bottom: 1.5rem; }
+    .grid { display: grid; gap: 1rem; }
+    @media (min-width: 800px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+      .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 1.1rem 1.2rem;
+      box-shadow: 0 12px 36px -24px rgba(26,23,20,0.4);
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin: 0 0 0.85rem;
+      color: var(--gold-strong);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-family: system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-family: system-ui, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.7rem;
+    }
+    input {
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--fg);
+      text-transform: none;
+      letter-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 0.65rem 0.8rem;
+      background: #f6f2e9;
+    }
+    input:focus { outline: 2px solid color-mix(in srgb, var(--gold) 50%, transparent); border-color: var(--gold); }
+    table { width: 100%; border-collapse: collapse; font-family: system-ui, sans-serif; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 0.55rem 0.4rem; border-bottom: 1px solid var(--border); }
+    th { color: var(--gold-strong); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .ok { color: var(--ok); font-weight: 700; }
+    .bad { color: var(--bad); font-weight: 700; }
+    .muted { color: var(--muted); }
+    .kpi {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0.15rem 0;
+    }
+    .hint { font-family: system-ui, sans-serif; font-size: 0.8rem; color: var(--muted); margin-top: 0.35rem; }
+    .pill {
+      display: inline-block;
+      font-family: system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-strong);
+      background: color-mix(in srgb, var(--gold) 18%, white);
+      border: 1px solid color-mix(in srgb, var(--gold) 35%, white);
+      border-radius: 999px;
+      padding: 0.2rem 0.55rem;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="pill">HairSales · unit economics</p>
+    <h1>Preço × custo × lucro</h1>
+    <p class="sub">
+      Ajuste as premissas. Stripe BR aproximado (3,99% + R$ 0,39).
+      Custo de IA por “unidade” é estimativa — calibra com a fatura Anthropic.
+    </p>
+
+    <div class="grid grid-2" style="margin-bottom: 1rem;">
+      <section class="card">
+        <h2>Preços e taxas</h2>
+        <label>Standard (R$/mês)<input id="priceStd" type="number" step="0.01" value="29.90" /></label>
+        <label>Pro (R$/mês)<input id="pricePro" type="number" step="0.01" value="199.90" /></label>
+        <label>Stripe % <input id="stripePct" type="number" step="0.01" value="3.99" /></label>
+        <label>Stripe fixo (R$)<input id="stripeFix" type="number" step="0.01" value="0.39" /></label>
+      </section>
+      <section class="card">
+        <h2>Custo de IA (estimativa)</h2>
+        <label>Custo por unidade de IA (R$)<input id="aiUnit" type="number" step="0.001" value="0.04" /></label>
+        <p class="hint">
+          Default R$ 0,04/un ≈ pergunta curta no Sonnet.
+          Briefing = 5 un · pergunta = 1 un (como no código).
+        </p>
+        <label>Infra fixa mensal (R$)<input id="infra" type="number" step="1" value="150" /></label>
+        <p class="hint">Vercel + Neon + Sentry + extras. Divide entre todos os assinantes.</p>
+      </section>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom: 1rem;">
+      <section class="card">
+        <h2>Uso Standard (un/mês por pessoa)</h2>
+        <label>Uso baixo<input id="stdLow" type="number" value="150" /></label>
+        <label>Uso médio<input id="stdMid" type="number" value="400" /></label>
+        <label>Uso alto (perto do teto)<input id="stdHigh" type="number" value="900" /></label>
+        <p class="hint">Teto no app: 1.000 un/mês · 40/dia.</p>
+      </section>
+      <section class="card">
+        <h2>Uso Pro (un/mês por pessoa)</h2>
+        <label>Uso baixo<input id="proLow" type="number" value="300" /></label>
+        <label>Uso médio<input id="proMid" type="number" value="1200" /></label>
+        <label>Uso alto<input id="proHigh" type="number" value="3000" /></label>
+        <p class="hint">Teto no app: 4.000 un/mês · 150/dia. WhatsApp Meta no WABA do cliente = R$ 0 aqui.</p>
+      </section>
+    </div>
+
+    <div class="grid grid-3" style="margin-bottom: 1rem;">
+      <section class="card">
+        <h2>Assinantes Standard</h2>
+        <label>Quantidade<input id="nStd" type="number" value="20" /></label>
+        <label>Mix de uso (baixo / médio / alto %)<input id="mixStd" type="text" value="50,40,10" /></label>
+      </section>
+      <section class="card">
+        <h2>Assinantes Pro</h2>
+        <label>Quantidade<input id="nPro" type="number" value="5" /></label>
+        <label>Mix de uso (baixo / médio / alto %)<input id="mixPro" type="text" value="40,45,15" /></label>
+      </section>
+      <section class="card">
+        <h2>Resultado do mês</h2>
+        <div class="muted" style="font-family:system-ui;font-size:0.8rem;">Receita líquida (após Stripe)</div>
+        <p class="kpi" id="kpiRevenue">—</p>
+        <div class="muted" style="font-family:system-ui;font-size:0.8rem;">− IA − infra</div>
+        <p class="kpi" id="kpiProfit">—</p>
+        <p class="hint" id="kpiMargin"></p>
+      </section>
+    </div>
+
+    <section class="card" style="margin-bottom: 1rem;">
+      <h2>Unit economics por plano × uso</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Plano</th>
+            <th>Uso</th>
+            <th class="num">Receita bruta</th>
+            <th class="num">Stripe</th>
+            <th class="num">IA</th>
+            <th class="num">Lucro / user</th>
+            <th class="num">Margem</th>
+          </tr>
+        </thead>
+        <tbody id="unitTable"></tbody>
+      </table>
+    </section>
+
+    <section class="card" style="margin-bottom: 1rem;">
+      <h2>Cenários de escala (mesmo mix)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Base</th>
+            <th class="num">Receita líquida</th>
+            <th class="num">Custo IA</th>
+            <th class="num">Infra</th>
+            <th class="num">Lucro</th>
+          </tr>
+        </thead>
+        <tbody id="scaleTable"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Leitura rápida</h2>
+      <ul id="notes" class="hint" style="margin:0;padding-left:1.1rem;font-size:0.9rem;color:var(--fg);"></ul>
+    </section>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id)
+    const money = (n) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    const pct = (n) => (n * 100).toFixed(0) + '%'
+
+    function num(id) { return Number($(id).value) || 0 }
+    function parseMix(str) {
+      const parts = String(str).split(',').map((x) => Number(x.trim()) || 0)
+      const [a = 0, b = 0, c = 0] = parts
+      const sum = a + b + c || 1
+      return [a / sum, b / sum, c / sum]
+    }
+
+    function stripeFee(price, pctFee, fix) {
+      return price * (pctFee / 100) + fix
+    }
+
+    function unitRow(plan, usageLabel, price, units, aiUnit, pctFee, fix) {
+      const fee = stripeFee(price, pctFee, fix)
+      const ai = units * aiUnit
+      const profit = price - fee - ai
+      const margin = price > 0 ? profit / price : 0
+      return { plan, usageLabel, price, fee, ai, profit, margin }
+    }
+
+    function weightedAiCost(n, mix, lows) {
+      const [a, b, c] = mix
+      const [lo, mid, hi] = lows
+      return n * (a * lo + b * mid + c * hi)
+    }
+
+    function render() {
+      const priceStd = num('priceStd')
+      const pricePro = num('pricePro')
+      const stripePct = num('stripePct')
+      const stripeFix = num('stripeFix')
+      const aiUnit = num('aiUnit')
+      const infra = num('infra')
+      const nStd = num('nStd')
+      const nPro = num('nPro')
+      const mixStd = parseMix($('mixStd').value)
+      const mixPro = parseMix($('mixPro').value)
+      const stdUsage = [num('stdLow'), num('stdMid'), num('stdHigh')]
+      const proUsage = [num('proLow'), num('proMid'), num('proHigh')]
+
+      const rows = [
+        unitRow('Standard', 'baixo', priceStd, stdUsage[0], aiUnit, stripePct, stripeFix),
+        unitRow('Standard', 'médio', priceStd, stdUsage[1], aiUnit, stripePct, stripeFix),
+        unitRow('Standard', 'alto', priceStd, stdUsage[2], aiUnit, stripePct, stripeFix),
+        unitRow('Pro', 'baixo', pricePro, proUsage[0], aiUnit, stripePct, stripeFix),
+        unitRow('Pro', 'médio', pricePro, proUsage[1], aiUnit, stripePct, stripeFix),
+        unitRow('Pro', 'alto', pricePro, proUsage[2], aiUnit, stripePct, stripeFix),
+      ]
+
+      $('unitTable').innerHTML = rows.map((r) => `
+        <tr>
+          <td>${r.plan}</td>
+          <td>${r.usageLabel}</td>
+          <td class="num">${money(r.price)}</td>
+          <td class="num">${money(r.fee)}</td>
+          <td class="num">${money(r.ai)}</td>
+          <td class="num ${r.profit >= 0 ? 'ok' : 'bad'}">${money(r.profit)}</td>
+          <td class="num ${r.margin >= 0.3 ? 'ok' : r.margin < 0 ? 'bad' : ''}">${pct(r.margin)}</td>
+        </tr>
+      `).join('')
+
+      const gross = nStd * priceStd + nPro * pricePro
+      const fees = nStd * stripeFee(priceStd, stripePct, stripeFix) + nPro * stripeFee(pricePro, stripePct, stripeFix)
+      const net = gross - fees
+      const aiCost =
+        weightedAiCost(nStd, mixStd, stdUsage) * aiUnit +
+        weightedAiCost(nPro, mixPro, proUsage) * aiUnit
+      const profit = net - aiCost - infra
+      const margin = net > 0 ? profit / net : 0
+
+      $('kpiRevenue').textContent = money(net)
+      $('kpiProfit').textContent = money(profit)
+      $('kpiProfit').className = 'kpi ' + (profit >= 0 ? 'ok' : 'bad')
+      $('kpiMargin').textContent = `Margem sobre receita líquida: ${pct(margin)} · IA ${money(aiCost)} · ${nStd + nPro} assinantes`
+
+      const scales = [
+        { label: 'Agora (inputs)', std: nStd, pro: nPro },
+        { label: '10 Std + 2 Pro', std: 10, pro: 2 },
+        { label: '50 Std + 10 Pro', std: 50, pro: 10 },
+        { label: '100 Std + 25 Pro', std: 100, pro: 25 },
+        { label: '200 Std + 40 Pro', std: 200, pro: 40 },
+      ]
+
+      $('scaleTable').innerHTML = scales.map((s) => {
+        const g = s.std * priceStd + s.pro * pricePro
+        const f = s.std * stripeFee(priceStd, stripePct, stripeFix) + s.pro * stripeFee(pricePro, stripePct, stripeFix)
+        const n = g - f
+        const ai =
+          weightedAiCost(s.std, mixStd, stdUsage) * aiUnit +
+          weightedAiCost(s.pro, mixPro, proUsage) * aiUnit
+        const p = n - ai - infra
+        return `<tr>
+          <td>${s.label}</td>
+          <td class="num">${money(n)}</td>
+          <td class="num">${money(ai)}</td>
+          <td class="num">${money(infra)}</td>
+          <td class="num ${p >= 0 ? 'ok' : 'bad'}">${money(p)}</td>
+        </tr>`
+      }).join('')
+
+      const stdMid = rows[1]
+      const stdHigh = rows[2]
+      const proMid = rows[4]
+      const notes = []
+      notes.push(stdMid.profit >= 10
+        ? `Standard com uso médio sobra ~${money(stdMid.profit)}/user — ok para entrada.`
+        : `Standard com uso médio fica apertado (${money(stdMid.profit)}/user). Considere subir preço ou baixar cota.`)
+      notes.push(stdHigh.profit < 0
+        ? `Standard uso alto dá prejuízo (${money(stdHigh.profit)}). Power users comem margem — monitore Anthropic.`
+        : `Standard uso alto ainda positivo (${money(stdHigh.profit)}), mas margem ${pct(stdHigh.margin)}.`)
+      notes.push(`Pro uso médio gera ~${money(proMid.profit)}/user — este plano carrega o negócio.`)
+      notes.push(profit >= 0
+        ? `Com a base atual (${nStd} Std + ${nPro} Pro), o mês fecha positivo em ~${money(profit)}.`
+        : `Com a base atual, o mês fica negativo (~${money(profit)}). Precisa de mais Pro ou menos uso de IA.`)
+      notes.push('WhatsApp: se o WABA/token for do profissional, custo Meta não entra nesta planilha.')
+      $('notes').innerHTML = notes.map((t) => `<li style="margin-bottom:0.45rem">${t}</li>`).join('')
+    }
+
+    document.querySelectorAll('input').forEach((el) => el.addEventListener('input', render))
+    render()
+  </script>
+</body>
+</html>
