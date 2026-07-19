@@ -18,7 +18,7 @@ describe('Pro secrets', () => {
     vi.stubEnv('PRO_DATA_SECRET', '')
     vi.stubEnv('CRON_SECRET', 'cron-secret')
 
-    const token = createProSessionToken('sub_123')
+    const token = createProSessionToken('sub_123', 1)
     const [payload, signature] = token.split('.')
 
     expect(payload).toBeTruthy()
@@ -40,8 +40,8 @@ describe('Pro secrets', () => {
     vi.stubEnv('NODE_ENV', 'test')
     vi.stubEnv('PRO_DATA_SECRET', 'pro-secret')
 
-    const token = createProSessionToken('sub_123')
-    expect(parseProSessionToken(token)).toBe('sub_123')
+    const token = createProSessionToken('sub_123', 1)
+    expect(parseProSessionToken(token)).toEqual({ sid: 'sub_123', sv: 1 })
 
     vi.setSystemTime(new Date('2026-02-01T00:00:01Z'))
     expect(parseProSessionToken(token)).toBeNull()
@@ -54,6 +54,6 @@ describe('Pro secrets', () => {
     const payload = Buffer.from(JSON.stringify({ sid: 'sub_123', v: 1 }), 'utf8').toString('base64url')
     const token = `${payload}.${signedPayload(payload, 'pro-secret')}`
 
-    expect(parseProSessionToken(token)).toBe('sub_123')
+    expect(parseProSessionToken(token)).toEqual({ sid: 'sub_123', sv: 1 })
   })
 })

@@ -18,6 +18,7 @@ export interface SubscriberRow {
   telegram_chat_id?: string | null
   marketing_credits?: number | null
   stripe_customer_id?: string | null
+  session_version: number
   created_at: string
   updated_at: string
 }
@@ -92,6 +93,17 @@ export async function authenticateSubscriber(
   if (!sub) return null
   const ok = await verifyPassword(password, sub.password_hash)
   return ok ? sub : null
+}
+
+export async function bumpSubscriberSessionVersion(id: string): Promise<SubscriberRow | null> {
+  const sql = getSql()
+  const rows = (await sql`
+    update subscribers
+    set session_version = session_version + 1, updated_at = now()
+    where id = ${id}
+    returning *
+  `) as SubscriberRow[]
+  return rows[0] ?? null
 }
 
 export function isProPlan(plan: SubscriberPlan): boolean {

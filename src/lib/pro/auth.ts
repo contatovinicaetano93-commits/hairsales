@@ -14,13 +14,24 @@ function sign(payload: string) {
   return createHmac('sha256', sessionSecret()).update(payload).digest('base64url')
 }
 
-export function createProSessionToken(subscriberId: string) {
+export interface ProSessionTokenPayload {
+  sid: string
+  sv: number
+}
+
+export function createProSessionToken(subscriberId: string, sessionVersion: number) {
+  if (!Number.isSafeInteger(sessionVersion) || sessionVersion < 1) {
+    throw new Error('Versão de sessão inválida')
+  }
   const exp = Math.floor(Date.now() / 1000) + PRO_SESSION_MAX_AGE_SECONDS
-  const payload = Buffer.from(JSON.stringify({ sid: subscriberId, v: 1, exp }), 'utf8').toString('base64url')
+  const payload = Buffer.from(
+    JSON.stringify({ sid: subscriberId, sv: sessionVersion, v: 1, exp }),
+    'utf8',
+  ).toString('base64url')
   return `${payload}.${sign(payload)}`
 }
 
-export function parseProSessionToken(token: string): string | null {
+export function parseProSessionToken(token: string): ProSessionTokenPayload | null {
   const [payload, sig] = token.split('.')
   if (!payload || !sig) return null
   const expected = sign(payload)
@@ -31,12 +42,22 @@ export function parseProSessionToken(token: string): string | null {
     const json = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
       sid?: string
       exp?: unknown
+      sv?: unknown
     }
     if (json.exp !== undefined) {
       if (typeof json.exp !== 'number' || !Number.isFinite(json.exp)) return null
       if (json.exp < Math.floor(Date.now() / 1000)) return null
     }
-    return typeof json.sid === 'string' ? json.sid : null
+    if (typeof json.sid !== 'string') return null
+    const sessionVersion = json.sv ?? 1
+    if (
+      typeof sessionVersion !== 'number' ||
+      !Number.isSafeInteger(sessionVersion) ||
+      sessionVersion < 1
+    ) {
+      return null
+    }
+    return { sid: json.sid, sv: sessionVersion }
   } catch {
     return null
   }
@@ -49,10 +70,11 @@ export interface ProSession {
 export async function getProSession(req: NextRequest): Promise<ProSession | null> {
   const cookie = req.cookies.get(PRO_AUTH_COOKIE)?.value
   if (!cookie) return null
-  const sid = parseProSessionToken(cookie)
-  if (!sid) return null
-  const subscriber = await findSubscriberById(sid)
+  const token = parseProSessionToken(cookie)
+  if (!token) return null
+  const subscriber = await findSubscriberById(token.sid)
   if (!subscriber) return null
+  if (subscriber.session_version !== token.sv) return null
   return { subscriber }
 }
 

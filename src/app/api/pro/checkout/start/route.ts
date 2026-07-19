@@ -1,10 +1,22 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { getProPlanOffer, type ProPublicPlanId } from '@/lib/pro/plan-catalog'
+import { checkProRateLimit } from '@/lib/pro/rate-limit'
 import { createSignupCheckout, isStripeConfigured } from '@/lib/pro/stripe'
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = checkProRateLimit(req, {
+      route: 'pro-checkout-start',
+      limit: 10,
+      windowMs: 60_000,
+    })
+    if (!rateLimit.allowed) {
+      const res = err('Muitas tentativas de checkout. Aguarde um minuto e tente novamente.', 429)
+      res.headers.set('Retry-After', String(rateLimit.retryAfterSeconds))
+      return res
+    }
+
     if (!isStripeConfigured()) {
       return err('Pagamento indisponível neste ambiente (Stripe não configurado)', 503)
     }
