@@ -7,8 +7,10 @@ import {
   markConnectionError,
   updateSubscriberDisplayName,
   upsertConnection,
+  type SubscriberRow,
 } from '@/lib/pro/subscribers'
 import { syncSubscriberConnection } from '@/lib/pro/sync'
+import { captureHairsalesException } from '@/lib/pro/observability'
 
 export async function GET() {
   return ok({
@@ -21,14 +23,16 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  let subscriber: SubscriberRow | null = null
   try {
     const auth = await requireProSession(req)
     if (!auth.ok) return err(auth.message, auth.status)
+    subscriber = auth.session.subscriber
 
     const body = await req.json().catch(() => null)
     const providerId = (typeof body?.provider === 'string' ? body.provider : 'avec') as AgendaProviderId
     const displayName =
-      typeof body?.display_name === 'string' ? body.display_name.trim() : auth.session.subscriber.display_name
+      typeof body?.display_name === 'string' ? body.display_name.trim() : subscriber.display_name
     const apiToken = typeof body?.api_token === 'string' ? body.api_token.trim() : ''
     const unitExternalId =
       typeof body?.unit_external_id === 'string' ? body.unit_external_id.trim() : null
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
       return err(`${provider.label} em breve — use Avec por enquanto`, 400)
     }
 
-    await updateSubscriberDisplayName(auth.session.subscriber.id, displayName)
+    await updateSubscriberDisplayName(subscriber.id, displayName)
 
     const resolved = await provider.resolveProfessional({
       token: apiToken,
@@ -51,7 +55,7 @@ export async function POST(req: NextRequest) {
 
     if (resolved.status === 'not_found') {
       await markConnectionError(
-        auth.session.subscriber.id,
+        subscriber.id,
         providerId,
         'Nome não encontrado na agenda',
       ).catch(() => {})
@@ -69,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     const conn = await upsertConnection({
-      subscriberId: auth.session.subscriber.id,
+      subscriberId: subscriber.id,
       provider: providerId,
       apiToken,
       unitExternalId,
@@ -80,6 +84,18 @@ export async function POST(req: NextRequest) {
     })
 
     const syncStats = await syncSubscriberConnection(conn)
+    console.info(
+      JSON.stringify({
+        event: 'hairsales.agenda_connected',
+        surface: 'hairsales',
+        subscriber_id: subscriber.id,
+        plan: subscriber.plan,
+        subscription_status: subscriber.subscription_status,
+        provider: providerId,
+        appointments: syncStats.appointments,
+        attendances: syncStats.attendances,
+      }),
+    )
 
     return ok({
       connection: {
@@ -91,6 +107,10 @@ export async function POST(req: NextRequest) {
       sync: syncStats,
     })
   } catch (e) {
+    captureHairsalesException(e, subscriber, {
+      route: '/api/me/connect',
+      method: 'POST',
+    })
     return handleError(e)
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { getProPlanOffer, type ProPublicPlanId } from '@/lib/pro/plan-catalog'
 import { createSignupCheckout, isStripeConfigured } from '@/lib/pro/stripe'
+import { captureHairsalesException } from '@/lib/pro/observability'
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,6 +21,13 @@ export async function POST(req: NextRequest) {
     if (!email.includes('@')) return err('E-mail inválido', 400)
 
     const checkout = await createSignupCheckout({ email, publicPlan: planId })
+    console.info(
+      JSON.stringify({
+        event: 'hairsales.checkout_started',
+        surface: 'hairsales',
+        plan: planId,
+      }),
+    )
     return ok({
       checkout_url: checkout.url,
       session_id: checkout.session_id,
@@ -31,6 +39,10 @@ export async function POST(req: NextRequest) {
         /e-mail|Plano|STRIPE_PRICE|já existe|inválido/i.test(e.message)
       if (soft) return err(e.message, 400)
     }
+    captureHairsalesException(e, null, {
+      route: '/api/pro/checkout/start',
+      method: 'POST',
+    })
     return handleError(e)
   }
 }

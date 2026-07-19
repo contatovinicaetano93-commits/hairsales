@@ -3,6 +3,8 @@
 Path B2C `/pro/*` + APIs `/api/me/*` e `/api/pro/*`.  
 Não substitui o painel ROM — só empilha o produto do profissional individual.
 
+Para isolar HairSales do painel ROM em outro Vercel Project/Neon, siga `deploy/HAIRSALES-SEPARATE-DEPLOY.md`.
+
 PR de referência: `cursor/pro-subscriber-app-2182` → base `feat/vitrini-branding`.
 
 ## 0. Pré-requisito

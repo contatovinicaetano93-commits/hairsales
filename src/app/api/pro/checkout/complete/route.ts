@@ -11,6 +11,8 @@ import {
   isStripeConfigured,
 } from '@/lib/pro/stripe'
 import { labelForDbPlan } from '@/lib/pro/plan-catalog'
+import { captureHairsalesException } from '@/lib/pro/observability'
+import type { SubscriberRow } from '@/lib/pro/subscribers'
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,11 +22,16 @@ export async function GET(req: NextRequest) {
     const preview = await getSignupCheckoutPreview(sessionId)
     return ok(preview)
   } catch (e) {
+    captureHairsalesException(e, null, {
+      route: '/api/pro/checkout/complete',
+      method: 'GET',
+    })
     return handleError(e)
   }
 }
 
 export async function POST(req: NextRequest) {
+  let subscriber: SubscriberRow | null = null
   try {
     if (!isStripeConfigured()) return err('Stripe não configurado', 503)
 
@@ -37,11 +44,20 @@ export async function POST(req: NextRequest) {
     if (displayName.length < 2) return err('Informe seu nome como no Avec/Trinks', 400)
     if (password.length < 6) return err('Senha precisa ter pelo menos 6 caracteres', 400)
 
-    const subscriber = await completeSignupFromCheckout({
+    subscriber = await completeSignupFromCheckout({
       sessionId,
       displayName,
       password,
     })
+    console.info(
+      JSON.stringify({
+        event: 'hairsales.signup_completed',
+        surface: 'hairsales',
+        subscriber_id: subscriber.id,
+        plan: subscriber.plan,
+        subscription_status: subscriber.subscription_status,
+      }),
+    )
 
     const res = ok({
       id: subscriber.id,
@@ -54,6 +70,10 @@ export async function POST(req: NextRequest) {
     res.cookies.set(PRO_AUTH_COOKIE, createProSessionToken(subscriber.id), proSessionCookieOptions())
     return res
   } catch (e) {
+    captureHairsalesException(e, subscriber, {
+      route: '/api/pro/checkout/complete',
+      method: 'POST',
+    })
     return handleError(e)
   }
 }

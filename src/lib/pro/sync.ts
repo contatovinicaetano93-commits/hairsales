@@ -8,6 +8,7 @@ import {
   markConnectionSynced,
   type SubscriberConnectionRow,
 } from '@/lib/pro/subscribers'
+import { captureHairsalesException } from '@/lib/pro/observability'
 
 async function upsertClient(
   subscriberId: string,
@@ -122,111 +123,124 @@ async function upsertService(
 }
 
 export async function syncSubscriberConnection(conn: SubscriberConnectionRow) {
-  const provider = getAgendaProvider(conn.provider)
-  if (!provider.available) {
-    throw new Error(`${provider.label} ainda não está disponível`)
-  }
+  try {
+    const provider = getAgendaProvider(conn.provider)
+    if (!provider.available) {
+      throw new Error(`${provider.label} ainda não está disponível`)
+    }
 
-  const token = connectionToken(conn)
-  const professional = connectionProfessional(conn)
-  const unit = conn.unit_external_id
+    const token = connectionToken(conn)
+    const professional = connectionProfessional(conn)
+    const unit = conn.unit_external_id
 
-  const [revenue, appointments, attendances] = await Promise.all([
-    provider.fetchRevenue({ token, professional, unitExternalId: unit, daysBack: 0 }),
-    provider.fetchAppointments({
-      token,
-      professional,
-      unitExternalId: unit,
-      daysBack: 1,
-      daysForward: 14,
-    }),
-    provider.fetchAttendances({ token, professional, unitExternalId: unit, daysBack: 90 }),
-  ])
+    const [revenue, appointments, attendances] = await Promise.all([
+      provider.fetchRevenue({ token, professional, unitExternalId: unit, daysBack: 0 }),
+      provider.fetchAppointments({
+        token,
+        professional,
+        unitExternalId: unit,
+        daysBack: 1,
+        daysForward: 14,
+      }),
+      provider.fetchAttendances({ token, professional, unitExternalId: unit, daysBack: 90 }),
+    ])
 
-  const sql = getSql()
-  const day = todayIso()
-  const todaysAppts = appointments.filter(
-    (a) => a.scheduledAt && a.scheduledAt.toISOString().slice(0, 10) === day,
-  )
-
-  await sql`
-    insert into subscriber_metrics_daily (
-      subscriber_id, day, revenue, attended, ticket_avg, occupancy, appointments, updated_at
-    ) values (
-      ${conn.subscriber_id},
-      ${day},
-      ${revenue?.revenue ?? 0},
-      ${revenue?.attended ?? 0},
-      ${revenue?.ticketAvg ?? null},
-      ${revenue?.occupancy ?? null},
-      ${todaysAppts.length},
-      now()
+    const sql = getSql()
+    const day = todayIso()
+    const todaysAppts = appointments.filter(
+      (a) => a.scheduledAt && a.scheduledAt.toISOString().slice(0, 10) === day,
     )
-    on conflict (subscriber_id, day) do update set
-      revenue = excluded.revenue,
-      attended = excluded.attended,
-      ticket_avg = excluded.ticket_avg,
-      occupancy = excluded.occupancy,
-      appointments = excluded.appointments,
-      updated_at = now()
-  `
-
-  await sql`
-    delete from subscriber_appointments
-    where subscriber_id = ${conn.subscriber_id}
-      and scheduled_at >= date_trunc('day', now())
-  `
-
-  for (const appt of appointments) {
-    const clientId = await upsertClient(conn.subscriber_id, {
-      externalClientId: appt.externalClientId,
-      name: appt.clientName,
-      phone: appt.clientPhone,
-      lastVisitAt: null,
-      lastServiceName: appt.serviceName,
-      lastPrice: appt.price,
-      status: 'agendado',
-    })
 
     await sql`
-      insert into subscriber_appointments (
-        subscriber_id, client_id, external_client_id, client_name, service_name,
-        scheduled_at, status, price, source, updated_at
+      insert into subscriber_metrics_daily (
+        subscriber_id, day, revenue, attended, ticket_avg, occupancy, appointments, updated_at
       ) values (
         ${conn.subscriber_id},
-        ${clientId},
-        ${appt.externalClientId},
-        ${appt.clientName},
-        ${appt.serviceName},
-        ${appt.scheduledAt?.toISOString() ?? null},
-        ${appt.status},
-        ${appt.price},
-        ${conn.provider},
+        ${day},
+        ${revenue?.revenue ?? 0},
+        ${revenue?.attended ?? 0},
+        ${revenue?.ticketAvg ?? null},
+        ${revenue?.occupancy ?? null},
+        ${todaysAppts.length},
         now()
       )
+      on conflict (subscriber_id, day) do update set
+        revenue = excluded.revenue,
+        attended = excluded.attended,
+        ticket_avg = excluded.ticket_avg,
+        occupancy = excluded.occupancy,
+        appointments = excluded.appointments,
+        updated_at = now()
     `
-  }
 
-  for (const att of attendances) {
-    const clientId = await upsertClient(conn.subscriber_id, {
-      externalClientId: att.externalClientId,
-      name: att.clientName,
-      phone: att.clientPhone,
-      lastVisitAt: att.doneAt,
-      lastServiceName: att.serviceName,
-      lastPrice: att.price,
-      status: 'convertido',
-    })
-    if (!clientId || !att.serviceName) continue
-    await upsertService(conn.subscriber_id, clientId, att.serviceName, att.doneAt, att.price)
-  }
+    await sql`
+      delete from subscriber_appointments
+      where subscriber_id = ${conn.subscriber_id}
+        and scheduled_at >= date_trunc('day', now())
+    `
 
-  await markConnectionSynced(conn.id)
+    for (const appt of appointments) {
+      const clientId = await upsertClient(conn.subscriber_id, {
+        externalClientId: appt.externalClientId,
+        name: appt.clientName,
+        phone: appt.clientPhone,
+        lastVisitAt: null,
+        lastServiceName: appt.serviceName,
+        lastPrice: appt.price,
+        status: 'agendado',
+      })
 
-  return {
-    revenue: revenue?.revenue ?? 0,
-    attended: revenue?.attended ?? 0,
-    appointments: appointments.length,
-    attendances: attendances.length,
+      await sql`
+        insert into subscriber_appointments (
+          subscriber_id, client_id, external_client_id, client_name, service_name,
+          scheduled_at, status, price, source, updated_at
+        ) values (
+          ${conn.subscriber_id},
+          ${clientId},
+          ${appt.externalClientId},
+          ${appt.clientName},
+          ${appt.serviceName},
+          ${appt.scheduledAt?.toISOString() ?? null},
+          ${appt.status},
+          ${appt.price},
+          ${conn.provider},
+          now()
+        )
+      `
+    }
+
+    for (const att of attendances) {
+      const clientId = await upsertClient(conn.subscriber_id, {
+        externalClientId: att.externalClientId,
+        name: att.clientName,
+        phone: att.clientPhone,
+        lastVisitAt: att.doneAt,
+        lastServiceName: att.serviceName,
+        lastPrice: att.price,
+        status: 'convertido',
+      })
+      if (!clientId || !att.serviceName) continue
+      await upsertService(conn.subscriber_id, clientId, att.serviceName, att.doneAt, att.price)
+    }
+
+    await markConnectionSynced(conn.id)
+
+    return {
+      revenue: revenue?.revenue ?? 0,
+      attended: revenue?.attended ?? 0,
+      appointments: appointments.length,
+      attendances: attendances.length,
+    }
+  } catch (e) {
+    captureHairsalesException(
+      e,
+      { id: conn.subscriber_id },
+      {
+        operation: 'syncSubscriberConnection',
+        provider: conn.provider,
+        connection_id: conn.id,
+      },
+    )
+    throw e
   }
 }

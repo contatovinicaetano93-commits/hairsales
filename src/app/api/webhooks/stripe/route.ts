@@ -10,8 +10,32 @@ import {
   markSignupCheckoutPaid,
   subscriptionStatusFromStripe,
 } from '@/lib/pro/stripe'
+import { captureHairsalesException } from '@/lib/pro/observability'
 
 export const runtime = 'nodejs'
+
+type StripeObjectWithSubscriber = {
+  client_reference_id?: string | null
+  metadata?: {
+    kind?: string
+    subscriber_id?: string
+  } | null
+}
+
+function stripeSubscriberContext(event: Stripe.Event) {
+  const object = event.data.object as StripeObjectWithSubscriber
+  const subscriberId = object.metadata?.subscriber_id ?? object.client_reference_id ?? null
+
+  return {
+    subscriber: subscriberId ? { id: subscriberId } : null,
+    extra: {
+      route: '/api/webhooks/stripe',
+      event_type: event.type,
+      stripe_event_id: event.id,
+      metadata_kind: object.metadata?.kind ?? null,
+    },
+  }
+}
 
 export async function POST(req: NextRequest) {
   if (!isStripeConfigured()) return err('Stripe não configurado', 503)
@@ -84,6 +108,8 @@ export async function POST(req: NextRequest) {
     }
     return ok({ received: true, type: event.type })
   } catch (e) {
+    const context = stripeSubscriberContext(event)
+    captureHairsalesException(e, context.subscriber, context.extra)
     console.error('[stripe webhook]', e)
     return err(e instanceof Error ? e.message : 'Erro no webhook', 500)
   }
