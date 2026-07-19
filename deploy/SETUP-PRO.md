@@ -15,7 +15,7 @@ PR de referência: `cursor/pro-subscriber-app-2182` → base `feat/vitrini-brand
 
 ## 1. Migrations (Neon)
 
-Aplicar `020`–`024` (já listadas em `db/migrations.json`):
+Aplicar `020`–`029` (já listadas em `db/migrations.json`):
 
 | ID | Arquivo |
 |----|---------|
@@ -24,6 +24,13 @@ Aplicar `020`–`024` (já listadas em `db/migrations.json`):
 | `022_pro_whatsapp` | `delta-pro-whatsapp.sql` |
 | `023_pro_wa_packs` | `delta-pro-wa-packs.sql` |
 | `024_pro_stripe` | `delta-pro-stripe.sql` |
+| `025_pro_billing_signup` | `delta-pro-billing-signup.sql` |
+| `026_pro_subscription_status` | `delta-pro-subscription-status.sql` |
+| `027_pro_billing_events` | `delta-pro-billing-events.sql` |
+| `028_pro_session_version` | `delta-pro-session-version.sql` |
+| `029_pro_billing_events_pending` | `delta-pro-billing-events-pending.sql` |
+
+Quando HairSales estiver separado do painel ROM, aplique as migrations Pro somente no `DATABASE_URL` do Neon HairSales. Não rode estas migrations contra bancos das unidades ROM.
 
 ```bash
 DATABASE_URL=... ROM_PANEL=vitrini npm run db:migrate
@@ -41,6 +48,7 @@ Obrigatórias em **production**:
 | `PRO_DATA_SECRET` | Cookie de sessão + criptografia do token da agenda (`openssl rand -hex 32`); deve ser único e nunca o `CRON_SECRET` |
 | `NEXT_PUBLIC_APP_URL` | Return URLs Stripe / links absolutos |
 | `ANTHROPIC_API_KEY` | Assistente / briefing |
+| `CRON_SECRET` | Protege `/api/pro/reminders` e `/api/pro/billing/reconcile` |
 
 Obrigatórias em **production** para habilitar Telegram HairSales (Standard / Pro):
 
@@ -117,7 +125,20 @@ Após o domínio no ar:
 - WhatsApp Pro: `https://SEU-DOMINIO/api/webhooks/whatsapp-pro`
 - Stripe: `https://SEU-DOMINIO/api/webhooks/stripe`
 
-## 5. Smoke (automático)
+## 5. Crons HairSales
+
+O `vercel.json` da raiz fica reservado para crons das unidades ROM (`/api/avec/sync`, `/api/estoque/sync`, `/api/director-report`) e não agenda rotas Pro por padrão.
+
+No projeto Vercel HairSales, use `deploy/vercel-hairsales.json` como fonte dos crons Pro (copie para `vercel.json` na branch/projeto HairSales ou replique os agendamentos no projeto dedicado):
+
+| Path | Schedule | Requer |
+|------|----------|--------|
+| `/api/pro/reminders` | `0 * * * *` | `CRON_SECRET` |
+| `/api/pro/billing/reconcile` | `0 5 * * *` | `CRON_SECRET`, Stripe configurado |
+
+Esses crons devem apontar para o `DATABASE_URL` separado do HairSales, nunca para bancos de unidade ROM.
+
+## 6. Smoke (automático)
 
 Com a URL do preview ou produção **já com o branch Pro**:
 
@@ -132,7 +153,7 @@ Fluxo completo (register → connect mock → onboarding) exige DB migrado e **n
 npm test -- src/__tests__/e2e-pro-onboarding.test.ts
 ```
 
-## 6. Smoke manual (5 min)
+## 7. Smoke manual (5 min)
 
 1. Abrir `/pro/login` → criar conta  
 2. `/pro/conectar` → nome igual à agenda + token Avec (ou `mock` só em preview/dev)  
@@ -141,7 +162,7 @@ npm test -- src/__tests__/e2e-pro-onboarding.test.ts
 5. Assistente responde sem vazar salão  
 6. (Pro) WhatsApp / packs / Portal só após Stripe + plano Pro  
 
-## 7. Critérios de “está no ar”
+## 8. Critérios de “está no ar”
 
 - [ ] `GET /pro/login` → **200** (não 404)
 - [ ] `GET /api/me/onboarding` sem cookie → **401**
