@@ -153,6 +153,9 @@ export function ProLanding() {
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-muted">
             <span className="inline-flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-gold-strong" /> Assistente IA pessoal
+            </span>
+            <span className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4 text-gold-strong" /> Avec · Trinks
             </span>
             <span className="inline-flex items-center gap-1.5">
