@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import type { RomPanelId } from '@/lib/brand'
@@ -8,6 +8,19 @@ import {
   loadMigrationsManifest,
   MissingMigrationFileError,
 } from './registry'
+
+const PRO_MIGRATION_IDS = [
+  '020_pro_subscribers',
+  '021_pro_assistant',
+  '022_pro_whatsapp',
+  '023_pro_wa_packs',
+  '024_pro_stripe',
+  '025_pro_billing_signup',
+  '026_pro_subscription_status',
+  '027_pro_billing_events',
+  '028_pro_session_version',
+  '029_pro_billing_events_pending',
+]
 
 function panelOfThisRepo(): RomPanelId {
   const db = join(process.cwd(), 'db')
@@ -49,6 +62,19 @@ describe('assertSafeDbFileName', () => {
 })
 
 describe('migrations registry', () => {
+  const env = process.env
+
+  beforeEach(() => {
+    process.env = { ...env }
+    delete process.env.APP_SURFACE
+    delete process.env.NEXT_PUBLIC_APP_SURFACE
+    delete process.env.PRO_MIGRATIONS_ON_ROM
+  })
+
+  afterEach(() => {
+    process.env = env
+  })
+
   it('carrega manifest e ids únicos', () => {
     const { migrations } = loadMigrationsManifest()
     const ids = migrations.map((m) => m.id)
@@ -76,6 +102,39 @@ describe('migrations registry', () => {
     for (const migration of list) {
       expect(existsSync(join(process.cwd(), 'db', migration.file))).toBe(true)
     }
+  })
+
+  it('no surface ROM não inclui migrations exclusivas do HairSales', () => {
+    process.env.APP_SURFACE = 'rom'
+
+    const list = listMigrationsForPanel('vitrini')
+    const ids = list.map((migration) => migration.id)
+
+    expect(ids).not.toEqual(expect.arrayContaining(PRO_MIGRATION_IDS))
+    expect(list.some((migration) => migration.panels.includes('hairsales'))).toBe(false)
+  })
+
+  it('no surface HairSales ignora ROM_PANEL e lista apenas migrations hairsales', () => {
+    process.env.APP_SURFACE = 'hairsales'
+    process.env.ROM_PANEL = 'brasil'
+    process.env.NEXT_PUBLIC_ROM_PANEL = 'brasil'
+
+    const list = listMigrationsForPanel('vitrini')
+    const ids = list.map((migration) => migration.id)
+
+    expect(ids).toEqual(PRO_MIGRATION_IDS)
+    expect(list.every((migration) => migration.panels.includes('hairsales'))).toBe(true)
+  })
+
+  it('permite escape hatch transitório para Pro migrations no ROM', () => {
+    process.env.APP_SURFACE = 'rom'
+    process.env.PRO_MIGRATIONS_ON_ROM = '1'
+
+    const list = listMigrationsForPanel('vitrini')
+    const ids = list.map((migration) => migration.id)
+
+    expect(ids).toContain('001_base_schema')
+    expect(ids).toEqual(expect.arrayContaining(PRO_MIGRATION_IDS))
   })
 
   it('falha se arquivo do outro painel estiver ausente neste repo', () => {

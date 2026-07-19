@@ -263,7 +263,7 @@ export const DUVIDAS = [
   },
   {
     q: 'Isso substitui o painel da unidade?',
-    a: 'Não. HairSales é o app do profissional. O painel da equipe da unidade continua em /login, com acesso normal.',
+    a: 'Não. HairSales é o app do profissional. O painel da equipe da unidade continua separado no projeto ROM.',
   },
   {
     q: 'Quais agendas funcionam?',
@@ -276,7 +276,7 @@ export const CONTATO = {
   body: 'Dúvidas de onboarding, agenda ou plano — use o e-mail da sua conta ou o suporte do projeto.',
   points: [
     'Suporte de produto: pelo e-mail usado no cadastro',
-    'Painel da unidade (equipe): acesse /login',
+    'Painel da unidade (equipe): acesso separado no projeto ROM',
     'Cobrança: Stripe Customer Portal na aba Conectar',
   ],
 }
@@ -288,7 +288,7 @@ export const SOBRE = {
     'Produto: HairSales',
     'Standard: R$ 29,90/mês',
     'Pro: R$ 199,90/mês',
-    'Painel da equipe: acesso separado em /login',
+    'Painel da equipe: acesso separado no projeto ROM',
   ],
 }
 

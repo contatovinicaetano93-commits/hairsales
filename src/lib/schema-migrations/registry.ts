@@ -1,13 +1,16 @@
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { getAppSurface } from '@/lib/app-surface'
 import type { RomPanelId } from '@/lib/brand'
 import { getRomPanelId } from '@/lib/brand'
 import { assertSafeDbFileName } from '@/lib/schema-migrations/sql'
 
+export type MigrationPanelId = RomPanelId | 'hairsales'
+
 export interface SchemaMigrationDef {
   id: string
   file: string
-  panels: RomPanelId[]
+  panels: MigrationPanelId[]
 }
 
 interface MigrationsManifest {
@@ -56,7 +59,17 @@ export function listMigrationsForPanel(
   cwd = process.cwd(),
 ): SchemaMigrationDef[] {
   const { migrations } = loadMigrationsManifest(cwd)
-  const forPanel = migrations.filter((m) => m.panels.includes(panel))
+  const surface = getAppSurface()
+  const includeHairsalesOnRom = process.env.PRO_MIGRATIONS_ON_ROM === '1'
+  const migrationPanels: MigrationPanelId[] =
+    surface === 'hairsales'
+      ? ['hairsales']
+      : includeHairsalesOnRom
+        ? [panel, 'hairsales']
+        : [panel]
+  const forPanel = migrations.filter((m) =>
+    migrationPanels.some((migrationPanel) => m.panels.includes(migrationPanel)),
+  )
   const missing = forPanel
     .map((m) => assertSafeDbFileName(m.file))
     .filter((file) => !existsSync(join(cwd, 'db', file)))

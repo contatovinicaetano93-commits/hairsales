@@ -4,6 +4,7 @@ Path B2C `/pro/*` + APIs `/api/me/*` e `/api/pro/*`.
 Não substitui o painel ROM — só empilha o produto do profissional individual.
 
 Para isolar HairSales do painel ROM em outro Vercel Project/Neon, siga `deploy/HAIRSALES-SEPARATE-DEPLOY.md`.
+No projeto dedicado, configure `APP_SURFACE=hairsales` e `NEXT_PUBLIC_APP_SURFACE=hairsales`. Projetos de unidade ROM podem omitir essas vars ou usar `rom`.
 
 PR de referência: `cursor/pro-subscriber-app-2182` → base `feat/vitrini-branding`.
 
@@ -33,10 +34,11 @@ Aplicar `020`–`029` (já listadas em `db/migrations.json`):
 Quando HairSales estiver separado do painel ROM, aplique as migrations Pro somente no `DATABASE_URL` do Neon HairSales. Não rode estas migrations contra bancos das unidades ROM.
 
 ```bash
-DATABASE_URL=... ROM_PANEL=vitrini npm run db:migrate
+APP_SURFACE=hairsales NEXT_PUBLIC_APP_SURFACE=hairsales DATABASE_URL=... npm run db:migrate
 ```
 
 Ou confiar no boot (`instrumentation`) se `ROM_SKIP_BOOT_MIGRATIONS` **não** estiver `1`.
+As migrations `020`–`029` ficam registradas no painel lógico `hairsales`; em ROM elas só rodam com o escape hatch transitório `PRO_MIGRATIONS_ON_ROM=1`.
 
 ## 2. Variáveis Vercel (mínimo para /pro subir)
 
@@ -44,11 +46,14 @@ Obrigatórias em **production**:
 
 | Var | Uso |
 |-----|-----|
-| `DATABASE_URL` | Neon |
+| `APP_SURFACE` | `hairsales` no projeto B2C dedicado |
+| `NEXT_PUBLIC_APP_SURFACE` | `hairsales` no bundle client do projeto B2C |
+| `DATABASE_URL` | Neon HairSales separado das unidades ROM |
 | `PRO_DATA_SECRET` | Cookie de sessão + criptografia do token da agenda (`openssl rand -hex 32`); deve ser único e nunca o `CRON_SECRET` |
 | `NEXT_PUBLIC_APP_URL` | Return URLs Stripe / links absolutos |
 | `ANTHROPIC_API_KEY` | Assistente / briefing |
 | `CRON_SECRET` | Protege `/api/pro/reminders` e `/api/pro/billing/reconcile` |
+| `ROM_TEAM_LOGIN_URL` | Opcional: URL externa do painel ROM da equipe; sem ela, o link da equipe é ocultado no surface HairSales |
 
 Obrigatórias em **production** para habilitar Telegram HairSales (Standard / Pro):
 
@@ -74,6 +79,7 @@ Stripe (obrigatório para cobrar assinaturas — pagar antes do cadastro):
 
 Fluxo: landing → Checkout Stripe → `/pro/completar-cadastro` → conta ativa.  
 Painel da equipe (`/login`) continua com acesso normal (sem estes planos).
+Em `APP_SURFACE=hairsales`, `/login` e as rotas ROM redirecionam para `/pro/login`; em `APP_SURFACE=rom`, `/pro/*`, `/api/me/*`, `/api/pro/*` e webhooks Pro ficam bloqueados.
 
 WhatsApp Cloud (só Pro):
 

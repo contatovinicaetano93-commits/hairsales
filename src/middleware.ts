@@ -1,17 +1,63 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isHairsalesSurface } from '@/lib/app-surface'
 import { isAuthorized, isAuthEnabled, getSession } from '@/lib/auth'
 import { isCronAuthorized } from '@/lib/cron-auth'
 
-const PUBLIC_API_PREFIXES = ['/api/auth', '/api/health', '/api/webhooks', '/api/pro/auth']
+const PUBLIC_API_PREFIXES = ['/api/auth', '/api/health', '/api/webhooks']
+const PRO_WEBHOOK_PATHS = [
+  '/api/webhooks/stripe',
+  '/api/webhooks/telegram-pro',
+  '/api/webhooks/whatsapp-pro',
+]
+
+function isPathOrSubpath(pathname: string, basePath: string) {
+  return pathname === basePath || pathname.startsWith(`${basePath}/`)
+}
 
 function isPublicApi(pathname: string) {
-  return PUBLIC_API_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  return PUBLIC_API_PREFIXES.some((p) => isPathOrSubpath(pathname, p))
 }
 
 /** App do profissional — autenticação própria (cookie vitrini_pro_session), não ROM. */
 function isProAppApi(pathname: string) {
-  return pathname.startsWith('/api/me') || pathname.startsWith('/api/pro/')
+  return isPathOrSubpath(pathname, '/api/me') || isPathOrSubpath(pathname, '/api/pro')
+}
+
+function isProWebhook(pathname: string) {
+  return PRO_WEBHOOK_PATHS.some((p) => isPathOrSubpath(pathname, p))
+}
+
+function isProPage(pathname: string) {
+  return isPathOrSubpath(pathname, '/pro')
+}
+
+function isRomSurfacePage(pathname: string) {
+  return (
+    pathname === '/login' ||
+    pathname === '/hoje' ||
+    pathname === '/dashboard' ||
+    pathname === '/contatos' ||
+    pathname.startsWith('/contatos/') ||
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/') ||
+    pathname === '/financeiro' ||
+    pathname.startsWith('/financeiro/') ||
+    pathname === '/estoque' ||
+    pathname.startsWith('/estoque/') ||
+    pathname === '/onboarding' ||
+    pathname.startsWith('/onboarding/') ||
+    pathname === '/observability' ||
+    pathname.startsWith('/observability/')
+  )
+}
+
+function isHairsalesAllowedApi(pathname: string) {
+  return isPathOrSubpath(pathname, '/api/health') || isProAppApi(pathname) || isProWebhook(pathname)
+}
+
+function isMonitoringPath(pathname: string) {
+  return isPathOrSubpath(pathname, '/monitoring')
 }
 
 function isFinancePath(pathname: string) {
@@ -83,8 +129,24 @@ function isProtectedApi(pathname: string) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Rotas do app do profissional: handlers validam sessão própria.
-  if (isProAppApi(pathname)) return NextResponse.next()
+  if (isHairsalesSurface()) {
+    if (isProPage(pathname) || isMonitoringPath(pathname)) return NextResponse.next()
+    if (pathname.startsWith('/api/')) {
+      if (isHairsalesAllowedApi(pathname)) return NextResponse.next()
+      return NextResponse.json({ error: 'Rota indisponível no HairSales' }, { status: 403 })
+    }
+    if (pathname === '/' || isRomSurfacePage(pathname)) {
+      return NextResponse.redirect(new URL('/pro/login', req.url))
+    }
+    return NextResponse.next()
+  }
+
+  if (isProPage(pathname)) {
+    return NextResponse.redirect(new URL('/login', req.url))
+  }
+  if (isProAppApi(pathname) || isProWebhook(pathname)) {
+    return NextResponse.json({ error: 'Rota indisponível no painel ROM' }, { status: 403 })
+  }
 
   if (!isAuthEnabled()) return NextResponse.next()
 
@@ -185,6 +247,11 @@ export const config = {
     '/onboarding/:path*',
     '/observability',
     '/observability/:path*',
+    '/login',
+    '/pro',
+    '/pro/:path*',
+    '/monitoring',
+    '/monitoring/:path*',
     '/api/:path*',
   ],
 }

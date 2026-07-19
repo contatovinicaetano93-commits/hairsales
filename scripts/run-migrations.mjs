@@ -2,7 +2,7 @@
 /**
  * Aplica db/migrations.json no Neon (DATABASE_URL).
  * Uso:
- *   DATABASE_URL=... ROM_PANEL=vitrini npm run db:migrate
+ *   DATABASE_URL=... APP_SURFACE=hairsales npm run db:migrate
  */
 import { existsSync, readFileSync } from 'fs'
 import { basename, join, dirname } from 'path'
@@ -21,6 +21,17 @@ const cwd = join(dirname(fileURLToPath(import.meta.url)), '..')
 const panel = (process.env.ROM_PANEL || process.env.NEXT_PUBLIC_ROM_PANEL || 'vitrini')
   .toLowerCase()
   .replace('iguatuemi', 'iguatemi')
+const surface =
+  (process.env.APP_SURFACE || process.env.NEXT_PUBLIC_APP_SURFACE || 'rom').toLowerCase() ===
+  'hairsales'
+    ? 'hairsales'
+    : 'rom'
+const migrationPanels =
+  surface === 'hairsales'
+    ? ['hairsales']
+    : process.env.PRO_MIGRATIONS_ON_ROM === '1'
+      ? [panel, 'hairsales']
+      : [panel]
 const databaseUrl = process.env.DATABASE_URL
 
 if (!databaseUrl) {
@@ -50,7 +61,9 @@ function splitSqlStatements(sql) {
 }
 
 const manifest = JSON.parse(readFileSync(join(cwd, 'db', 'migrations.json'), 'utf8'))
-const migrations = manifest.migrations.filter((m) => m.panels.includes(panel))
+const migrations = manifest.migrations.filter((m) =>
+  migrationPanels.some((migrationPanel) => m.panels.includes(migrationPanel)),
+)
 const missing = migrations
   .map((m) => assertSafeDbFileName(m.file))
   .filter((file) => !existsSync(join(cwd, 'db', file)))
@@ -94,4 +107,6 @@ for (const migration of migrations) {
   appliedCount += 1
 }
 
-console.log(`done panel=${panel} applied=${appliedCount} registered=${migrations.length}`)
+console.log(
+  `done surface=${surface} panel=${panel} applied=${appliedCount} registered=${migrations.length}`,
+)

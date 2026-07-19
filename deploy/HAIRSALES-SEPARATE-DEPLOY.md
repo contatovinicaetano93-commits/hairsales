@@ -12,6 +12,7 @@ Objetivo: isolar banco, segredos, Stripe e webhooks do produto B2C sem quebrar o
 | Neon | `DATABASE_URL` da unidade / painel | Novo Neon project ou branch dedicado |
 | Domínio | Ex.: `rom-salao.example.com` | Ex.: `hairsales.example.com` |
 | Login principal | `/login` | `/pro/login` |
+| Surface env | `APP_SURFACE=rom` (ou omitido) | `APP_SURFACE=hairsales` |
 | Webhooks Pro | Não configurar | Configurar Stripe, Telegram Pro e WhatsApp Pro |
 | Crons Vercel | Somente unidade (`avec`, `estoque`, `director-report`) | Pro (`reminders`, `billing/reconcile`) via `deploy/vercel-hairsales.json` |
 
@@ -21,10 +22,11 @@ O ROM `/login` pode continuar nos projetos das unidades. HairSales usa seu próp
 
 1. Crie um novo Vercel Project a partir do mesmo repositório.
 2. Aponte a Production Branch para a branch que contém o app Pro.
-3. Defina `NEXT_PUBLIC_APP_URL` para o domínio HairSales final.
-4. Não copie variáveis de banco das unidades ROM. Use as variáveis HairSales abaixo.
-5. Configure os crons Pro a partir de `deploy/vercel-hairsales.json` (copiando para `vercel.json` no projeto/branch HairSales ou replicando os agendamentos no Vercel dedicado).
-6. Configure o domínio HairSales no projeto novo.
+3. Defina `APP_SURFACE=hairsales` e `NEXT_PUBLIC_APP_SURFACE=hairsales`.
+4. Defina `NEXT_PUBLIC_APP_URL` para o domínio HairSales final.
+5. Não copie variáveis de banco das unidades ROM. Use as variáveis HairSales abaixo.
+6. Configure os crons Pro a partir de `deploy/vercel-hairsales.json` (copiando para `vercel.json` no projeto/branch HairSales ou replicando os agendamentos no Vercel dedicado).
+7. Configure o domínio HairSales no projeto novo.
 
 ## 3. Criar Neon separado
 
@@ -41,11 +43,14 @@ O ROM `/login` pode continuar nos projetos das unidades. HairSales usa seu próp
 
 | Var | Uso |
 |-----|-----|
+| `APP_SURFACE=hairsales` | Seleciona rotas e migrations do produto HairSales no servidor |
+| `NEXT_PUBLIC_APP_SURFACE=hairsales` | Expõe o surface ao bundle client |
 | `DATABASE_URL` | Neon separado do HairSales |
 | `PRO_DATA_SECRET` | Sessão Pro e criptografia dos tokens de agenda; gere com `openssl rand -hex 32` |
 | `NEXT_PUBLIC_APP_URL` | URL pública do projeto HairSales |
 | `ANTHROPIC_API_KEY` | Assistente Pro / briefing |
 | `CRON_SECRET` | Protege rotas cron/automação quando habilitadas |
+| `ROM_TEAM_LOGIN_URL` | Opcional: URL externa do painel ROM da equipe; se ausente, o link da equipe fica oculto no HairSales |
 
 ### Stripe
 
@@ -122,6 +127,10 @@ npm run verify:pro -- https://HAIRSALES_DOMINIO
 
 Os projetos Vercel das unidades podem continuar servindo `/login` e demais telas ROM com seus bancos atuais. Não é necessário mover o painel ROM para o projeto HairSales.
 
+Nas unidades ROM, mantenha `APP_SURFACE=rom` e `NEXT_PUBLIC_APP_SURFACE=rom` (ou omita ambos, pois `rom` é o default). As migrations `020`–`029` são HairSales-only e não rodam em ROM por padrão.
+
 O `vercel.json` da raiz não agenda crons Pro por padrão. Mantenha `/api/pro/reminders` e `/api/pro/billing/reconcile` fora dos projetos de unidade para evitar que reconciliem ou enviem lembretes usando bancos ROM.
 
 Se o mesmo repositório publica ambos, a separação real fica nas variáveis por projeto: cada Vercel Project aponta para seu próprio `DATABASE_URL`, domínio, conjunto de webhooks e arquivo de crons.
+
+Escape hatch transitório: `PRO_MIGRATIONS_ON_ROM=1` faz o runner também aplicar as migrations HairSales no painel ROM atual. Use apenas durante migração/rollback controlado; remova depois para manter os bancos separados.

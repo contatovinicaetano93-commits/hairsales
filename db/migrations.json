@@ -20,15 +20,15 @@
     { "id": "017_parity_brasil", "file": "delta-parity-brasil.sql", "panels": ["iguatemi"] },
     { "id": "018_audit_alerts", "file": "delta-audit-alerts.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
     { "id": "019_vitrini_staff_links", "file": "delta-vitrini-staff-links.sql", "panels": ["vitrini"] },
-    { "id": "020_pro_subscribers", "file": "delta-pro-subscribers.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "021_pro_assistant", "file": "delta-pro-assistant.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "022_pro_whatsapp", "file": "delta-pro-whatsapp.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "023_pro_wa_packs", "file": "delta-pro-wa-packs.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "024_pro_stripe", "file": "delta-pro-stripe.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "025_pro_billing_signup", "file": "delta-pro-billing-signup.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "026_pro_subscription_status", "file": "delta-pro-subscription-status.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "027_pro_billing_events", "file": "delta-pro-billing-events.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "028_pro_session_version", "file": "delta-pro-session-version.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "029_pro_billing_events_pending", "file": "delta-pro-billing-events-pending.sql", "panels": ["brasil", "iguatemi", "vitrini"] }
+    { "id": "020_pro_subscribers", "file": "delta-pro-subscribers.sql", "panels": ["hairsales"] },
+    { "id": "021_pro_assistant", "file": "delta-pro-assistant.sql", "panels": ["hairsales"] },
+    { "id": "022_pro_whatsapp", "file": "delta-pro-whatsapp.sql", "panels": ["hairsales"] },
+    { "id": "023_pro_wa_packs", "file": "delta-pro-wa-packs.sql", "panels": ["hairsales"] },
+    { "id": "024_pro_stripe", "file": "delta-pro-stripe.sql", "panels": ["hairsales"] },
+    { "id": "025_pro_billing_signup", "file": "delta-pro-billing-signup.sql", "panels": ["hairsales"] },
+    { "id": "026_pro_subscription_status", "file": "delta-pro-subscription-status.sql", "panels": ["hairsales"] },
+    { "id": "027_pro_billing_events", "file": "delta-pro-billing-events.sql", "panels": ["hairsales"] },
+    { "id": "028_pro_session_version", "file": "delta-pro-session-version.sql", "panels": ["hairsales"] },
+    { "id": "029_pro_billing_events_pending", "file": "delta-pro-billing-events-pending.sql", "panels": ["hairsales"] }
   ]
 }

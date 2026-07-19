@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CalendarDays, MessageCircle, Sparkles } from 'lucide-react'
 import { getProBrand } from '@/lib/pro/brand'
@@ -16,7 +16,11 @@ import { ProInfoModal } from './ProInfoModal'
 
 type AuthMode = 'login' | 'subscribe'
 
-export function ProLanding() {
+interface ProLandingProps {
+  romTeamLoginUrl?: string | null
+}
+
+export function ProLanding({ romTeamLoginUrl = null }: ProLandingProps) {
   const brand = getProBrand()
   const formRef = useRef<HTMLDivElement>(null)
   const [modal, setModal] = useState<LandingModalId | null>(null)
@@ -28,28 +32,28 @@ export function ProLanding() {
   const [loading, setLoading] = useState(false)
   const [selectedCard, setSelectedCard] = useState<string>('login')
 
-  function scrollToForm() {
+  const scrollToForm = useCallback(() => {
     requestAnimationFrame(() => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
-  }
+  }, [])
 
-  function openLogin() {
+  const openLogin = useCallback(() => {
     setMode('login')
     setSelectedCard('login')
     setError(null)
     scrollToForm()
-  }
+  }, [scrollToForm])
 
-  function openSubscribe(plan: ProPublicPlanId, options?: { keepError?: boolean }) {
+  const openSubscribe = useCallback((plan: ProPublicPlanId, options?: { keepError?: boolean }) => {
     setMode('subscribe')
     setSubscribePlan(plan)
     setSelectedCard(plan)
     if (!options?.keepError) setError(null)
     scrollToForm()
-  }
+  }, [scrollToForm])
 
-  function onHeroCard(id: (typeof HERO_CARDS)[number]['id']) {
+  const onHeroCard = useCallback((id: (typeof HERO_CARDS)[number]['id']) => {
     if (id === 'login') {
       openLogin()
       return
@@ -59,7 +63,7 @@ export function ProLanding() {
       return
     }
     setModal(id)
-  }
+  }, [openLogin, openSubscribe])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -107,14 +111,6 @@ export function ProLanding() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
 
-    if (params.get('checkout') === 'cancel') {
-      const plan: ProPublicPlanId =
-        params.get('plan') === 'pro' ? 'pro' : 'standard'
-      setError('Checkout cancelado. Escolha o plano quando quiser.')
-      openSubscribe(plan, { keepError: true })
-      return
-    }
-
     function applyHash(raw: string) {
       const hash = raw.replace(/^#/, '').toLowerCase()
       switch (hash) {
@@ -137,11 +133,24 @@ export function ProLanding() {
       }
     }
 
-    applyHash(window.location.hash)
+    const frame = requestAnimationFrame(() => {
+      if (params.get('checkout') === 'cancel') {
+        const plan: ProPublicPlanId =
+          params.get('plan') === 'pro' ? 'pro' : 'standard'
+        setError('Checkout cancelado. Escolha o plano quando quiser.')
+        openSubscribe(plan, { keepError: true })
+        return
+      }
+
+      applyHash(window.location.hash)
+    })
     const onHashChange = () => applyHash(window.location.hash)
     window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [])
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('hashchange', onHashChange)
+    }
+  }, [openLogin, openSubscribe])
 
   const planPrice = subscribePlan === 'pro' ? 'R$ 199,90/mês' : 'R$ 29,90/mês'
   const planLabel = subscribePlan === 'pro' ? 'Pro' : 'Standard'
@@ -421,12 +430,28 @@ export function ProLanding() {
             {mode === 'login' ? 'Ainda não tenho conta — ver planos' : 'Já tenho conta — entrar'}
           </button>
 
-          <p className="mt-6 text-xs font-medium text-muted">
-            Painel da unidade?{' '}
-            <Link href="/login" className="font-bold text-gold-strong underline-offset-2 hover:underline">
-              Acesso da equipe
-            </Link>
-          </p>
+          {romTeamLoginUrl && (
+            <p className="mt-6 text-xs font-medium text-muted">
+              Painel da unidade?{' '}
+              {romTeamLoginUrl.startsWith('/') ? (
+                <Link
+                  href={romTeamLoginUrl}
+                  className="font-bold text-gold-strong underline-offset-2 hover:underline"
+                >
+                  Acesso da equipe
+                </Link>
+              ) : (
+                <a
+                  href={romTeamLoginUrl}
+                  className="font-bold text-gold-strong underline-offset-2 hover:underline"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Acesso da equipe
+                </a>
+              )}
+            </p>
+          )}
         </section>
 
         <p className="mt-10 text-center text-xs font-medium text-muted">
