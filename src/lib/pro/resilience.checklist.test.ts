@@ -54,7 +54,7 @@ describe('HairSales resilience checklist', () => {
     'smoke-tests optional billing event module exports when present',
     async () => {
       const mod = await importOptionalModule<Record<string, unknown>>(OPTIONAL_MODULES.billingEvents)
-      const expectedExports = ['recordBillingEvent', 'logBillingEvent', 'appendBillingEvent']
+      const expectedExports = ['claimBillingEvent', 'markBillingEvent', 'deleteBillingEvent']
 
       expect(expectedExports.some((name) => typeof mod[name] === 'function')).toBe(true)
     },
@@ -64,7 +64,7 @@ describe('HairSales resilience checklist', () => {
     'smoke-tests optional rate limit module exports when present',
     async () => {
       const mod = await importOptionalModule<Record<string, unknown>>(OPTIONAL_MODULES.rateLimit)
-      const expectedExports = ['checkRateLimit', 'consumeRateLimit', 'withRateLimit', 'rateLimit']
+      const expectedExports = ['checkProRateLimit', 'resetProRateLimitsForTests']
 
       expect(expectedExports.some((name) => typeof mod[name] === 'function')).toBe(true)
     },
