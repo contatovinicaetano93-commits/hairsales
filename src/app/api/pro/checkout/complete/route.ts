@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       display_name: subscriber.display_name,
       email: subscriber.email,
       plan: subscriber.plan,
+      subscription_status: subscriber.subscription_status,
       plan_label: labelForDbPlan(subscriber.plan),
     })
     res.cookies.set(PRO_AUTH_COOKIE, createProSessionToken(subscriber.id), proSessionCookieOptions())

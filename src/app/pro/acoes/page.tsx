@@ -24,7 +24,7 @@ export default function ProAcoesPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [sending, setSending] = useState<string | null>(null)
   const [waConnected, setWaConnected] = useState(false)
-  const [plan, setPlan] = useState('free')
+  const [plan, setPlan] = useState('standard')
 
   useEffect(() => {
     fetch('/api/me/actions', { credentials: 'include' })

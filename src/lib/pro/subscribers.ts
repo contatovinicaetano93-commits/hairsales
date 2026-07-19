@@ -2,7 +2,8 @@ import { getSql } from '@/lib/db'
 import { decryptSecret, encryptSecret, hashPassword, verifyPassword } from '@/lib/pro/crypto'
 import type { AgendaProviderId } from '@/lib/providers/types'
 
-export type SubscriberPlan = 'free' | 'pro'
+export type SubscriberPlan = 'standard' | 'pro'
+export type SubscriptionStatus = 'none' | 'active' | 'canceled' | 'past_due'
 export type ConnectionStatus = 'pending' | 'active' | 'error' | 'disconnected'
 
 export interface SubscriberRow {
@@ -11,6 +12,7 @@ export interface SubscriberRow {
   email: string
   password_hash: string
   plan: SubscriberPlan
+  subscription_status: SubscriptionStatus
   daily_goal_revenue: number | null
   weekly_goal_revenue: number | null
   telegram_chat_id?: string | null
@@ -41,19 +43,24 @@ export async function createSubscriber(input: {
   email: string
   password: string
   plan?: SubscriberPlan
+  subscription_status?: SubscriptionStatus
   stripeCustomerId?: string | null
 }): Promise<SubscriberRow> {
   const sql = getSql()
   const passwordHash = await hashPassword(input.password)
-  const plan = input.plan ?? 'free'
+  const plan = input.plan ?? 'standard'
+  const subscriptionStatus = input.subscription_status ?? 'none'
   const stripeCustomerId = input.stripeCustomerId?.trim() || null
   const rows = (await sql`
-    insert into subscribers (display_name, email, password_hash, plan, stripe_customer_id)
+    insert into subscribers (
+      display_name, email, password_hash, plan, subscription_status, stripe_customer_id
+    )
     values (
       ${input.displayName.trim()},
       ${input.email.trim().toLowerCase()},
       ${passwordHash},
       ${plan},
+      ${subscriptionStatus},
       ${stripeCustomerId}
     )
     returning *
@@ -85,6 +92,14 @@ export async function authenticateSubscriber(
   if (!sub) return null
   const ok = await verifyPassword(password, sub.password_hash)
   return ok ? sub : null
+}
+
+export function isProPlan(plan: SubscriberPlan): boolean {
+  return plan === 'pro'
+}
+
+export function hasActiveSubscription(subscriber: SubscriberRow): boolean {
+  return subscriber.subscription_status === 'active'
 }
 
 export async function updateSubscriberDisplayName(id: string, displayName: string) {

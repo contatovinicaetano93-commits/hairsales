@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
         display_name: auth.session.subscriber.display_name,
         email: auth.session.subscriber.email,
         plan: auth.session.subscriber.plan,
+        subscription_status: auth.session.subscriber.subscription_status,
       },
       connection: conn
         ? {

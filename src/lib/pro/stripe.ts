@@ -5,7 +5,14 @@ import {
   stripePriceIdForPlan,
   type ProPublicPlanId,
 } from '@/lib/pro/plan-catalog'
-import { createSubscriber, findSubscriberByEmail, type SubscriberRow } from '@/lib/pro/subscribers'
+import {
+  createSubscriber,
+  findSubscriberByEmail,
+  hasActiveSubscription,
+  isProPlan,
+  type SubscriberRow,
+  type SubscriptionStatus,
+} from '@/lib/pro/subscribers'
 import { getMarketingPack, type MarketingPack } from '@/lib/pro/pack-catalog'
 
 let stripeClient: Stripe | null = null
@@ -21,6 +28,29 @@ export function getStripe(): Stripe {
     stripeClient = new Stripe(key, { apiVersion: '2025-08-27.basil' })
   }
   return stripeClient
+}
+
+export function subscriptionStatusFromStripe(
+  status: Stripe.Subscription.Status,
+): SubscriptionStatus {
+  switch (status) {
+    case 'active':
+    case 'trialing':
+      return 'active'
+    case 'past_due':
+      return 'past_due'
+    case 'canceled':
+    case 'incomplete_expired':
+    case 'unpaid':
+      return 'canceled'
+    case 'incomplete':
+    case 'paused':
+      return 'none'
+    default: {
+      const exhaustive: never = status
+      throw new Error(`Status Stripe inválido: ${exhaustive}`)
+    }
+  }
 }
 
 function appBaseUrl() {
@@ -55,7 +85,7 @@ export async function createMarketingPackCheckout(
   subscriber: SubscriberRow,
   packId: string,
 ): Promise<{ url: string; session_id: string; pack: MarketingPack }> {
-  if (subscriber.plan !== 'pro') {
+  if (!isProPlan(subscriber.plan)) {
     throw new Error('Packs de marketing estão no plano Pro.')
   }
   const pack = getMarketingPack(packId)
@@ -192,7 +222,7 @@ export async function createProSubscriptionCheckout(
   if (!offer) return null
   const priceId = stripePriceIdForPlan(offer.id)
   if (!priceId || !isStripeConfigured()) return null
-  if (subscriber.plan === offer.dbPlan) {
+  if (subscriber.plan === offer.dbPlan && hasActiveSubscription(subscriber)) {
     throw new Error(`Você já está no plano ${offer.label}`)
   }
   if (offer.id === 'standard' && subscriber.plan === 'pro') {
@@ -238,9 +268,15 @@ export async function fulfillProSubscription(session: Stripe.Checkout.Session) {
   if (!subscriberId) return { upgraded: false }
 
   const offer = getProPlanOffer(session.metadata?.public_plan) ?? getProPlanOffer('pro')!
+  const customerId =
+    typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null
   const sql = getSql()
   await sql`
-    update subscribers set plan = ${offer.dbPlan}, updated_at = now()
+    update subscribers
+    set plan = ${offer.dbPlan},
+        subscription_status = 'active',
+        stripe_customer_id = coalesce(${customerId}, stripe_customer_id),
+        updated_at = now()
     where id = ${subscriberId}
   `
   return { upgraded: true, subscriber_id: subscriberId, plan: offer.dbPlan }
@@ -357,6 +393,7 @@ export async function completeSignupFromCheckout(input: {
     email,
     password: input.password,
     plan: offer.dbPlan,
+    subscription_status: 'active',
     stripeCustomerId: customerId,
   })
 

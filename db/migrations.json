@@ -25,6 +25,7 @@
     { "id": "022_pro_whatsapp", "file": "delta-pro-whatsapp.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
     { "id": "023_pro_wa_packs", "file": "delta-pro-wa-packs.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
     { "id": "024_pro_stripe", "file": "delta-pro-stripe.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-    { "id": "025_pro_billing_signup", "file": "delta-pro-billing-signup.sql", "panels": ["brasil", "iguatemi", "vitrini"] }
+    { "id": "025_pro_billing_signup", "file": "delta-pro-billing-signup.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
+    { "id": "026_pro_subscription_status", "file": "delta-pro-subscription-status.sql", "panels": ["brasil", "iguatemi", "vitrini"] }
   ]
 }

@@ -233,7 +233,7 @@ export default function ProConectarPage() {
 }
 
 function PlanBlock() {
-  const [plan, setPlan] = useState('free')
+  const [plan, setPlan] = useState('standard')
   const [allowed, setAllowed] = useState(false)
   const [stripeEnabled, setStripeEnabled] = useState(false)
   const [stripeProPrice, setStripeProPrice] = useState(false)
@@ -276,7 +276,7 @@ function PlanBlock() {
     window.location.assign(json.data.url)
   }
 
-  async function setTo(next: 'free' | 'pro', checkout = false) {
+  async function setTo(next: 'standard' | 'pro', checkout = false) {
     setMsg(null)
     const res = await fetch('/api/me/plan', {
       method: 'PUT',
@@ -305,11 +305,11 @@ function PlanBlock() {
     <ConnectCard
       title="Plano"
       summary={
-        plan === 'free'
+        plan === 'standard'
           ? 'Standard · R$ 29,90 · App + Telegram'
           : 'Pro · R$ 199,90 · WhatsApp Cloud incluso'
       }
-      badge={plan === 'free' ? 'standard' : 'pro'}
+      badge={plan === 'standard' ? 'standard' : 'pro'}
     >
       <div className="flex flex-wrap gap-2">
         {plan !== 'pro' && stripeEnabled && stripeProPrice && (
@@ -333,7 +333,7 @@ function PlanBlock() {
         {plan === 'pro' && allowed && (
           <button
             type="button"
-            onClick={() => setTo('free', false)}
+            onClick={() => setTo('standard', false)}
             className="rounded-xl border border-border px-3 py-2 text-sm"
           >
             Voltar Standard (demo)
@@ -358,7 +358,7 @@ function PlanBlock() {
 }
 
 function WhatsappBlock() {
-  const [plan, setPlan] = useState('free')
+  const [plan, setPlan] = useState('standard')
   const [connected, setConnected] = useState(false)
   const [usage, setUsage] = useState<{
     utility_sent: number
@@ -537,7 +537,7 @@ function WhatsappBlock() {
             ? 'Número do assinante na Cloud API oficial'
             : 'Disponível no plano Pro'
       }
-      badge={connected ? 'ativo' : plan === 'pro' ? 'pro' : 'free'}
+      badge={connected ? 'ativo' : plan === 'pro' ? 'pro' : 'standard'}
     >
       <p className="text-sm text-muted">
         Standard usa Telegram. Em dev, token <code className="text-gold-strong">mock</code>.

@@ -14,9 +14,10 @@ describe('plan-catalog', () => {
     expect(getProPlanOffer('pro')?.amountCents).toBe(19990)
   })
 
-  it('mapeia free do banco para Standard na UI', () => {
-    expect(publicPlanFromDb('free')).toBe('standard')
-    expect(labelForDbPlan('free')).toBe('Standard')
-    expect(getProPlanOffer('free')?.id).toBe('standard')
+  it('mapeia Standard/Pro do banco para UI', () => {
+    expect(publicPlanFromDb('standard')).toBe('standard')
+    expect(publicPlanFromDb('pro')).toBe('pro')
+    expect(labelForDbPlan('standard')).toBe('Standard')
+    expect(getProPlanOffer('standard')?.dbPlan).toBe('standard')
   })
 })

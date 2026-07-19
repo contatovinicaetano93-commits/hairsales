@@ -2,7 +2,7 @@ import { getSql } from '@/lib/db'
 import { todayIso } from '@/lib/salon/format'
 import type { SubscriberPlan } from '@/lib/pro/subscribers'
 
-/** Unidades de IA — alinhado ao plano Free/Pro validado. */
+/** Unidades de IA — alinhado ao plano Standard/Pro validado. */
 export const AI_UNIT_COST = {
   question: 1,
   client_brief: 2,
@@ -12,12 +12,12 @@ export const AI_UNIT_COST = {
 export type AiAction = keyof typeof AI_UNIT_COST
 
 const DAILY_LIMIT: Record<SubscriberPlan, number> = {
-  free: 40,
+  standard: 40,
   pro: 150,
 }
 
 const MONTHLY_LIMIT: Record<SubscriberPlan, number> = {
-  free: 1000,
+  standard: 1000,
   pro: 4000,
 }
 

@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
 
     return ok({
       plan: auth.session.subscriber.plan,
+      subscription_status: auth.session.subscriber.subscription_status,
       connected: Boolean(wa && wa.status === 'active'),
       display_phone: wa?.display_phone ?? null,
       phone_number_id: wa ? `${wa.phone_number_id.slice(0, 4)}…` : null,
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     if (auth.session.subscriber.plan !== 'pro') {
       return err(
-        'WhatsApp Cloud API está no plano Pro. No Free use Telegram + app.',
+        'WhatsApp Cloud API está no plano Pro. No Standard use Telegram + app.',
         403,
       )
     }

@@ -4,7 +4,7 @@ import { computeOnboardingStatus, type OnboardingStep } from './onboarding'
 function baseInput(overrides: Partial<Parameters<typeof computeOnboardingStatus>[0]> = {}) {
   return {
     email: 'pro@example.com',
-    plan: 'free',
+    plan: 'standard',
     daily_goal_revenue: null,
     weekly_goal_revenue: null,
     telegram_chat_id: null,
@@ -64,8 +64,8 @@ describe('computeOnboardingStatus', () => {
   })
 
   it('whatsapp só aparece liberado no Pro', () => {
-    const free = computeOnboardingStatus(baseInput({ plan: 'free' }))
-    expect(free.steps.find((s) => s.id === 'whatsapp')?.detail).toContain('Pro')
+    const standard = computeOnboardingStatus(baseInput({ plan: 'standard' }))
+    expect(standard.steps.find((s) => s.id === 'whatsapp')?.detail).toContain('Pro')
 
     const pro = computeOnboardingStatus(baseInput({ plan: 'pro', whatsapp_active: true }))
     expect(pro.steps.find((s) => s.id === 'plan_pro')?.done).toBe(true)

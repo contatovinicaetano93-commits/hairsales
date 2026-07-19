@@ -18,7 +18,7 @@ export type WaCategory = 'utility' | 'marketing' | 'service'
 
 /** Inclusos na mensalidade Pro (marketing = 0 — pack avulso). */
 export const WA_MONTHLY_INCLUDED: Record<SubscriberPlan, { utility: number; marketing: number }> = {
-  free: { utility: 0, marketing: 0 },
+  standard: { utility: 0, marketing: 0 },
   pro: { utility: 200, marketing: 0 },
 }
 
@@ -251,7 +251,7 @@ async function graphSend(
 export async function assertProPlan(subscriber: SubscriberRow) {
   if (subscriber.plan !== 'pro') {
     throw new WhatsappPlanError(
-      'WhatsApp Cloud API está no plano Pro. No Free use Telegram + app.',
+      'WhatsApp Cloud API está no plano Pro. No Standard use Telegram + app.',
     )
   }
 }

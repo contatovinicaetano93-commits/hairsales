@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     if (!auth.ok) return err(auth.message, auth.status)
     return ok({
       plan: auth.session.subscriber.plan,
+      subscription_status: auth.session.subscriber.subscription_status,
       plan_label: labelForDbPlan(auth.session.subscriber.plan),
       self_upgrade_allowed: allowSelfUpgrade(),
       stripe_enabled: isStripeConfigured(),
@@ -61,15 +62,22 @@ export async function PUT(req: NextRequest) {
       )
     }
 
-    if (plan !== 'free' && plan !== 'pro') return err('plan deve ser free ou pro', 400)
+    if (plan !== 'standard' && plan !== 'pro') return err('plan deve ser standard ou pro', 400)
 
     const sql = getSql()
     await sql`
-      update subscribers set plan = ${plan}, updated_at = now()
+      update subscribers
+      set plan = ${plan},
+          subscription_status = 'none',
+          updated_at = now()
       where id = ${auth.session.subscriber.id}
     `
     const updated = await findSubscriberById(auth.session.subscriber.id)
-    return ok({ mode: 'demo', plan: updated?.plan ?? plan })
+    return ok({
+      mode: 'demo',
+      plan: updated?.plan ?? plan,
+      subscription_status: updated?.subscription_status ?? 'none',
+    })
   } catch (e) {
     return handleError(e)
   }

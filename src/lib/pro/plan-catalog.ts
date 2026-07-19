@@ -6,7 +6,7 @@ export type ProPublicPlanId = 'standard' | 'pro'
 export interface ProPlanOffer {
   /** ID na UI e no Stripe metadata. */
   id: ProPublicPlanId
-  /** Valor persistido em `subscribers.plan` (standard = free no banco). */
+  /** Valor persistido em `subscribers.plan`. */
   dbPlan: SubscriberPlan
   label: string
   /** Preço mensal em centavos BRL. */
@@ -23,7 +23,7 @@ export interface ProPlanOffer {
 export const PRO_PLAN_OFFERS: Record<ProPublicPlanId, ProPlanOffer> = {
   standard: {
     id: 'standard',
-    dbPlan: 'free',
+    dbPlan: 'standard',
     label: 'Standard',
     amountCents: 2990,
     priceLabel: 'R$ 29,90/mês',
@@ -57,22 +57,47 @@ export function listProPlanOffers(): ProPlanOffer[] {
 
 export function getProPlanOffer(id: string | null | undefined): ProPlanOffer | null {
   if (id === 'standard' || id === 'pro') return PRO_PLAN_OFFERS[id]
-  if (id === 'free') return PRO_PLAN_OFFERS.standard
   return null
 }
 
 export function publicPlanFromDb(plan: SubscriberPlan): ProPublicPlanId {
-  return plan === 'pro' ? 'pro' : 'standard'
+  switch (plan) {
+    case 'standard':
+      return 'standard'
+    case 'pro':
+      return 'pro'
+    default: {
+      const exhaustive: never = plan
+      throw new Error(`Plano inválido: ${exhaustive}`)
+    }
+  }
 }
 
 export function labelForDbPlan(plan: SubscriberPlan): string {
-  return plan === 'pro' ? PRO_PLAN_OFFERS.pro.label : PRO_PLAN_OFFERS.standard.label
+  switch (plan) {
+    case 'standard':
+      return PRO_PLAN_OFFERS.standard.label
+    case 'pro':
+      return PRO_PLAN_OFFERS.pro.label
+    default: {
+      const exhaustive: never = plan
+      throw new Error(`Plano inválido: ${exhaustive}`)
+    }
+  }
 }
 
 /** Price ID Stripe do plano (env). */
 export function stripePriceIdForPlan(id: ProPublicPlanId): string | null {
-  if (id === 'pro') return process.env.STRIPE_PRICE_PRO?.trim() || null
-  return process.env.STRIPE_PRICE_STANDARD?.trim() || null
+  switch (id) {
+    case 'standard':
+      return process.env.STRIPE_PRICE_STANDARD?.trim() || null
+    case 'pro':
+      return process.env.STRIPE_PRICE_PRO?.trim() || null
+    default: {
+      const exhaustive: never = id
+      throw new Error(`Plano público inválido: ${exhaustive}`)
+    }
+  }
 }
 
 export function formatBrlFromCents(cents: number): string {

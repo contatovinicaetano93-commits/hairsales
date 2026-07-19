@@ -42,12 +42,19 @@ export async function POST(req: NextRequest) {
       return err('Já existe conta com este e-mail', 409)
     }
 
-    const subscriber = await createSubscriber({ displayName, email, password, plan: 'free' })
+    const subscriber = await createSubscriber({
+      displayName,
+      email,
+      password,
+      plan: 'standard',
+      subscription_status: 'none',
+    })
     const res = ok({
       id: subscriber.id,
       display_name: subscriber.display_name,
       email: subscriber.email,
       plan: subscriber.plan,
+      subscription_status: subscriber.subscription_status,
       demo: true,
     })
     res.cookies.set(PRO_AUTH_COOKIE, createProSessionToken(subscriber.id), proSessionCookieOptions())

@@ -8,6 +8,7 @@ import {
   getStripe,
   isStripeConfigured,
   markSignupCheckoutPaid,
+  subscriptionStatusFromStripe,
 } from '@/lib/pro/stripe'
 
 export const runtime = 'nodejs'
@@ -54,7 +55,25 @@ export async function POST(req: NextRequest) {
         if (subscriberId && sub.metadata?.kind === 'pro_subscription') {
           const sql = getSql()
           await sql`
-            update subscribers set plan = 'free', updated_at = now()
+            update subscribers
+            set plan = 'standard',
+                subscription_status = 'canceled',
+                updated_at = now()
+            where id = ${subscriberId}
+          `
+        }
+        break
+      }
+      case 'customer.subscription.updated': {
+        const sub = event.data.object as Stripe.Subscription
+        const subscriberId = sub.metadata?.subscriber_id
+        if (subscriberId && sub.metadata?.kind === 'pro_subscription') {
+          const status = subscriptionStatusFromStripe(sub.status)
+          const sql = getSql()
+          await sql`
+            update subscribers
+            set subscription_status = ${status},
+                updated_at = now()
             where id = ${subscriberId}
           `
         }

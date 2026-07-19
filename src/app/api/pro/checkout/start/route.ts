@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null)
     const email = typeof body?.email === 'string' ? body.email.trim() : ''
     const planRaw = typeof body?.plan === 'string' ? body.plan : ''
-    const planId = (planRaw === 'free' ? 'standard' : planRaw) as ProPublicPlanId
+    const planId = planRaw as ProPublicPlanId
 
     if (!getProPlanOffer(planId)) {
       return err('Plano inválido. Use standard ou pro.', 400)
