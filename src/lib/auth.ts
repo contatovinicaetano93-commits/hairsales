@@ -4,7 +4,7 @@ import { isProduction } from '@/lib/env'
 
 export const AUTH_COOKIE = 'rom_session'
 
-/** Senha padrão compartilhada por todas as roles (override via env). */
+/** Senha padrão compartilhada por todas as roles; em produção, rotacione via env por role. */
 export const DEFAULT_SHARED_PASSWORD = 'Senha@123'
 
 export type AuthRole = 'admin' | 'staff' | 'financeiro' | 'estoque'
@@ -67,13 +67,18 @@ function usernamesMatch(a: string, b: string) {
   return timingSafeEqual(a.toLowerCase(), b.toLowerCase())
 }
 
+function getRolePassword(envName: string) {
+  const configured = process.env[envName]?.trim()
+  return configured || DEFAULT_SHARED_PASSWORD
+}
+
 export function getAdminUser() {
   return (process.env.ROM_ADMIN_USER ?? defaultUsers().admin).trim()
 }
 
-/** Senha única de todas as roles — ignora env para evitar drift na Vercel. */
+/** Usa senha por role via env; se ausente/vazia, preserva o padrão compartilhado legado. */
 export function getAdminPassword() {
-  return DEFAULT_SHARED_PASSWORD
+  return getRolePassword('ROM_ADMIN_PASSWORD')
 }
 
 export function getStaffUser() {
@@ -81,7 +86,7 @@ export function getStaffUser() {
 }
 
 export function getStaffPassword() {
-  return DEFAULT_SHARED_PASSWORD
+  return getRolePassword('ROM_STAFF_PASSWORD')
 }
 
 export function getFinanceUser() {
@@ -89,7 +94,7 @@ export function getFinanceUser() {
 }
 
 export function getFinancePassword() {
-  return DEFAULT_SHARED_PASSWORD
+  return getRolePassword('ROM_FINANCE_PASSWORD')
 }
 
 export function getStockUser() {
@@ -97,7 +102,7 @@ export function getStockUser() {
 }
 
 export function getStockPassword() {
-  return DEFAULT_SHARED_PASSWORD
+  return getRolePassword('ROM_STOCK_PASSWORD')
 }
 
 function listAccounts(): Account[] {
