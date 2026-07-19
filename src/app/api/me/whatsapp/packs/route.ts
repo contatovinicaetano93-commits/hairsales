@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { requireProSession } from '@/lib/pro/auth'
+import { EntitlementError } from '@/lib/pro/entitlements'
 import {
   listMarketingPacks,
   listPackPurchases,
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
     )
     return ok({ ...result, usage })
   } catch (e) {
+    if (e instanceof EntitlementError) return err(e.message, 403)
     return handleError(e)
   }
 }

@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { requireProSession } from '@/lib/pro/auth'
+import { checkCan } from '@/lib/pro/entitlements'
 import {
   disconnectSubscriberWhatsapp,
   getSubscriberWhatsapp,
   getWhatsappUsage,
   upsertSubscriberWhatsapp,
-  WhatsappPlanError,
 } from '@/lib/pro/whatsapp-cloud'
 import { listMarketingPacks } from '@/lib/pro/whatsapp-packs'
 import { getEmbeddedSignupConfig } from '@/lib/pro/whatsapp-embedded'
@@ -46,12 +46,8 @@ export async function POST(req: NextRequest) {
     const auth = await requireProSession(req)
     if (!auth.ok) return err(auth.message, auth.status)
 
-    if (auth.session.subscriber.plan !== 'pro') {
-      return err(
-        'WhatsApp Cloud API está no plano Pro. No Standard use Telegram + app.',
-        403,
-      )
-    }
+    const entitlement = checkCan(auth.session.subscriber, 'whatsapp_cloud')
+    if (!entitlement.ok) return err(entitlement.message, 403)
 
     const body = await req.json().catch(() => null)
     const phoneNumberId =
@@ -80,7 +76,6 @@ export async function POST(req: NextRequest) {
       display_phone: row.display_phone,
     })
   } catch (e) {
-    if (e instanceof WhatsappPlanError) return err(e.message, 403)
     return handleError(e)
   }
 }

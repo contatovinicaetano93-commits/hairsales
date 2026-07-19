@@ -1,4 +1,5 @@
 import { getSql } from '@/lib/db'
+import { assertCan } from '@/lib/pro/entitlements'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
 import { createMarketingPackCheckout, isStripeConfigured } from '@/lib/pro/stripe'
 import {
@@ -40,9 +41,7 @@ export async function purchaseMarketingPack(
   subscriber: SubscriberRow,
   packId: string,
 ): Promise<PurchaseResult> {
-  if (subscriber.plan !== 'pro') {
-    throw new Error('Packs de marketing estão no plano Pro.')
-  }
+  assertCan(subscriber, 'marketing_packs')
 
   const pack = getMarketingPack(packId)
   if (!pack) throw new Error('Pack inválido')
