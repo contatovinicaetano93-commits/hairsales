@@ -42,13 +42,17 @@ Obrigatórias em **production**:
 | `NEXT_PUBLIC_APP_URL` | Return URLs Stripe / links absolutos |
 | `ANTHROPIC_API_KEY` | Assistente / briefing |
 
-Recomendadas no go-live HairSales (Standard / Pro):
+Obrigatórias em **production** para habilitar Telegram HairSales (Standard / Pro):
 
 | Var | Uso |
 |-----|-----|
 | `TELEGRAM_PRO_BOT_TOKEN` | Bot do assinante (Standard+) |
 | `TELEGRAM_PRO_WEBHOOK_SECRET` | Webhook `/api/webhooks/telegram-pro` |
 | `TELEGRAM_PRO_BOT_USERNAME` | Deep link no Conectar |
+
+Em production, Telegram Pro **não** cai para `TELEGRAM_BOT_TOKEN` ou
+`TELEGRAM_WEBHOOK_SECRET` do painel ROM. Esses fallbacks existem apenas em
+preview/dev para facilitar testes locais.
 
 Stripe (obrigatório para cobrar assinaturas — pagar antes do cadastro):
 
@@ -70,6 +74,10 @@ WhatsApp Cloud (só Pro):
 | `WHATSAPP_PRO_VERIFY_TOKEN` | Verify do webhook Meta |
 | `WHATSAPP_PRO_APP_SECRET` | Verificação HMAC `X-Hub-Signature-256` do POST do webhook Meta |
 | `META_APP_ID` / `META_APP_SECRET` / `META_EMBEDDED_SIGNUP_CONFIG_ID` | Embedded Signup (opcional) |
+
+Em production, WhatsApp Pro **não** cai para `WHATSAPP_WEBHOOK_SECRET` do ROM.
+Configure sempre `WHATSAPP_PRO_VERIFY_TOKEN` para o GET de verificação e
+`WHATSAPP_PRO_APP_SECRET` para validar o POST assinado pela Meta.
 
 **Não** ligar em production sem necessidade:
 

@@ -7,8 +7,9 @@ import {
 } from '@/lib/pro/whatsapp-cloud'
 import { askSubscriberAssistant } from '@/lib/pro/assistant'
 import { getSql } from '@/lib/db'
+import { isProduction } from '@/lib/env'
 import { can } from '@/lib/pro/entitlements'
-import { getWhatsAppProAppSecret } from '@/lib/pro/secrets'
+import { getWhatsAppProAppSecret, getWhatsAppProVerifyToken } from '@/lib/pro/secrets'
 import { verifyMetaWebhookSignature } from '@/lib/pro/whatsapp-signature'
 
 /**
@@ -20,8 +21,7 @@ export async function GET(req: NextRequest) {
   const mode = req.nextUrl.searchParams.get('hub.mode')
   const token = req.nextUrl.searchParams.get('hub.verify_token')
   const challenge = req.nextUrl.searchParams.get('hub.challenge')
-  const expected =
-    process.env.WHATSAPP_PRO_VERIFY_TOKEN || process.env.WHATSAPP_WEBHOOK_SECRET || ''
+  const expected = getWhatsAppProVerifyToken()
 
   if (mode === 'subscribe' && expected && token === expected && challenge) {
     return new NextResponse(challenge, { status: 200 })
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       appSecret,
     )
     if (!verified) return err('Assinatura inválida', 401)
-  } else if (process.env.NODE_ENV === 'production') {
+  } else if (isProduction()) {
     // Meta signs Cloud API webhooks with the app secret; fail closed if it was not configured.
     return err('WHATSAPP_PRO_APP_SECRET não configurado', 401)
   }

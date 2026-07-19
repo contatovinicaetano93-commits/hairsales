@@ -1,7 +1,13 @@
 import { createHmac } from 'crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createProSessionToken, parseProSessionToken } from './auth'
-import { getProDataSecret } from './secrets'
+import {
+  getProDataSecret,
+  getTelegramProBotToken,
+  getTelegramProWebhookSecret,
+  getWhatsAppProAppSecret,
+  getWhatsAppProVerifyToken,
+} from './secrets'
 
 function signedPayload(payload: string, secret: string) {
   return createHmac('sha256', secret).update(payload).digest('base64url')
@@ -55,5 +61,66 @@ describe('Pro secrets', () => {
     const token = `${payload}.${signedPayload(payload, 'pro-secret')}`
 
     expect(parseProSessionToken(token)).toEqual({ sid: 'sub_123', sv: 1 })
+  })
+
+  it('does not fall back to ROM Telegram secrets in production', () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('TELEGRAM_PRO_BOT_TOKEN', '')
+    vi.stubEnv('TELEGRAM_PRO_WEBHOOK_SECRET', '')
+    vi.stubEnv('TELEGRAM_BOT_TOKEN', 'rom-bot-token')
+    vi.stubEnv('TELEGRAM_WEBHOOK_SECRET', 'rom-webhook-secret')
+
+    expect(getTelegramProBotToken()).toBe('')
+    expect(getTelegramProWebhookSecret()).toBe('')
+  })
+
+  it('uses dedicated Pro secrets in production when configured', () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('TELEGRAM_PRO_BOT_TOKEN', 'pro-bot-token')
+    vi.stubEnv('TELEGRAM_PRO_WEBHOOK_SECRET', 'pro-webhook-secret')
+    vi.stubEnv('WHATSAPP_PRO_VERIFY_TOKEN', 'pro-verify-token')
+    vi.stubEnv('WHATSAPP_PRO_APP_SECRET', 'pro-app-secret')
+    vi.stubEnv('TELEGRAM_BOT_TOKEN', 'rom-bot-token')
+    vi.stubEnv('TELEGRAM_WEBHOOK_SECRET', 'rom-webhook-secret')
+    vi.stubEnv('WHATSAPP_WEBHOOK_SECRET', 'rom-webhook-secret')
+    vi.stubEnv('WHATSAPP_APP_SECRET', 'shared-app-secret')
+
+    expect(getTelegramProBotToken()).toBe('pro-bot-token')
+    expect(getTelegramProWebhookSecret()).toBe('pro-webhook-secret')
+    expect(getWhatsAppProVerifyToken()).toBe('pro-verify-token')
+    expect(getWhatsAppProAppSecret()).toBe('pro-app-secret')
+  })
+
+  it('allows ROM Telegram fallbacks outside production for local DX', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('TELEGRAM_PRO_BOT_TOKEN', '')
+    vi.stubEnv('TELEGRAM_PRO_WEBHOOK_SECRET', '')
+    vi.stubEnv('TELEGRAM_BOT_TOKEN', 'rom-bot-token')
+    vi.stubEnv('TELEGRAM_WEBHOOK_SECRET', 'rom-webhook-secret')
+
+    expect(getTelegramProBotToken()).toBe('rom-bot-token')
+    expect(getTelegramProWebhookSecret()).toBe('rom-webhook-secret')
+  })
+
+  it('does not fall back to ROM WhatsApp verification or shared app secrets in production', () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('WHATSAPP_PRO_VERIFY_TOKEN', '')
+    vi.stubEnv('WHATSAPP_PRO_APP_SECRET', '')
+    vi.stubEnv('WHATSAPP_WEBHOOK_SECRET', 'rom-webhook-secret')
+    vi.stubEnv('WHATSAPP_APP_SECRET', 'shared-app-secret')
+
+    expect(getWhatsAppProVerifyToken()).toBe('')
+    expect(getWhatsAppProAppSecret()).toBe('')
+  })
+
+  it('allows WhatsApp Pro fallbacks outside production for local DX', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('WHATSAPP_PRO_VERIFY_TOKEN', '')
+    vi.stubEnv('WHATSAPP_PRO_APP_SECRET', '')
+    vi.stubEnv('WHATSAPP_WEBHOOK_SECRET', 'rom-webhook-secret')
+    vi.stubEnv('WHATSAPP_APP_SECRET', 'shared-app-secret')
+
+    expect(getWhatsAppProVerifyToken()).toBe('rom-webhook-secret')
+    expect(getWhatsAppProAppSecret()).toBe('shared-app-secret')
   })
 })
