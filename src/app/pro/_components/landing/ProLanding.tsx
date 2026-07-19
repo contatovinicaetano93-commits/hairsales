@@ -148,9 +148,9 @@ export function ProLanding() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[linear-gradient(165deg,#f7efe3_0%,#fafaf7_42%,#ebe2d4_100%)]">
-      {/* Hero: 3 vídeos lado a lado atrás do texto */}
-      <div className="relative isolate">
-        <div className="absolute inset-0 min-h-[min(72vh,42rem)]">
+      {/* Hero: fotos dos serviços em sequência atrás do texto */}
+      <div className="relative isolate min-h-[min(72vh,42rem)]">
+        <div className="absolute inset-0">
           <HeroVideoBackdrop />
         </div>
 

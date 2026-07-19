@@ -115,8 +115,9 @@ export function HeroVideoBackdrop() {
         ))}
       </div>
 
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(250,250,247,0.72)_0%,rgba(250,250,247,0.55)_40%,rgba(250,250,247,0.88)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(70%_55%_at_50%_35%,rgba(250,250,247,0.35)_0%,transparent_70%)]" />
+      {/* Véu leve — fotos dos serviços precisam aparecer atrás do texto */}
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(250,250,247,0.45)_0%,rgba(250,250,247,0.28)_42%,rgba(250,250,247,0.62)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(55%_45%_at_50%_40%,rgba(250,250,247,0.5)_0%,transparent_72%)]" />
     </div>
   )
 }
