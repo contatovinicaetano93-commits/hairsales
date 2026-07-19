@@ -4,6 +4,7 @@ import {
   getSubscriberWhatsapp,
   sendAppointmentReminder,
 } from '@/lib/pro/whatsapp-cloud'
+import { can } from '@/lib/pro/entitlements'
 
 /**
  * Envia lembretes utility para agendamentos nas próximas `hoursAhead` horas
@@ -24,6 +25,7 @@ export async function runProAppointmentReminders(hoursAhead = 24): Promise<{
     join subscribers s on s.id = a.subscriber_id
     join subscriber_whatsapp w on w.subscriber_id = a.subscriber_id and w.status = 'active'
     where s.plan = 'pro'
+      and s.subscription_status = 'active'
       and a.reminder_sent_at is null
       and a.scheduled_at is not null
       and a.scheduled_at > now()
@@ -48,7 +50,7 @@ export async function runProAppointmentReminders(hoursAhead = 24): Promise<{
   for (const row of rows) {
     try {
       const subscriber = await findSubscriberById(row.subscriber_id)
-      if (!subscriber || subscriber.plan !== 'pro') {
+      if (!subscriber || !can(subscriber, 'whatsapp_cloud')) {
         skipped++
         continue
       }

@@ -2,6 +2,7 @@ import { askAI, isAiConfigured } from '@/lib/ai/client'
 import { getProBrand } from '@/lib/pro/brand'
 import { buildProHoje } from '@/lib/pro/hoje'
 import { getSql } from '@/lib/db'
+import { assertCan } from '@/lib/pro/entitlements'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
 import { consumeAiUnits, QuotaExceededError } from '@/lib/pro/quotas'
 
@@ -67,6 +68,8 @@ export async function askSubscriberAssistant(
   subscriber: SubscriberRow,
   question: string,
 ): Promise<{ answer: string; source: 'ai' | 'rules'; units: number; quota_error?: string }> {
+  assertCan(subscriber, 'assistant')
+
   const context = await buildSubscriberContext(subscriber)
 
   let units = 0

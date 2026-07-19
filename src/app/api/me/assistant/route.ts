@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { requireProSession } from '@/lib/pro/auth'
 import { askSubscriberAssistant, listAssistantHistory } from '@/lib/pro/assistant'
+import { checkCan } from '@/lib/pro/entitlements'
 import { getQuotaStatus } from '@/lib/pro/quotas'
 import { captureHairsalesException } from '@/lib/pro/observability'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
@@ -34,6 +35,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null)
     const question = typeof body?.message === 'string' ? body.message.trim() : ''
     if (question.length < 2) return err('Escreva sua pergunta', 400)
+
+    const entitlement = checkCan(subscriber, 'assistant')
+    if (!entitlement.ok) return err(entitlement.message, 403)
 
     const result = await askSubscriberAssistant(subscriber, question)
     const quotas = await getQuotaStatus(subscriber.id, subscriber.plan)

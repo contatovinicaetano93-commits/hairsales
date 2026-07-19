@@ -7,6 +7,7 @@ import {
 } from '@/lib/pro/whatsapp-cloud'
 import { askSubscriberAssistant } from '@/lib/pro/assistant'
 import { getSql } from '@/lib/db'
+import { can } from '@/lib/pro/entitlements'
 import { getWhatsAppProAppSecret } from '@/lib/pro/secrets'
 import { verifyMetaWebhookSignature } from '@/lib/pro/whatsapp-signature'
 
@@ -68,8 +69,8 @@ export async function POST(req: NextRequest) {
     if (!subscriberId) return ok({ ignored: true, reason: 'unknown_number' })
 
     const subscriber = await findSubscriberById(subscriberId)
-    if (!subscriber || subscriber.plan !== 'pro') {
-      return ok({ ignored: true, reason: 'not_pro' })
+    if (!subscriber || !can(subscriber, 'whatsapp_cloud')) {
+      return ok({ ignored: true, reason: 'not_entitled' })
     }
 
     // Associa / cria cliente na carteira do assinante pelo telefone

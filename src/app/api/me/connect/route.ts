@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { requireProSession } from '@/lib/pro/auth'
+import { assertCan } from '@/lib/pro/entitlements'
 import { getAgendaProvider, listAgendaProviders } from '@/lib/providers/registry'
 import type { AgendaProviderId } from '@/lib/providers/types'
 import {
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
     const auth = await requireProSession(req)
     if (!auth.ok) return err(auth.message, auth.status)
     subscriber = auth.session.subscriber
+    assertCan(subscriber, 'agenda_sync')
 
     const body = await req.json().catch(() => null)
     const providerId = (typeof body?.provider === 'string' ? body.provider : 'avec') as AgendaProviderId

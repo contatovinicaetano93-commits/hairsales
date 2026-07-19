@@ -9,10 +9,10 @@ import {
   createSubscriber,
   findSubscriberByEmail,
   hasActiveSubscription,
-  isProPlan,
   type SubscriberRow,
   type SubscriptionStatus,
 } from '@/lib/pro/subscribers'
+import { assertCan } from '@/lib/pro/entitlements'
 import { getMarketingPack, type MarketingPack } from '@/lib/pro/pack-catalog'
 
 let stripeClient: Stripe | null = null
@@ -85,9 +85,8 @@ export async function createMarketingPackCheckout(
   subscriber: SubscriberRow,
   packId: string,
 ): Promise<{ url: string; session_id: string; pack: MarketingPack }> {
-  if (!isProPlan(subscriber.plan)) {
-    throw new Error('Packs de marketing estão no plano Pro.')
-  }
+  assertCan(subscriber, 'marketing_packs')
+
   const pack = getMarketingPack(packId)
   if (!pack) throw new Error('Pack inválido')
 

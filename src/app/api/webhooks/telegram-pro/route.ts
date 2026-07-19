@@ -8,6 +8,7 @@ import {
 } from '@/lib/pro/telegram'
 import { askSubscriberAssistant } from '@/lib/pro/assistant'
 import { generateMorningBriefing } from '@/lib/pro/briefing'
+import { checkCan } from '@/lib/pro/entitlements'
 import { buildProHoje } from '@/lib/pro/hoje'
 import { getBrand } from '@/lib/brand'
 
@@ -75,6 +76,16 @@ export async function POST(req: NextRequest) {
     return ok({ replied: true, mode: 'unlinked' })
   }
 
+  const telegramEntitlement = checkCan(subscriber, 'telegram')
+  if (!telegramEntitlement.ok) {
+    await reply(chatId, telegramEntitlement.message)
+    return ok({
+      replied: true,
+      mode: 'not_entitled',
+      capability: telegramEntitlement.capability,
+    })
+  }
+
   if (/^\/hoje\b/i.test(text)) {
     const hoje = await buildProHoje(subscriber)
     await reply(
@@ -92,9 +103,28 @@ export async function POST(req: NextRequest) {
   }
 
   if (/^\/briefing\b/i.test(text)) {
+    const assistantEntitlement = checkCan(subscriber, 'assistant')
+    if (!assistantEntitlement.ok) {
+      await reply(chatId, assistantEntitlement.message)
+      return ok({
+        replied: true,
+        mode: 'not_entitled',
+        capability: assistantEntitlement.capability,
+      })
+    }
     const result = await generateMorningBriefing(subscriber)
     await reply(chatId, result.briefing)
     return ok({ replied: true, mode: 'briefing' })
+  }
+
+  const assistantEntitlement = checkCan(subscriber, 'assistant')
+  if (!assistantEntitlement.ok) {
+    await reply(chatId, assistantEntitlement.message)
+    return ok({
+      replied: true,
+      mode: 'not_entitled',
+      capability: assistantEntitlement.capability,
+    })
   }
 
   const result = await askSubscriberAssistant(subscriber, text)

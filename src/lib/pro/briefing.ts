@@ -1,6 +1,7 @@
 import { askAI, isAiConfigured } from '@/lib/ai/client'
 import { getProBrand } from '@/lib/pro/brand'
 import { buildProHoje } from '@/lib/pro/hoje'
+import { assertCan } from '@/lib/pro/entitlements'
 import { consumeAiUnits, getQuotaStatus, QuotaExceededError } from '@/lib/pro/quotas'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
 
@@ -42,6 +43,8 @@ export async function generateMorningBriefing(subscriber: SubscriberRow): Promis
   already_done: boolean
   quota_error?: string
 }> {
+  assertCan(subscriber, 'assistant')
+
   const hoje = await buildProHoje(subscriber)
   const quota = await getQuotaStatus(subscriber.id, subscriber.plan)
 
