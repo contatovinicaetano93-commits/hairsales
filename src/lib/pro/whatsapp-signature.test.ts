@@ -14,10 +14,15 @@ describe('verifyMetaWebhookSignature', () => {
 
   it('rejects missing, malformed, or mismatched signatures', () => {
     const rawBody = Buffer.from(JSON.stringify({ entry: [] }))
+    const tamperedBody = Buffer.from(JSON.stringify({ entry: [{ id: 'changed' }] }))
 
     expect(verifyMetaWebhookSignature(rawBody, null, 'app-secret')).toBe(false)
     expect(verifyMetaWebhookSignature(rawBody, 'sha1=abc', 'app-secret')).toBe(false)
     expect(verifyMetaWebhookSignature(rawBody, 'sha256=not-hex', 'app-secret')).toBe(false)
+    expect(verifyMetaWebhookSignature(rawBody, 'sha256=abcd', 'app-secret')).toBe(false)
+    expect(verifyMetaWebhookSignature(tamperedBody, signature(rawBody, 'app-secret'), 'app-secret')).toBe(
+      false,
+    )
     expect(verifyMetaWebhookSignature(rawBody, signature(rawBody, 'wrong-secret'), 'app-secret')).toBe(false)
   })
 })
