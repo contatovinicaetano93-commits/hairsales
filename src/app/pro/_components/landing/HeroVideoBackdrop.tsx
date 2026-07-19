@@ -78,46 +78,50 @@ function PhotoColumn({
   }, [images.length, offsetMs])
 
   return (
-    <div className="relative min-h-0 overflow-hidden bg-surface">
-      {images.map((src, i) => (
-        <Image
-          key={`${src}-${i === index ? 'active' : 'idle'}`}
-          src={src}
-          alt=""
-          fill
-          sizes={imageSizes}
-          priority={i === 0}
-          className={`object-cover transition-opacity duration-1000 ease-out ${
-            i === index ? 'animate-hero-ken-burns opacity-100' : 'scale-100 opacity-0'
-          }`}
-        />
-      ))}
+    <div className="relative h-full w-full overflow-hidden bg-surface">
+      {images.map((src, i) => {
+        const active = i === index
+        return (
+          <Image
+            key={src}
+            src={src}
+            alt=""
+            fill
+            sizes={imageSizes}
+            priority={i === 0}
+            className={`object-cover transition-opacity duration-1000 ease-out ${
+              active ? 'animate-hero-ken-burns opacity-100' : 'scale-100 opacity-0'
+            }`}
+          />
+        )
+      })}
     </div>
   )
 }
 
-/** Três colunas de fotos em sequência (estilo vitrine), atrás do texto do hero. */
+/** Três colunas de fotos de serviços em sequência, atrás do texto do hero. */
 export function HeroVideoBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 block sm:hidden">
+      {/* Mobile: uma coluna com todas as fotos */}
+      <div className="absolute inset-0 h-full sm:hidden">
         <PhotoColumn images={ALL_IMAGES} offsetMs={0} imageSizes="100vw" />
       </div>
 
-      <div className="absolute inset-0 hidden grid-cols-3 sm:grid">
+      {/* Desktop: 3 colunas (unhas · cabelo · barbearia) */}
+      <div className="absolute inset-0 hidden h-full grid-cols-3 sm:grid">
         {COLUMNS.map((col, i) => (
-          <div key={col.id} className="relative min-h-0">
+          <div key={col.id} className="relative h-full min-h-0">
             <PhotoColumn images={col.images} offsetMs={i * 700} imageSizes="33vw" />
-            <span className="absolute inset-x-0 bottom-3 z-10 text-center text-[0.62rem] font-bold uppercase tracking-[0.22em] text-white/85 drop-shadow-[0_1px_4px_rgba(26,23,20,0.75)]">
+            <span className="absolute inset-x-0 bottom-3 z-10 text-center text-[0.62rem] font-bold uppercase tracking-[0.22em] text-white/90 drop-shadow-[0_1px_4px_rgba(26,23,20,0.75)]">
               {col.label}
             </span>
           </div>
         ))}
       </div>
 
-      {/* Véu leve — fotos dos serviços precisam aparecer atrás do texto */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(250,250,247,0.45)_0%,rgba(250,250,247,0.28)_42%,rgba(250,250,247,0.62)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(55%_45%_at_50%_40%,rgba(250,250,247,0.5)_0%,transparent_72%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(250,250,247,0.4)_0%,rgba(250,250,247,0.22)_42%,rgba(250,250,247,0.58)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(55%_45%_at_50%_40%,rgba(250,250,247,0.42)_0%,transparent_72%)]" />
     </div>
   )
 }

@@ -154,7 +154,7 @@ export function ProLanding() {
           <HeroVideoBackdrop />
         </div>
 
-      <header className="relative z-30 px-3 pt-4 sm:px-5 sm:pt-5">
+        <header className="relative z-30 px-3 pt-4 sm:px-5 sm:pt-5">
         <div className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border border-border/80 bg-card/90 px-3 py-2 shadow-[0_12px_40px_-24px_rgba(26,23,20,0.45)] backdrop-blur-md animate-rise sm:gap-3 sm:px-4 sm:py-2.5">
           <div className="min-w-0 shrink-0 px-1">
             <p className="truncate font-serif text-lg font-bold tracking-tight sm:text-xl">
@@ -203,9 +203,9 @@ export function ProLanding() {
             </button>
           ))}
         </div>
-      </header>
+        </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-10 pt-10 sm:px-6 sm:pt-14">
+        <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-10 pt-10 sm:px-6 sm:pt-14">
         <section className="flex min-h-[min(48vh,28rem)] flex-col items-center justify-center text-center">
           <p
             className="animate-rise text-[0.7rem] font-bold uppercase tracking-[0.28em] text-gold-strong drop-shadow-sm"
@@ -261,7 +261,7 @@ export function ProLanding() {
             </button>
           </div>
         </section>
-      </main>
+        </main>
       </div>
 
       <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-16 sm:px-6">
@@ -340,7 +340,10 @@ export function ProLanding() {
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
-                onClick={() => setSubscribePlan('standard')}
+                onClick={() => {
+                  setSubscribePlan('standard')
+                  setSelectedCard('standard')
+                }}
                 className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold transition ${
                   subscribePlan === 'standard'
                     ? 'border-gold bg-gold/15 text-gold-strong'
@@ -351,7 +354,10 @@ export function ProLanding() {
               </button>
               <button
                 type="button"
-                onClick={() => setSubscribePlan('pro')}
+                onClick={() => {
+                  setSubscribePlan('pro')
+                  setSelectedCard('pro')
+                }}
                 className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold transition ${
                   subscribePlan === 'pro'
                     ? 'border-gold bg-gold/15 text-gold-strong'

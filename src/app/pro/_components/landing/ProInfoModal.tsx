@@ -45,12 +45,23 @@ export function ProInfoModal({
 
   if (!openId) return null
 
-  const titles: Record<LandingModalId, string> = {
-    'como-funciona': 'Como funciona',
-    produtos: 'Nossos produtos',
-    contato: 'Contato',
-    duvidas: 'Dúvidas',
-    sobre: 'Sobre',
+  function modalTitle(id: LandingModalId): string {
+    switch (id) {
+      case 'como-funciona':
+        return 'Como funciona'
+      case 'produtos':
+        return 'Nossos produtos'
+      case 'contato':
+        return 'Contato'
+      case 'duvidas':
+        return 'Dúvidas'
+      case 'sobre':
+        return 'Sobre'
+      default: {
+        const _exhaustive: never = id
+        return _exhaustive
+      }
+    }
   }
 
   function handleSubscribe(plan: SubscribePlanId) {
@@ -73,7 +84,7 @@ export function ProInfoModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-7 sm:py-5">
           <h2 id={titleId} className="font-serif text-2xl font-bold tracking-tight sm:text-3xl">
-            {titles[openId]}
+            {modalTitle(openId)}
           </h2>
           <button
             type="button"
