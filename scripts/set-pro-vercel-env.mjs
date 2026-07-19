@@ -43,6 +43,7 @@ const vars = [
 const optional = [
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
+  'STRIPE_PRICE_STANDARD',
   'STRIPE_PRICE_PRO',
   'STRIPE_PORTAL_CONFIGURATION_ID',
   'TELEGRAM_PRO_BOT_TOKEN',
@@ -50,6 +51,10 @@ const optional = [
   'TELEGRAM_PRO_BOT_USERNAME',
   'WHATSAPP_PRO_VERIFY_TOKEN',
   'ANTHROPIC_API_KEY',
+  'NEXT_PUBLIC_SENTRY_DSN',
+  'SENTRY_DSN',
+  'NEXT_PUBLIC_SENTRY_ENVIRONMENT',
+  'SENTRY_ENVIRONMENT',
 ]
 for (const key of optional) {
   const value = process.env[key]?.trim()
