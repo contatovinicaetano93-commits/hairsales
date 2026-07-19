@@ -5,6 +5,7 @@
 
 import { getSql } from '@/lib/db'
 import { decryptSecret, encryptSecret } from '@/lib/pro/crypto'
+import { checkCan } from '@/lib/pro/entitlements'
 import {
   decrementMarketingCredit,
   getMarketingCredits,
@@ -249,11 +250,8 @@ async function graphSend(
 }
 
 export async function assertProPlan(subscriber: SubscriberRow) {
-  if (subscriber.plan !== 'pro') {
-    throw new WhatsappPlanError(
-      'WhatsApp Cloud API está no plano Pro. No Standard use Telegram + app.',
-    )
-  }
+  const entitlement = checkCan(subscriber, 'whatsapp_cloud')
+  if (!entitlement.ok) throw new WhatsappPlanError(entitlement.message)
 }
 
 /** Texto livre — só dentro da janela service (cliente falou antes). Não consome crédito. */

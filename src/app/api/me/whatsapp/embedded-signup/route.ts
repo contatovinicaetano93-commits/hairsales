@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { requireProSession } from '@/lib/pro/auth'
+import { checkCan } from '@/lib/pro/entitlements'
 import {
   exchangeEmbeddedSignupCode,
   getEmbeddedSignupConfig,
@@ -11,9 +12,8 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await requireProSession(req)
     if (!auth.ok) return err(auth.message, auth.status)
-    if (auth.session.subscriber.plan !== 'pro') {
-      return err('Embedded Signup requer plano Pro', 403)
-    }
+    const entitlement = checkCan(auth.session.subscriber, 'whatsapp_cloud')
+    if (!entitlement.ok) return err(entitlement.message, 403)
     return ok(getEmbeddedSignupConfig())
   } catch (e) {
     return handleError(e)
@@ -25,9 +25,8 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requireProSession(req)
     if (!auth.ok) return err(auth.message, auth.status)
-    if (auth.session.subscriber.plan !== 'pro') {
-      return err('Embedded Signup requer plano Pro', 403)
-    }
+    const entitlement = checkCan(auth.session.subscriber, 'whatsapp_cloud')
+    if (!entitlement.ok) return err(entitlement.message, 403)
 
     const body = await req.json().catch(() => null)
     const code = typeof body?.code === 'string' ? body.code.trim() : ''
