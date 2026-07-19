@@ -27,10 +27,7 @@
     { "id": "024_pro_stripe", "file": "delta-pro-stripe.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
     { "id": "025_pro_billing_signup", "file": "delta-pro-billing-signup.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
     { "id": "026_pro_subscription_status", "file": "delta-pro-subscription-status.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
-<<<<<<< HEAD
+    { "id": "027_pro_billing_events", "file": "delta-pro-billing-events.sql", "panels": ["brasil", "iguatemi", "vitrini"] },
     { "id": "028_pro_session_version", "file": "delta-pro-session-version.sql", "panels": ["brasil", "iguatemi", "vitrini"] }
-=======
-    { "id": "027_pro_billing_events", "file": "delta-pro-billing-events.sql", "panels": ["brasil", "iguatemi", "vitrini"] }
->>>>>>> origin/cursor/hs-billing-events-2182
   ]
 }
