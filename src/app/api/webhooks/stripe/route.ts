@@ -4,7 +4,6 @@ import { ok, err } from '@/lib/api-response'
 import { getSql } from '@/lib/db'
 import {
   claimBillingEvent,
-  deleteBillingEvent,
   markBillingEvent,
   type BillingEventPayloadSummary,
   type BillingEventStatus,
@@ -20,6 +19,8 @@ import {
 } from '@/lib/pro/stripe'
 
 export const runtime = 'nodejs'
+
+type FinalBillingEventStatus = Exclude<BillingEventStatus, 'pending'>
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -75,7 +76,7 @@ function summarizeStripeEvent(event: Stripe.Event): BillingEventPayloadSummary {
   return { object: object.object, id: 'id' in object ? object.id : null }
 }
 
-async function handleStripeEvent(event: Stripe.Event): Promise<BillingEventStatus> {
+async function handleStripeEvent(event: Stripe.Event): Promise<FinalBillingEventStatus> {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
@@ -157,19 +158,20 @@ export async function POST(req: NextRequest) {
     payloadSummary,
   })
   if (!claim.claimed) {
+    if (claim.reason === 'pending') {
+      return ok({ received: true, pending: true, type: event.type })
+    }
     return ok({ received: true, duplicate: true, type: event.type })
   }
 
-  let status: BillingEventStatus
+  let status: FinalBillingEventStatus
   try {
     status = await handleStripeEvent(event)
   } catch (e) {
-    // The event row is a concurrency claim. Delete it on handler failure so Stripe's retry
-    // can claim and run the handler again instead of being blocked by the unique event id.
     try {
-      await deleteBillingEvent(event.id)
-    } catch (deleteError) {
-      console.error('[stripe webhook] failed to release event claim', deleteError)
+      await markBillingEvent(event.id, { status: 'error', subscriberId, payloadSummary })
+    } catch (markError) {
+      console.error('[stripe webhook] failed to mark event error', markError)
     }
     captureHairsalesException(e, subscriberId ? { id: subscriberId } : null, {
       route: '/api/webhooks/stripe',

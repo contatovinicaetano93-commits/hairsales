@@ -1,7 +1,10 @@
 import { getSql } from '@/lib/db'
 
-export type BillingEventStatus = 'processed' | 'ignored' | 'error'
+export type BillingEventStatus = 'pending' | 'processed' | 'ignored' | 'error'
 export type BillingEventPayloadSummary = Record<string, unknown>
+export type ClaimBillingEventResult =
+  | { claimed: true }
+  | { claimed: false; reason: 'duplicate' | 'pending' }
 
 interface ClaimBillingEventOptions {
   status?: BillingEventStatus
@@ -23,23 +26,56 @@ export async function claimBillingEvent(
   type: string,
   subscriberId?: string | null,
   options: ClaimBillingEventOptions = {},
-): Promise<{ claimed: boolean }> {
+): Promise<ClaimBillingEventResult> {
   const sql = getSql()
+  const status = options.status ?? 'pending'
   const rows = (await sql`
-    insert into subscriber_billing_events (
-      stripe_event_id, type, subscriber_id, status, payload_summary
-    ) values (
-      ${eventId},
-      ${type},
-      ${subscriberId ?? null},
-      ${options.status ?? 'processed'},
-      ${payloadSummaryJson(options.payloadSummary)}::jsonb
+    with claimed_event as (
+      insert into subscriber_billing_events (
+        stripe_event_id, type, subscriber_id, status, payload_summary
+      ) values (
+        ${eventId},
+        ${type},
+        ${subscriberId ?? null},
+        ${status},
+        ${payloadSummaryJson(options.payloadSummary)}::jsonb
+      )
+      on conflict (stripe_event_id) do update
+      set type = excluded.type,
+          subscriber_id = coalesce(excluded.subscriber_id, subscriber_billing_events.subscriber_id),
+          status = excluded.status,
+          payload_summary = coalesce(excluded.payload_summary, subscriber_billing_events.payload_summary),
+          processed_at = now()
+      where subscriber_billing_events.status = 'error'
+         or (
+           subscriber_billing_events.status = 'pending'
+           and subscriber_billing_events.processed_at < now() - interval '5 minutes'
+         )
+      returning true as claimed, null::text as reason
+    ),
+    existing_event as (
+      select status
+      from subscriber_billing_events
+      where stripe_event_id = ${eventId}
+        and not exists (select 1 from claimed_event)
     )
-    on conflict (stripe_event_id) do nothing
-    returning stripe_event_id
-  `) as { stripe_event_id: string }[]
+    select claimed, reason
+    from claimed_event
+    union all
+    select false as claimed,
+           case
+             when status in ('processed', 'ignored') then 'duplicate'
+             when status = 'pending' then 'pending'
+             when status = 'error' then 'pending'
+             else 'duplicate'
+           end as reason
+    from existing_event
+    limit 1
+  `) as { claimed: boolean; reason: 'duplicate' | 'pending' | null }[]
 
-  return { claimed: rows.length > 0 }
+  const row = rows[0]
+  if (row?.claimed) return { claimed: true }
+  return { claimed: false, reason: row?.reason ?? 'pending' }
 }
 
 export async function markBillingEvent(
