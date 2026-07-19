@@ -104,6 +104,14 @@ textarea::placeholder {
 .animate-slide-up { animation: rom-slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-rise { animation: rom-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+@keyframes hero-ken-burns {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
+.animate-hero-ken-burns {
+  animation: hero-ken-burns 3.2s ease-out forwards;
+}
+
 /* App Pro — tipografia e densidade visual */
 .pro-app {
   --muted: #534d45;
