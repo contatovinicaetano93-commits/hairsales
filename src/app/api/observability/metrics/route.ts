@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
-import { requireSession } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth'
 import { getSql } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   try {
-    const auth = await requireSession(req)
+    const auth = await requireAdmin(req)
     if (!auth.ok) return err(auth.message, auth.status)
 
     const sql = getSql()
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     try {
       await sql`select 1 as ok`
       metrics.database.query_time_ms = performance.now() - start
-    } catch (e) {
+    } catch {
       metrics.database.connected = false
     }
 

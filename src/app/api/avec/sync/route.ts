@@ -2,9 +2,8 @@ import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { isAvecConfigured, isAvecMock, getAvecBaseUrl, testAvecConnection } from '@/lib/avec/client'
 import { runAvecSync, getLastAvecSync, type AvecSyncMode } from '@/lib/avec/sync'
-import { isAuthorized } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth'
 import { isCronAuthorized } from '@/lib/cron-auth'
-import { isProduction } from '@/lib/env'
 import { getDeploymentContext } from '@/lib/deployment'
 import { isSyncLockBusyError } from '@/lib/sync-lock'
 
@@ -12,10 +11,10 @@ import { isSyncLockBusyError } from '@/lib/sync-lock'
 export const maxDuration = 300
 
 async function authorize(req: NextRequest) {
-  if (isCronAuthorized(req)) return true
-  if (await isAuthorized(req)) return true
-  if (!process.env.CRON_SECRET?.trim() && !isProduction()) return true
-  return false
+  if (isCronAuthorized(req)) return { ok: true as const, cron: true as const }
+  const auth = await requireAdmin(req)
+  if (!auth.ok) return auth
+  return { ok: true as const, cron: false as const }
 }
 
 function parseMode(req: NextRequest, cronFallback: AvecSyncMode = 'fast'): AvecSyncMode {
@@ -95,9 +94,13 @@ async function executeSync(
 
 export async function POST(req: NextRequest) {
   try {
-    if (!(await authorize(req))) return err('Não autorizado', 401)
-    const cron = isCronAuthorized(req)
-    return await executeSync(req, { force: !cron, defaultMode: 'full', cron })
+    const auth = await authorize(req)
+    if (!auth.ok) return err(auth.message, auth.status)
+    return await executeSync(req, {
+      force: !auth.cron,
+      defaultMode: 'full',
+      cron: auth.cron,
+    })
   } catch (e) {
     return handleError(e)
   }
@@ -105,10 +108,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    if (!(await authorize(req))) return err('Não autorizado', 401)
+    const auth = await authorize(req)
+    if (!auth.ok) return err(auth.message, auth.status)
 
-    const cron = isCronAuthorized(req)
-    if (cron) {
+    if (auth.cron) {
       return await executeSync(req, { defaultMode: parseMode(req, 'fast'), cron: true })
     }
 

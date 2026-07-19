@@ -22,6 +22,35 @@ function isStockPath(pathname: string) {
   return pathname === '/estoque' || pathname.startsWith('/estoque/') || pathname.startsWith('/api/estoque/')
 }
 
+function isAdminPath(pathname: string) {
+  return (
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/') ||
+    pathname === '/api/admin' ||
+    pathname.startsWith('/api/admin/')
+  )
+}
+
+function isObservabilityPath(pathname: string) {
+  return (
+    pathname === '/observability' ||
+    pathname.startsWith('/observability/') ||
+    pathname === '/api/observability' ||
+    pathname.startsWith('/api/observability/')
+  )
+}
+
+function isPrivilegedStaffApi(pathname: string) {
+  return (
+    pathname === '/api/seed' ||
+    pathname.startsWith('/api/seed/') ||
+    pathname === '/api/director-report' ||
+    pathname.startsWith('/api/director-report/') ||
+    pathname === '/api/avec/sync' ||
+    pathname.startsWith('/api/avec/sync/')
+  )
+}
+
 // Área compartilhada por todos os papéis (admin, staff, financeiro) — não é exclusiva do financeiro.
 function isOnboardingPath(pathname: string) {
   return pathname === '/onboarding' || pathname.startsWith('/onboarding/') || pathname.startsWith('/api/onboarding/')
@@ -93,6 +122,16 @@ export async function middleware(req: NextRequest) {
   const financePath = isFinancePath(pathname)
   const stockPath = isStockPath(pathname)
   const onboardingPath = isOnboardingPath(pathname)
+
+  if (
+    role === 'staff' &&
+    (isAdminPath(pathname) || isObservabilityPath(pathname) || isPrivilegedStaffApi(pathname))
+  ) {
+    if (isProtectedApi(pathname)) {
+      return NextResponse.json({ error: 'Acesso restrito ao admin operacional' }, { status: 403 })
+    }
+    return NextResponse.redirect(new URL('/hoje', req.url))
+  }
 
   if (
     role === 'financeiro' &&

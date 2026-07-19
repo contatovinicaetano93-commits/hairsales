@@ -4,7 +4,7 @@ import { isProduction } from '@/lib/env'
 
 export const AUTH_COOKIE = 'rom_session'
 
-/** Senha padrão compartilhada por todas as roles; em produção, rotacione via env por role. */
+/** Senha padrão compartilhada por todas as roles; apenas para DX fora de produção. */
 export const DEFAULT_SHARED_PASSWORD = 'Senha@123'
 
 export type AuthRole = 'admin' | 'staff' | 'financeiro' | 'estoque'
@@ -21,7 +21,7 @@ interface AuthOptions {
 
 interface Account {
   user: string
-  password: string
+  password: string | null
   role: AuthRole
 }
 
@@ -69,14 +69,15 @@ function usernamesMatch(a: string, b: string) {
 
 function getRolePassword(envName: string) {
   const configured = process.env[envName]?.trim()
-  return configured || DEFAULT_SHARED_PASSWORD
+  if (configured) return configured
+  return isProduction() ? null : DEFAULT_SHARED_PASSWORD
 }
 
 export function getAdminUser() {
   return (process.env.ROM_ADMIN_USER ?? defaultUsers().admin).trim()
 }
 
-/** Usa senha por role via env; se ausente/vazia, preserva o padrão compartilhado legado. */
+/** Usa senha por role via env; fora de produção preserva o padrão compartilhado legado. */
 export function getAdminPassword() {
   return getRolePassword('ROM_ADMIN_PASSWORD')
 }
@@ -137,7 +138,7 @@ export function canViewRevenue(role: AuthRole | null | undefined) {
 /** HMAC-SHA256 compatível com Edge Runtime (Web Crypto). */
 export async function createSessionToken(user: string, role: AuthRole) {
   const account = listAccounts().find((a) => a.role === role && timingSafeEqual(a.user, user))
-  if (!account) return ''
+  if (!account?.password) return ''
   const enc = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw',
@@ -160,7 +161,11 @@ export function validateCredentials(
   const pass = password.trim()
   if (!user || !pass) return null
   for (const account of listAccounts()) {
-    if (usernamesMatch(user, account.user) && timingSafeEqual(pass, account.password)) {
+    if (
+      account.password &&
+      usernamesMatch(user, account.user) &&
+      timingSafeEqual(pass, account.password)
+    ) {
       return { user: account.user, role: account.role }
     }
   }
