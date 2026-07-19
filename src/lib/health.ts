@@ -1,6 +1,5 @@
 import { getSql } from '@/lib/db'
 import { isAvecConfigured, isAvecMock, getAvecBaseUrl } from '@/lib/avec/client'
-import { isAuthEnabled, isFinanceAuthConfigured, isStockAuthConfigured } from '@/lib/auth'
 import { isAiConfigured } from '@/lib/ai/client'
 import { getBrand, getRomPanelId } from '@/lib/brand'
 import { getLastAvecSync } from '@/lib/avec/sync'
@@ -105,13 +104,13 @@ export async function getHealthStatus() {
     },
     cron: { configured: envOk('CRON_SECRET') },
     auth: {
-      enabled: isAuthEnabled(),
-      password: envOk('ROM_ADMIN_PASSWORD') || envOk('ROM_ACCESS_TOKEN'),
+      enabled: envOk('ROM_ADMIN_PASSWORD'),
+      password: envOk('ROM_ADMIN_PASSWORD'),
       user: envOk('ROM_ADMIN_USER'),
       staff_user: envOk('ROM_STAFF_USER'),
       staff_password: envOk('ROM_STAFF_PASSWORD'),
-      finance_configured: isFinanceAuthConfigured(),
-      stock_configured: isStockAuthConfigured(),
+      finance_configured: envOk('ROM_FINANCE_PASSWORD'),
+      stock_configured: envOk('ROM_STOCK_PASSWORD'),
     },
     webhooks: {
       avec_secret: envOk('AVEC_WEBHOOK_SECRET'),

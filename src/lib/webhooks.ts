@@ -1,8 +1,18 @@
+import { timingSafeEqual } from 'crypto'
 import type { NextRequest } from 'next/server'
 import { isProduction } from '@/lib/env'
 
 function headerSecret(req: NextRequest, name: string) {
   return req.headers.get(name)?.trim() ?? ''
+}
+
+function secretsMatch(received: string, expected: string) {
+  const receivedBuffer = Buffer.from(received)
+  const expectedBuffer = Buffer.from(expected)
+  return (
+    receivedBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(receivedBuffer, expectedBuffer)
+  )
 }
 
 export function verifyWhatsAppWebhook(req: NextRequest): { ok: true } | { ok: false; reason: string } {
@@ -17,9 +27,9 @@ export function verifyWhatsAppWebhook(req: NextRequest): { ok: true } | { ok: fa
     headerSecret(req, 'x-webhook-secret') ||
     headerSecret(req, 'x-evolution-secret') ||
     headerSecret(req, 'authorization').replace(/^Bearer\s+/i, '') ||
-    (req.nextUrl.searchParams.get('secret')?.trim() ?? '')
+    (!isProduction() ? req.nextUrl.searchParams.get('secret')?.trim() ?? '' : '')
 
-  if (got !== expected) return { ok: false, reason: 'Secret inválido' }
+  if (!secretsMatch(got, expected)) return { ok: false, reason: 'Secret inválido' }
   return { ok: true }
 }
 
@@ -35,7 +45,7 @@ export function verifyAvecWebhook(req: NextRequest): { ok: true } | { ok: false;
     headerSecret(req, 'x-webhook-secret') ||
     headerSecret(req, 'authorization').replace(/^Bearer\s+/i, '')
 
-  if (got !== expected) return { ok: false, reason: 'Secret inválido' }
+  if (!secretsMatch(got, expected)) return { ok: false, reason: 'Secret inválido' }
   return { ok: true }
 }
 
@@ -46,7 +56,7 @@ export function verifyTelegramWebhook(req: NextRequest): { ok: true } | { ok: fa
     return { ok: true }
   }
 
-  if (headerSecret(req, 'x-telegram-bot-api-secret-token') !== expected) {
+  if (!secretsMatch(headerSecret(req, 'x-telegram-bot-api-secret-token'), expected)) {
     return { ok: false, reason: 'Secret inválido' }
   }
   return { ok: true }
@@ -59,7 +69,7 @@ export function verifyTelegramStaffWebhook(req: NextRequest): { ok: true } | { o
     return { ok: true }
   }
 
-  if (headerSecret(req, 'x-telegram-bot-api-secret-token') !== expected) {
+  if (!secretsMatch(headerSecret(req, 'x-telegram-bot-api-secret-token'), expected)) {
     return { ok: false, reason: 'Secret inválido' }
   }
   return { ok: true }
@@ -89,7 +99,7 @@ export function verifyTelegramFinanceWebhook(req: NextRequest): { ok: true } | {
     return { ok: true }
   }
 
-  if (headerSecret(req, 'x-telegram-bot-api-secret-token') !== expected) {
+  if (!secretsMatch(headerSecret(req, 'x-telegram-bot-api-secret-token'), expected)) {
     return { ok: false, reason: 'Secret inválido' }
   }
   return { ok: true }

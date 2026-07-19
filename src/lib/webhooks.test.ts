@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import type { NextRequest } from 'next/server'
 import { isTelegramChatAllowed, verifyTelegramWebhook, verifyWhatsAppWebhook } from '@/lib/webhooks'
 
-function mockReq(headers: Record<string, string> = {}) {
+function mockReq(headers: Record<string, string> = {}, url = 'https://example.com/api/webhooks/whatsapp') {
   const normalized = Object.fromEntries(
     Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v])
   )
@@ -10,6 +10,7 @@ function mockReq(headers: Record<string, string> = {}) {
     headers: {
       get: (name: string) => normalized[name.toLowerCase()] ?? null,
     },
+    nextUrl: new URL(url),
   } as unknown as NextRequest
 }
 
@@ -17,7 +18,7 @@ describe('webhook auth', () => {
   const env = process.env
 
   beforeEach(() => {
-    process.env = { ...env, NODE_ENV: 'production' }
+    process.env = { ...env, NODE_ENV: 'production', VERCEL_ENV: 'production' }
   })
 
   afterEach(() => {
@@ -33,6 +34,23 @@ describe('webhook auth', () => {
   it('aceita WhatsApp com secret correto', () => {
     process.env.WHATSAPP_WEBHOOK_SECRET = 'abc'
     const result = verifyWhatsAppWebhook(mockReq({ 'x-webhook-secret': 'abc' }))
+    expect(result.ok).toBe(true)
+  })
+
+  it('ignora secret de WhatsApp via query string em produção', () => {
+    process.env.WHATSAPP_WEBHOOK_SECRET = 'abc'
+    const result = verifyWhatsAppWebhook(
+      mockReq({}, 'https://example.com/api/webhooks/whatsapp?secret=abc')
+    )
+    expect(result.ok).toBe(false)
+  })
+
+  it('aceita secret de WhatsApp via query string fora de produção', () => {
+    process.env.VERCEL_ENV = 'preview'
+    process.env.WHATSAPP_WEBHOOK_SECRET = 'abc'
+    const result = verifyWhatsAppWebhook(
+      mockReq({}, 'https://example.com/api/webhooks/whatsapp?secret=abc')
+    )
     expect(result.ok).toBe(true)
   })
 
