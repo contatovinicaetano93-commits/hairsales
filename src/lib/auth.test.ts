@@ -14,6 +14,8 @@ const ENV_KEYS = [
   'ROM_ACCESS_TOKEN',
   'ROM_STAFF_USER',
   'ROM_STAFF_PASSWORD',
+  'ROM_FINANCE_PASSWORD',
+  'ROM_STOCK_PASSWORD',
   'ROM_PANEL',
   'NEXT_PUBLIC_ROM_PANEL',
 ] as const
@@ -39,41 +41,45 @@ afterEach(() => {
 })
 
 describe('auth dual login', () => {
-  it('usa Senha@123 em todas as roles mesmo com env de senha diferente', () => {
+  it('usa senhas por role quando env está configurado', () => {
     setEnv({
       ROM_ADMIN_USER: 'ADMIN-VITRINI',
-      ROM_ADMIN_PASSWORD: 'outra-senha-antiga',
+      ROM_ADMIN_PASSWORD: '  outra-senha-antiga  ',
       ROM_ACCESS_TOKEN: 'token-antigo',
       ROM_STAFF_USER: 'EQUIPE-VITRINI',
       ROM_STAFF_PASSWORD: 'outra-staff',
+      ROM_FINANCE_PASSWORD: 'outra-financeiro',
+      ROM_STOCK_PASSWORD: 'outra-estoque',
       ROM_PANEL: 'vitrini',
       NEXT_PUBLIC_ROM_PANEL: 'vitrini',
     })
 
     expect(isAuthEnabled()).toBe(true)
     expect(isStaffAuthConfigured()).toBe(true)
-    expect(validateCredentials('ADMIN-VITRINI', DEFAULT_SHARED_PASSWORD)).toEqual({
+    expect(validateCredentials('ADMIN-VITRINI', 'outra-senha-antiga')).toEqual({
       user: 'ADMIN-VITRINI',
       role: 'admin',
     })
-    expect(validateCredentials('EQUIPE-VITRINI', DEFAULT_SHARED_PASSWORD)).toEqual({
+    expect(validateCredentials('EQUIPE-VITRINI', 'outra-staff')).toEqual({
       user: 'EQUIPE-VITRINI',
       role: 'staff',
     })
-    expect(validateCredentials('FINANCEIRO-VITRINI', DEFAULT_SHARED_PASSWORD)?.role).toBe(
+    expect(validateCredentials('FINANCEIRO-VITRINI', 'outra-financeiro')?.role).toBe(
       'financeiro'
     )
-    expect(validateCredentials('ESTOQUE-VITRINI', DEFAULT_SHARED_PASSWORD)?.role).toBe('estoque')
-    expect(validateCredentials('ADMIN-VITRINI', 'outra-senha-antiga')).toBeNull()
+    expect(validateCredentials('ESTOQUE-VITRINI', 'outra-estoque')?.role).toBe('estoque')
+    expect(validateCredentials('ADMIN-VITRINI', DEFAULT_SHARED_PASSWORD)).toBeNull()
   })
 
   it('usa usuários padrão do painel quando env de usuário está vazio', () => {
     setEnv({
       ROM_ADMIN_USER: undefined,
-      ROM_ADMIN_PASSWORD: undefined,
+      ROM_ADMIN_PASSWORD: '   ',
       ROM_ACCESS_TOKEN: undefined,
       ROM_STAFF_USER: undefined,
       ROM_STAFF_PASSWORD: undefined,
+      ROM_FINANCE_PASSWORD: undefined,
+      ROM_STOCK_PASSWORD: undefined,
       ROM_PANEL: 'vitrini',
       NEXT_PUBLIC_ROM_PANEL: 'vitrini',
     })
@@ -100,19 +106,19 @@ describe('auth dual login', () => {
 
     expect(isAuthEnabled()).toBe(true)
     expect(isStaffAuthConfigured()).toBe(true)
-    expect(validateCredentials('ADMIN-BRASIL', 'Senha@123')).toEqual({
+    expect(validateCredentials('ADMIN-BRASIL', 'Senha@brasil')).toEqual({
       user: 'ADMIN-BRASIL',
       role: 'admin',
     })
-    expect(validateCredentials('FUNC-BRASIL', 'Senha@123')).toEqual({
+    expect(validateCredentials('FUNC-BRASIL', 'Senha@func')).toEqual({
       user: 'FUNC-BRASIL',
       role: 'staff',
     })
-    expect(validateCredentials('admin-brasil', 'Senha@123')).toEqual({
+    expect(validateCredentials('admin-brasil', 'Senha@brasil')).toEqual({
       user: 'ADMIN-BRASIL',
       role: 'admin',
     })
-    expect(validateCredentials('FUNC-BRASIL', 'Senha@brasil')).toBeNull()
+    expect(validateCredentials('FUNC-BRASIL', DEFAULT_SHARED_PASSWORD)).toBeNull()
     expect(canViewRevenue('admin')).toBe(true)
     expect(canViewRevenue('staff')).toBe(false)
   })

@@ -41,7 +41,9 @@ function isProtectedPage(pathname: string) {
     pathname === '/estoque' ||
     pathname.startsWith('/estoque/') ||
     pathname === '/onboarding' ||
-    pathname.startsWith('/onboarding/')
+    pathname.startsWith('/onboarding/') ||
+    pathname === '/observability' ||
+    pathname.startsWith('/observability/')
   )
 }
 
@@ -142,6 +144,8 @@ export const config = {
     '/estoque/:path*',
     '/onboarding',
     '/onboarding/:path*',
+    '/observability',
+    '/observability/:path*',
     '/api/:path*',
   ],
 }
