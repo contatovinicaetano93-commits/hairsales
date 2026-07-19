@@ -98,7 +98,6 @@ export function ProShell({ children }: { children: React.ReactNode }) {
             {brand.productLine}
           </p>
           <h1 className="mt-2 font-serif text-2xl font-bold tracking-tight">{brand.name}</h1>
-          <p className="mt-2 text-xs font-semibold text-muted">Só os seus dados.</p>
         </div>
         <nav className="flex-1 py-3">
           <NavLinks pathname={pathname} orientation="side" />

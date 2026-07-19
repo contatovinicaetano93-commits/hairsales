@@ -119,7 +119,7 @@ export default function ProConectarPage() {
         return
       }
       setSuccess(
-        `Conectado como ${json.data.connection.professional_name}. Só os seus dados entram no app.`,
+        `Conectado como ${json.data.connection.professional_name}.`,
       )
       setTimeout(() => router.push('/pro/hoje'), 900)
     } catch (err) {
@@ -143,7 +143,7 @@ export default function ProConectarPage() {
       <div className="mx-auto flex w-full max-w-xl flex-col gap-3">
         <ConnectCard
           title="Agenda"
-          summary="Avec ou Trinks — só os seus dados"
+          summary="Avec ou Trinks"
           badge="obrigatório"
           defaultOpen
         >
@@ -804,7 +804,7 @@ function TelegramBlock() {
       summary={
         linked
           ? 'Assistente vinculada no Telegram'
-          : 'Canal grátis — briefing e perguntas só com os seus dados'
+          : 'Canal grátis — briefing e perguntas no Telegram'
       }
       badge={linked ? 'vinculado' : undefined}
     >

@@ -41,7 +41,7 @@ export const PRODUCT_TABS: ProductTab[] = [
     id: 'free',
     label: 'Plano Free',
     description:
-      'App + Telegram para o profissional individual. Só os seus dados da agenda entram.',
+      'App + Telegram para o profissional individual.',
     cards: [
       {
         title: 'App Hoje',
@@ -58,7 +58,7 @@ export const PRODUCT_TABS: ProductTab[] = [
         points: [
           'Perguntas sobre sua agenda',
           'Briefing da manhã',
-          'Respostas só com os seus dados',
+          'Respostas práticas do dia',
         ],
       },
       {
@@ -125,7 +125,7 @@ export const PRODUCT_TABS: ProductTab[] = [
         points: [
           'Upgrade na aba Conectar',
           'Cancelamento e faturas no Portal',
-          'Sem misturar dados da unidade',
+          'Gestão da assinatura no app',
         ],
       },
     ],
@@ -144,18 +144,18 @@ export const PRODUCT_TABS: ProductTab[] = [
         title: 'Agenda',
         accent: 'Avec primeiro, depois Trinks',
         points: [
-          'Token só seu, criptografado',
+          'Token criptografado',
           'Match pelo nome profissional',
-          'Nada de visão salon-wide',
+          'Sync da sua agenda',
         ],
       },
       {
         title: 'Clientes',
-        accent: 'Sua base filtrada',
+        accent: 'Sua base',
         points: [
-          'Histórico do que é seu',
+          'Histórico do seu atendimento',
           'Quem reativar e quem retornar',
-          'Sem cruzar dados de outros pros',
+          'Lista pronta para o dia',
         ],
       },
       {
@@ -178,9 +178,9 @@ export const PRODUCT_TABS: ProductTab[] = [
       },
     ],
     footer: {
-      badge: 'Privacidade',
-      title: 'Só os seus dados',
-      body: 'HairSales é o app do profissional individual — separado do painel da equipe da unidade.',
+      badge: 'No app',
+      title: 'Tudo no fluxo do profissional',
+      body: 'HairSales concentra Hoje, Assistente, Clientes, Ações e Conectar num só lugar.',
     },
   },
 ]
@@ -189,7 +189,7 @@ export const COMO_FUNCIONA_STEPS = [
   {
     step: '01',
     title: 'Crie sua conta',
-    body: 'E-mail e senha do profissional. Sem acesso à operação da unidade.',
+    body: 'E-mail e senha do profissional.',
   },
   {
     step: '02',
@@ -204,18 +204,18 @@ export const COMO_FUNCIONA_STEPS = [
   {
     step: '04',
     title: 'Use a assistente',
-    body: 'App, Telegram (Free) ou WhatsApp Cloud (Pro) com os seus dados.',
+    body: 'App, Telegram (Free) ou WhatsApp Cloud (Pro).',
   },
 ]
 
 export const DUVIDAS = [
   {
-    q: 'Isso substitui o painel da unidade?',
-    a: 'Não. O painel da equipe continua separado. HairSales é o app do profissional individual.',
+    q: 'Quem vê meus dados?',
+    a: 'Só você. A agenda conecta no seu nome e o app mostra clientes, horários e ações do seu perfil.',
   },
   {
-    q: 'Quem vê meus dados?',
-    a: 'Só você. Conectamos a agenda no seu nome e filtramos clientes, agenda e ações para o seu perfil.',
+    q: 'Isso substitui o painel da unidade?',
+    a: 'Não. HairSales é o app do profissional. O painel da equipe da unidade continua em /login.',
   },
   {
     q: 'Preciso do Pro para começar?',
@@ -248,7 +248,7 @@ export const SOBRE = {
     'Produto: HairSales',
     'Foco: profissional individual',
     'Princípio: um assinante = um profissional',
-    'Privacidade: só os seus dados da agenda',
+    'Canais: App, Telegram e WhatsApp Cloud (Pro)',
   ],
 }
 
@@ -263,7 +263,7 @@ export const HERO_CARDS = [
     id: 'register' as const,
     title: 'Criar conta',
     subtitle: 'Começar no Free',
-    detail: 'App + Telegram · só seus dados',
+    detail: 'App + Telegram no Free',
   },
   {
     id: 'produtos' as const,

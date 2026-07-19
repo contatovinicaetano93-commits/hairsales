@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, CalendarDays, MessageCircle, Sparkles } from 'lucide-react'
 import { getProBrand } from '@/lib/pro/brand'
 import { HERO_CARDS, LANDING_NAV, type LandingModalId } from './landing-content'
 import { ProInfoModal } from './ProInfoModal'
@@ -153,9 +153,6 @@ export function ProLanding() {
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-muted">
             <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-gold-strong" /> Sem visão da unidade
-            </span>
-            <span className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4 text-gold-strong" /> Avec · Trinks
             </span>
             <span className="inline-flex items-center gap-1.5">
@@ -212,7 +209,7 @@ export function ProLanding() {
             <Sparkles className="h-5 w-5 text-gold-strong" />
           </div>
           <p className="mt-2 text-sm font-medium text-muted">
-            Conta do profissional — você só vê os seus dados da agenda.
+            Conta do profissional — entre ou crie a sua.
           </p>
 
           <form onSubmit={submit} className="mt-5 flex flex-col gap-3">

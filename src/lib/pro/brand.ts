@@ -9,7 +9,7 @@ export interface ProBrand {
 export const PRO_BRAND: ProBrand = {
   name: 'HairSales',
   shortName: 'hairsales',
-  tagline: 'Agenda, clientes, metas e ações — só os seus dados.',
+  tagline: 'Agenda, clientes, metas e ações do seu dia.',
   productLine: 'App do profissional',
 }
 

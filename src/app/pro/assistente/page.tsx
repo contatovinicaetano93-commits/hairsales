@@ -106,7 +106,7 @@ export default function ProAssistentePage() {
     <div className="flex flex-col gap-5">
       <ProPageHeader
         title="Assistente"
-        subtitle="Pergunte sobre agenda, meta e clientes — só os seus dados."
+        subtitle="Pergunte sobre agenda, meta e clientes."
         action={
           <button
             type="button"
