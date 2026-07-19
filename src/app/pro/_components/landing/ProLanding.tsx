@@ -312,12 +312,6 @@ export function ProLanding() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-[0.7rem] font-medium text-muted/75">
-            Painel da equipe continua em{' '}
-            <Link href="/login" className="underline-offset-2 hover:underline">
-              /login
-            </Link>
-          </p>
         </section>
 
         <section
