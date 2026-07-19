@@ -13,6 +13,7 @@ Objetivo: isolar banco, segredos, Stripe e webhooks do produto B2C sem quebrar o
 | Domínio | Ex.: `rom-salao.example.com` | Ex.: `hairsales.example.com` |
 | Login principal | `/login` | `/pro/login` |
 | Webhooks Pro | Não configurar | Configurar Stripe, Telegram Pro e WhatsApp Pro |
+| Crons Vercel | Somente unidade (`avec`, `estoque`, `director-report`) | Pro (`reminders`, `billing/reconcile`) via `deploy/vercel-hairsales.json` |
 
 O ROM `/login` pode continuar nos projetos das unidades. HairSales usa seu próprio projeto Vercel e seu próprio `DATABASE_URL`, apontando para Neon separado.
 
@@ -22,7 +23,8 @@ O ROM `/login` pode continuar nos projetos das unidades. HairSales usa seu próp
 2. Aponte a Production Branch para a branch que contém o app Pro.
 3. Defina `NEXT_PUBLIC_APP_URL` para o domínio HairSales final.
 4. Não copie variáveis de banco das unidades ROM. Use as variáveis HairSales abaixo.
-5. Configure o domínio HairSales no projeto novo.
+5. Configure os crons Pro a partir de `deploy/vercel-hairsales.json` (copiando para `vercel.json` no projeto/branch HairSales ou replicando os agendamentos no Vercel dedicado).
+6. Configure o domínio HairSales no projeto novo.
 
 ## 3. Criar Neon separado
 
@@ -31,6 +33,7 @@ O ROM `/login` pode continuar nos projetos das unidades. HairSales usa seu próp
 3. Configure essa string como `DATABASE_URL` apenas no projeto Vercel HairSales.
 4. Aplique as migrations Pro listadas em `deploy/SETUP-PRO.md`.
 5. Não reutilize o `DATABASE_URL` de unidade ROM em HairSales.
+6. Quando o split estiver ativo, rode migrations Pro somente contra este banco HairSales.
 
 ## 4. Variáveis obrigatórias no Vercel HairSales
 
@@ -119,4 +122,6 @@ npm run verify:pro -- https://HAIRSALES_DOMINIO
 
 Os projetos Vercel das unidades podem continuar servindo `/login` e demais telas ROM com seus bancos atuais. Não é necessário mover o painel ROM para o projeto HairSales.
 
-Se o mesmo repositório publica ambos, a separação real fica nas variáveis por projeto: cada Vercel Project aponta para seu próprio `DATABASE_URL`, domínio e conjunto de webhooks.
+O `vercel.json` da raiz não agenda crons Pro por padrão. Mantenha `/api/pro/reminders` e `/api/pro/billing/reconcile` fora dos projetos de unidade para evitar que reconciliem ou enviem lembretes usando bancos ROM.
+
+Se o mesmo repositório publica ambos, a separação real fica nas variáveis por projeto: cada Vercel Project aponta para seu próprio `DATABASE_URL`, domínio, conjunto de webhooks e arquivo de crons.
