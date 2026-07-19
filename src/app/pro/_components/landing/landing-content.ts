@@ -5,6 +5,18 @@ export type LandingModalId =
   | 'duvidas'
   | 'sobre'
 
+export type SubscribePlanId = 'standard' | 'pro'
+
+export interface PlanComparisonColumn {
+  id: SubscribePlanId
+  label: string
+  price: string
+  period: string
+  description: string
+  bullets: string[]
+  featured?: boolean
+}
+
 export interface LandingNavItem {
   id: LandingModalId
   label: string
@@ -34,6 +46,36 @@ export const LANDING_NAV: LandingNavItem[] = [
   { id: 'contato', label: 'Contato' },
   { id: 'duvidas', label: 'Dúvidas' },
   { id: 'sobre', label: 'Sobre' },
+]
+
+export const PLAN_COMPARISON: PlanComparisonColumn[] = [
+  {
+    id: 'standard',
+    label: 'Standard',
+    price: 'R$ 29,90',
+    period: '/mês',
+    description: 'App + Telegram para o profissional individual.',
+    bullets: [
+      'App Hoje — faturamento, ticket, agenda e metas',
+      'Assistente — 40 unidades de IA / dia',
+      'Telegram — briefing e alertas no celular',
+      'Ações — reativação e retorno de clientes',
+    ],
+  },
+  {
+    id: 'pro',
+    label: 'Pro',
+    price: 'R$ 199,90',
+    period: '/mês',
+    description: 'Tudo do Standard + WhatsApp Cloud e mais IA.',
+    featured: true,
+    bullets: [
+      'Tudo do Standard incluso',
+      'WhatsApp Cloud — canal oficial Meta',
+      'Assistente — 150 unidades de IA / dia',
+      'Packs de marketing — 50 · 100 · 250 msgs',
+    ],
+  },
 ]
 
 export const PRODUCT_TABS: ProductTab[] = [
@@ -249,6 +291,16 @@ export const SOBRE = {
     'Painel da equipe: acesso separado em /login',
   ],
 }
+
+/** Faixa de confiança abaixo dos cards — fatos do produto, sem métricas inventadas. */
+export const TRUST_STRIP = {
+  headline: 'Integrações reais nos planos',
+  bullets: [
+    'Agenda Avec e Trinks',
+    'Telegram no Standard',
+    'WhatsApp Cloud no Pro',
+  ],
+} as const
 
 export const HERO_CARDS = [
   {

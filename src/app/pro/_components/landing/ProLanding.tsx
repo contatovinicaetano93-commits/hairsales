@@ -6,7 +6,12 @@ import { ArrowRight, CalendarDays, MessageCircle, Sparkles } from 'lucide-react'
 import { getProBrand } from '@/lib/pro/brand'
 import type { ProPublicPlanId } from '@/lib/pro/plan-catalog'
 import { HeroVideoBackdrop } from './HeroVideoBackdrop'
-import { HERO_CARDS, LANDING_NAV, type LandingModalId } from './landing-content'
+import {
+  HERO_CARDS,
+  LANDING_NAV,
+  TRUST_STRIP,
+  type LandingModalId,
+} from './landing-content'
 import { ProInfoModal } from './ProInfoModal'
 
 type AuthMode = 'login' | 'subscribe'
@@ -36,11 +41,11 @@ export function ProLanding() {
     scrollToForm()
   }
 
-  function openSubscribe(plan: ProPublicPlanId) {
+  function openSubscribe(plan: ProPublicPlanId, options?: { keepError?: boolean }) {
     setMode('subscribe')
     setSubscribePlan(plan)
     setSelectedCard(plan)
-    setError(null)
+    if (!options?.keepError) setError(null)
     scrollToForm()
   }
 
@@ -101,16 +106,41 @@ export function ProLanding() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+
     if (params.get('checkout') === 'cancel') {
+      const plan: ProPublicPlanId =
+        params.get('plan') === 'pro' ? 'pro' : 'standard'
       setError('Checkout cancelado. Escolha o plano quando quiser.')
-      const plan = params.get('plan')
-      if (plan === 'pro' || plan === 'standard') openSubscribe(plan)
-      else openSubscribe('standard')
+      openSubscribe(plan, { keepError: true })
+      return
     }
-    const hash = window.location.hash.replace('#', '')
-    if (hash === 'entrar' || hash === 'login') openLogin()
-    if (hash === 'standard' || hash === 'assinar') openSubscribe('standard')
-    if (hash === 'pro') openSubscribe('pro')
+
+    function applyHash(raw: string) {
+      const hash = raw.replace(/^#/, '').toLowerCase()
+      switch (hash) {
+        case 'entrar':
+        case 'login':
+          openLogin()
+          break
+        case 'produtos':
+          setModal('produtos')
+          break
+        case 'standard':
+        case 'assinar':
+          openSubscribe('standard')
+          break
+        case 'pro':
+          openSubscribe('pro')
+          break
+        default:
+          break
+      }
+    }
+
+    applyHash(window.location.hash)
+    const onHashChange = () => applyHash(window.location.hash)
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
   const planPrice = subscribePlan === 'pro' ? 'R$ 199,90/mês' : 'R$ 29,90/mês'
@@ -176,18 +206,30 @@ export function ProLanding() {
       </header>
 
       <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-10 pt-10 sm:px-6 sm:pt-14">
-        <section className="flex min-h-[min(48vh,28rem)] flex-col items-center justify-center text-center animate-rise">
-          <p className="text-[0.7rem] font-bold uppercase tracking-[0.28em] text-gold-strong drop-shadow-sm">
+        <section className="flex min-h-[min(48vh,28rem)] flex-col items-center justify-center text-center">
+          <p
+            className="animate-rise text-[0.7rem] font-bold uppercase tracking-[0.28em] text-gold-strong drop-shadow-sm"
+            style={{ animationDelay: '0ms' }}
+          >
             {brand.name}
           </p>
-          <h1 className="mt-3 max-w-3xl font-serif text-[2.35rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-[3.35rem]">
+          <h1
+            className="animate-rise mt-3 max-w-3xl font-serif text-[2.35rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-[3.35rem]"
+            style={{ animationDelay: '70ms' }}
+          >
             Seu dia no salão,{' '}
             <span className="text-gold-strong">organizado</span> pela assistente
           </h1>
-          <p className="mt-4 max-w-xl text-base font-medium leading-relaxed text-foreground/80 sm:text-lg">
+          <p
+            className="animate-rise mt-4 max-w-xl text-base font-medium leading-relaxed text-foreground/80 sm:text-lg"
+            style={{ animationDelay: '140ms' }}
+          >
             {brand.tagline} Standard R$ 29,90 · Pro R$ 199,90.
           </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground/75">
+          <div
+            className="animate-rise mt-5 flex flex-wrap items-center justify-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground/75"
+            style={{ animationDelay: '210ms' }}
+          >
             <span className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3 py-1.5 backdrop-blur-sm">
               <Sparkles className="h-4 w-4 text-gold-strong" /> Assistente IA pessoal
             </span>
@@ -197,6 +239,26 @@ export function ProLanding() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3 py-1.5 backdrop-blur-sm">
               <MessageCircle className="h-4 w-4 text-gold-strong" /> Telegram no Standard
             </span>
+          </div>
+          <div
+            className="animate-rise mt-7 flex flex-col items-center gap-3"
+            style={{ animationDelay: '280ms' }}
+          >
+            <button
+              type="button"
+              onClick={() => openSubscribe('standard')}
+              className="inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-bold text-foreground shadow-[0_12px_32px_-16px_rgba(26,23,20,0.45)] transition hover:bg-gold/90"
+            >
+              Começar por R$ 29,90
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => openSubscribe('pro')}
+              className="text-sm font-semibold text-gold-strong underline-offset-2 hover:underline"
+            >
+              Ver Pro
+            </button>
           </div>
         </section>
       </main>
@@ -231,6 +293,31 @@ export function ProLanding() {
               </button>
             )
           })}
+        </section>
+
+        <section
+          className="mt-6 border-y border-border/60 py-5 text-center animate-rise"
+          aria-label="Integrações incluídas"
+        >
+          <p className="text-sm font-semibold text-foreground/85">{TRUST_STRIP.headline}</p>
+          <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 text-sm font-medium text-muted">
+            {TRUST_STRIP.bullets.map((bullet, i) => (
+              <li key={bullet} className="inline-flex items-center gap-2">
+                {i > 0 && (
+                  <span className="hidden text-border sm:inline" aria-hidden>
+                    ·
+                  </span>
+                )}
+                <span>{bullet}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[0.7rem] font-medium text-muted/75">
+            Painel da equipe continua em{' '}
+            <Link href="/login" className="underline-offset-2 hover:underline">
+              /login
+            </Link>
+          </p>
         </section>
 
         <section
@@ -347,7 +434,11 @@ export function ProLanding() {
         </p>
       </main>
 
-      <ProInfoModal openId={modal} onClose={() => setModal(null)} />
+      <ProInfoModal
+        openId={modal}
+        onClose={() => setModal(null)}
+        onSubscribe={openSubscribe}
+      />
     </div>
   )
 }
