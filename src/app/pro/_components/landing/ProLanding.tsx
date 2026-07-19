@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowRight, CalendarDays, MessageCircle, Sparkles } from 'lucide-react'
 import { getProBrand } from '@/lib/pro/brand'
 import type { ProPublicPlanId } from '@/lib/pro/plan-catalog'
+import { HeroVideoBackdrop } from './HeroVideoBackdrop'
 import { HERO_CARDS, LANDING_NAV, type LandingModalId } from './landing-content'
 import { ProInfoModal } from './ProInfoModal'
 
@@ -116,19 +117,12 @@ export function ProLanding() {
   const planLabel = subscribePlan === 'pro' ? 'Pro' : 'Standard'
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_60%_at_50%_-10%,#f0e0c8_0%,transparent_55%),linear-gradient(165deg,#f7efe3_0%,#fafaf7_42%,#ebe2d4_100%)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[70vh] opacity-[0.35]"
-        style={{
-          backgroundImage:
-            'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23c9a227\' fill-opacity=\'0.07\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-        }}
-      />
+    <div className="relative min-h-screen overflow-x-hidden bg-[linear-gradient(165deg,#f7efe3_0%,#fafaf7_42%,#ebe2d4_100%)]">
+      {/* Hero: 3 vídeos lado a lado atrás do texto */}
+      <div className="relative isolate">
+        <div className="absolute inset-0 min-h-[min(72vh,42rem)]">
+          <HeroVideoBackdrop />
+        </div>
 
       <header className="relative z-30 px-3 pt-4 sm:px-5 sm:pt-5">
         <div className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border border-border/80 bg-card/90 px-3 py-2 shadow-[0_12px_40px_-24px_rgba(26,23,20,0.45)] backdrop-blur-md animate-rise sm:gap-3 sm:px-4 sm:py-2.5">
@@ -181,32 +175,35 @@ export function ProLanding() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
-        <section className="flex flex-col items-center text-center animate-rise">
-          <p className="text-[0.7rem] font-bold uppercase tracking-[0.28em] text-gold-strong">
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-10 pt-10 sm:px-6 sm:pt-14">
+        <section className="flex min-h-[min(48vh,28rem)] flex-col items-center justify-center text-center animate-rise">
+          <p className="text-[0.7rem] font-bold uppercase tracking-[0.28em] text-gold-strong drop-shadow-sm">
             {brand.name}
           </p>
           <h1 className="mt-3 max-w-3xl font-serif text-[2.35rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-[3.35rem]">
             Seu dia no salão,{' '}
             <span className="text-gold-strong">organizado</span> pela assistente
           </h1>
-          <p className="mt-4 max-w-xl text-base font-medium leading-relaxed text-muted sm:text-lg">
+          <p className="mt-4 max-w-xl text-base font-medium leading-relaxed text-foreground/80 sm:text-lg">
             {brand.tagline} Standard R$ 29,90 · Pro R$ 199,90.
           </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-muted">
-            <span className="inline-flex items-center gap-1.5">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-foreground/75">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3 py-1.5 backdrop-blur-sm">
               <Sparkles className="h-4 w-4 text-gold-strong" /> Assistente IA pessoal
             </span>
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3 py-1.5 backdrop-blur-sm">
               <CalendarDays className="h-4 w-4 text-gold-strong" /> Avec · Trinks
             </span>
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3 py-1.5 backdrop-blur-sm">
               <MessageCircle className="h-4 w-4 text-gold-strong" /> Telegram no Standard
             </span>
           </div>
         </section>
+      </main>
+      </div>
 
-        <section className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Começar">
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-16 sm:px-6">
+        <section className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Começar">
           {HERO_CARDS.map((card, i) => {
             const active = selectedCard === card.id
             return (
