@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { apiJson } from '@/lib/api-client'
 import { ProPageHeader, ProPanel } from '../_components/ProUi'
 
 interface Quota {
@@ -23,27 +24,22 @@ export default function ProAssistentePage() {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/me/assistant', { credentials: 'include' })
-    const json = await res.json()
-    if (res.status === 401) {
-      window.location.assign('/pro/login')
+    setError(null)
+    const res = await apiJson<{
+      history: Array<{ role: string; content: string }>
+      quotas: Quota
+    }>('/api/me/assistant')
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setError(res.error ?? 'Erro ao carregar a assistente')
       return
     }
-    if (!res.ok || json.error) {
-      setError(json.error ?? 'Erro')
-      return
-    }
-    setMessages(
-      (json.data.history as Array<{ role: string; content: string }>).map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
-    )
-    setQuotas(json.data.quotas)
+    setMessages(res.data.history.map((m) => ({ role: m.role, content: m.content })))
+    setQuotas(res.data.quotas)
   }, [])
 
   useEffect(() => {
-    load().catch((e) => setError(String(e)))
+    void load()
   }, [load])
 
   async function send(e: React.FormEvent) {
@@ -54,52 +50,37 @@ export default function ProAssistentePage() {
     setError(null)
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', content: text }])
-    try {
-      const res = await fetch('/api/me/assistant', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
-      })
-      const json = await res.json()
-      if (!res.ok || json.error) {
-        setError(json.error ?? 'Falha')
-        return
-      }
-      setMessages((prev) => [...prev, { role: 'assistant', content: json.data.answer }])
-      setQuotas(json.data.quotas)
-    } catch (err) {
-      setError(String(err))
-    } finally {
-      setLoading(false)
+    const res = await apiJson<{ answer: string; quotas: Quota }>('/api/me/assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    })
+    setLoading(false)
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setError(res.error ?? 'Falha ao falar com a assistente')
+      return
     }
+    setMessages((prev) => [...prev, { role: 'assistant', content: res.data!.answer }])
+    setQuotas(res.data.quotas)
   }
 
   async function runBriefing() {
     setLoading(true)
     setError(null)
-    try {
-      const res = await fetch('/api/me/briefing', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ push_telegram: true }),
-      })
-      const json = await res.json()
-      if (!res.ok || json.error) {
-        setError(json.error ?? 'Falha no briefing')
-        return
-      }
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: json.data.briefing },
-      ])
-      setQuotas(json.data.quotas)
-    } catch (err) {
-      setError(String(err))
-    } finally {
-      setLoading(false)
+    const res = await apiJson<{ briefing: string; quotas: Quota }>('/api/me/briefing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ push_telegram: true }),
+    })
+    setLoading(false)
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setError(res.error ?? 'Falha no briefing')
+      return
     }
+    setMessages((prev) => [...prev, { role: 'assistant', content: res.data!.briefing }])
+    setQuotas(res.data.quotas)
   }
 
   return (

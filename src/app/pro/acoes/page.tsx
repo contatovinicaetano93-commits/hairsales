@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { apiJson } from '@/lib/api-client'
 import { ProEmptyRow, ProPageHeader, ProPanel, ProTable } from '@/app/pro/_components/ProUi'
 
 export default function ProAcoesPage() {
@@ -26,57 +27,58 @@ export default function ProAcoesPage() {
   const [waConnected, setWaConnected] = useState(false)
   const [plan, setPlan] = useState('standard')
 
-  useEffect(() => {
-    fetch('/api/me/actions', { credentials: 'include' })
-      .then(async (res) => {
-        const json = await res.json()
-        if (res.status === 401) {
-          window.location.assign('/pro/login')
-          return
-        }
-        if (!res.ok || json.error) {
-          setError(json.error ?? 'Erro')
-          return
-        }
-        setData(json.data)
-      })
-      .catch((e) => setError(String(e)))
+  const load = useCallback(async () => {
+    setError(null)
+    const actions = await apiJson<NonNullable<typeof data>>('/api/me/actions')
+    if (actions.status === 401) return
+    if (!actions.ok || !actions.data) {
+      setError(actions.error ?? 'Erro ao carregar ações')
+      return
+    }
+    setData(actions.data)
 
-    fetch('/api/me/whatsapp', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.data) {
-          setWaConnected(Boolean(json.data.connected))
-          setPlan(json.data.plan)
-        }
-      })
-      .catch(() => {})
+    const wa = await apiJson<{ connected: boolean; plan: string }>('/api/me/whatsapp')
+    if (wa.ok && wa.data) {
+      setWaConnected(Boolean(wa.data.connected))
+      setPlan(wa.data.plan)
+    }
   }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
 
   async function sendWa(kind: 'reminder' | 'reactivation', clientId: string) {
     setSending(`${kind}-${clientId}`)
     setToast(null)
-    try {
-      const res = await fetch('/api/me/whatsapp/send', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, client_id: clientId }),
-      })
-      const json = await res.json()
-      if (!res.ok || json.error) {
-        setToast(json.error ?? 'Falha no envio')
-        return
-      }
-      setToast(kind === 'reminder' ? 'Lembrete utility enviado.' : 'Reativação marketing enviada.')
-    } catch (e) {
-      setToast(String(e))
-    } finally {
-      setSending(null)
+    const res = await apiJson('/api/me/whatsapp/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind, client_id: clientId }),
+    })
+    setSending(null)
+    if (res.status === 401) return
+    if (!res.ok) {
+      setToast(res.error ?? 'Falha no envio')
+      return
     }
+    setToast(kind === 'reminder' ? 'Lembrete utility enviado.' : 'Reativação marketing enviada.')
   }
 
-  if (error) return <p className="text-sm font-medium text-danger">{error}</p>
+  if (error) {
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm font-medium text-danger">{error}</p>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold"
+        >
+          Tentar de novo
+        </button>
+      </div>
+    )
+  }
   if (!data) return <p className="text-sm font-medium text-muted">Carregando ações…</p>
 
   return (
@@ -114,7 +116,12 @@ export default function ProAcoesPage() {
       >
         <ProTable columns={['Cliente', 'Sumiu', 'Último serviço', 'Ação']}>
           {data.reactivation.length === 0 ? (
-            <ProEmptyRow colSpan={4}>Ninguém sumido há 45+ dias na sua base.</ProEmptyRow>
+            <ProEmptyRow colSpan={4}>
+              Ninguém sumido há 45+ dias na sua base.{' '}
+              <Link href="/pro/clientes" className="font-bold text-gold-strong underline">
+                Ver seus clientes
+              </Link>
+            </ProEmptyRow>
           ) : (
             data.reactivation.map((r) => (
               <tr key={r.id}>
@@ -147,7 +154,12 @@ export default function ProAcoesPage() {
       >
         <ProTable columns={['Cliente', 'Serviço', 'Última vez', 'Ação']}>
           {data.upsell.length === 0 ? (
-            <ProEmptyRow colSpan={4}>Nenhuma sugestão de retorno agora.</ProEmptyRow>
+            <ProEmptyRow colSpan={4}>
+              Nenhuma sugestão de retorno agora.{' '}
+              <Link href="/pro/hoje" className="font-bold text-gold-strong underline">
+                Ver o dia
+              </Link>
+            </ProEmptyRow>
           ) : (
             data.upsell.map((u) => (
               <tr key={`${u.client_id}-${u.service_name}`}>

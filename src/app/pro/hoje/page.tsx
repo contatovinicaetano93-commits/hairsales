@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { ProHojePayload } from '@/lib/pro/hoje'
+import { apiJson } from '@/lib/api-client'
 import { OnboardingChecklist } from '@/app/pro/_components/OnboardingChecklist'
 import {
   ProEmptyRow,
@@ -23,25 +24,32 @@ export default function ProHojePage() {
 
   const load = useCallback(async (refresh = false) => {
     setError(null)
-    const res = await fetch(`/api/me/hoje${refresh ? '?refresh=1' : ''}`, { credentials: 'include' })
-    const json = await res.json()
-    if (res.status === 401) {
-      window.location.assign('/pro/login')
+    const res = await apiJson<ProHojePayload>(`/api/me/hoje${refresh ? '?refresh=1' : ''}`)
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setError(res.error ?? 'Erro ao carregar')
       return
     }
-    if (!res.ok || json.error) {
-      setError(json.error ?? 'Erro ao carregar')
-      return
-    }
-    setData(json.data)
+    setData(res.data)
   }, [])
 
   useEffect(() => {
-    load().catch((e) => setError(String(e)))
+    void load()
   }, [load])
 
   if (error) {
-    return <p className="text-sm font-medium text-danger">{error}</p>
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm font-medium text-danger">{error}</p>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold"
+        >
+          Tentar de novo
+        </button>
+      </div>
+    )
   }
 
   if (!data) {
@@ -128,7 +136,7 @@ export default function ProHojePage() {
         action={
           <button
             type="button"
-            onClick={() => load(true)}
+            onClick={() => void load(true)}
             className="text-xs font-bold uppercase tracking-wide text-gold-strong hover:underline"
           >
             Atualizar

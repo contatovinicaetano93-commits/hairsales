@@ -1,22 +1,40 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { OnboardingStatus } from '@/lib/pro/onboarding'
+import { apiJson } from '@/lib/api-client'
 
 export function OnboardingChecklist({ compact = false }: { compact?: boolean }) {
   const [data, setData] = useState<OnboardingStatus | null>(null)
+  const [failed, setFailed] = useState(false)
 
-  useEffect(() => {
-    fetch('/api/me/onboarding', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.data) setData(json.data)
-      })
-      .catch(() => {})
+  const load = useCallback(async () => {
+    setFailed(false)
+    const res = await apiJson<OnboardingStatus>('/api/me/onboarding')
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setFailed(true)
+      return
+    }
+    setData(res.data)
   }, [])
 
-  if (!data) return null
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  if (!data) {
+    if (compact || !failed) return null
+    return (
+      <p className="text-xs font-medium text-muted">
+        Não deu pra carregar o setup.{' '}
+        <button type="button" onClick={() => void load()} className="text-gold-strong underline">
+          Tentar de novo
+        </button>
+      </p>
+    )
+  }
 
   const pending = data.steps.filter((s) => !s.done)
   if (compact && data.ready_for_day && pending.length === 0) return null

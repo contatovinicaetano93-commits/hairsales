@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { apiJson } from '@/lib/api-client'
 import { ProEmptyRow, ProPageHeader, ProPanel, ProTable } from '@/app/pro/_components/ProUi'
 
 type Filter = 'all' | 'hot' | 'reactivation'
@@ -25,27 +26,26 @@ export default function ProClientesPage() {
   const [filter, setFilter] = useState<Filter>('all')
   const [q, setQ] = useState('')
   const [clients, setClients] = useState<ClientRow[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setError(null)
+    setLoading(true)
     const params = new URLSearchParams({ filter })
     if (q.trim()) params.set('q', q.trim())
-    const res = await fetch(`/api/me/clients?${params}`, { credentials: 'include' })
-    const json = await res.json()
-    if (res.status === 401) {
-      window.location.assign('/pro/login')
+    const res = await apiJson<{ clients: ClientRow[] }>(`/api/me/clients?${params}`)
+    setLoading(false)
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setError(res.error ?? 'Erro ao carregar clientes')
       return
     }
-    if (!res.ok || json.error) {
-      setError(json.error ?? 'Erro')
-      return
-    }
-    setClients(json.data.clients)
+    setClients(res.data.clients)
   }, [filter, q])
 
   useEffect(() => {
-    load().catch((e) => setError(String(e)))
+    void load()
   }, [load])
 
   return (
@@ -89,7 +89,9 @@ export default function ProClientesPage() {
         </div>
 
         <ProTable columns={['Cliente', 'Telefone', 'Último serviço', 'Última visita', 'Valor']}>
-          {clients.length === 0 ? (
+          {loading ? (
+            <ProEmptyRow colSpan={5}>Carregando clientes…</ProEmptyRow>
+          ) : clients.length === 0 ? (
             <ProEmptyRow colSpan={5}>
               Nenhum cliente ainda.{' '}
               <Link href="/pro/conectar" className="font-bold text-gold-strong underline">

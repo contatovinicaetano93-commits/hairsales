@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 import { OnboardingChecklist } from '@/app/pro/_components/OnboardingChecklist'
 import { ProPageHeader } from '@/app/pro/_components/ProUi'
+import { apiJson } from '@/lib/api-client'
 
 interface ProviderOpt {
   id: string
@@ -77,23 +78,18 @@ export default function ProConectarPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetch('/api/me/session', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) {
-          window.location.assign('/pro/login')
-          return
-        }
-        setDisplayName(json.data?.subscriber?.display_name ?? '')
-      })
-      .catch(() => window.location.assign('/pro/login'))
+    apiJson<{ subscriber?: { display_name?: string } }>('/api/me/session').then((res) => {
+      if (res.status === 401) return
+      if (!res.ok) {
+        window.location.assign('/pro/login')
+        return
+      }
+      setDisplayName(res.data?.subscriber?.display_name ?? '')
+    })
 
-    fetch('/api/me/connect', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.data?.providers) setProviders(json.data.providers)
-      })
-      .catch(() => {})
+    apiJson<{ providers?: ProviderOpt[] }>('/api/me/connect').then((res) => {
+      if (res.ok && res.data?.providers) setProviders(res.data.providers)
+    })
   }, [])
 
   async function submit(e: React.FormEvent) {
@@ -101,32 +97,24 @@ export default function ProConectarPage() {
     setLoading(true)
     setError(null)
     setSuccess(null)
-    try {
-      const res = await fetch('/api/me/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          provider,
-          display_name: displayName,
-          api_token: apiToken,
-          unit_external_id: unitId || null,
-        }),
-      })
-      const json = await res.json()
-      if (!res.ok || json.error) {
-        setError(json.error ?? 'Falha ao conectar')
-        return
-      }
-      setSuccess(
-        `Conectado como ${json.data.connection.professional_name}.`,
-      )
-      setTimeout(() => router.push('/pro/hoje'), 900)
-    } catch (err) {
-      setError(String(err))
-    } finally {
-      setLoading(false)
+    const res = await apiJson<{ connection: { professional_name: string } }>('/api/me/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider,
+        display_name: displayName,
+        api_token: apiToken,
+        unit_external_id: unitId || null,
+      }),
+    })
+    setLoading(false)
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setError(res.error ?? 'Falha ao conectar')
+      return
     }
+    setSuccess(`Conectado como ${res.data.connection.professional_name}.`)
+    setTimeout(() => router.push('/pro/hoje'), 900)
   }
 
   return (
@@ -246,59 +234,58 @@ function PlanBlock() {
     if (params.get('plan') === 'cancel') setMsg('Checkout cancelado.')
 
     Promise.all([
-      fetch('/api/me/plan', { credentials: 'include' }).then((r) => r.json()),
-      fetch('/api/me/onboarding', { credentials: 'include' }).then((r) => r.json()),
-    ])
-      .then(([planJson, onboardingJson]) => {
-        if (planJson.data?.plan) setPlan(planJson.data.plan)
-        setAllowed(Boolean(planJson.data?.self_upgrade_allowed))
-        setStripeEnabled(Boolean(planJson.data?.stripe_enabled))
-        setStripeProPrice(Boolean(planJson.data?.stripe_pro_price_configured))
-        setHasCustomer(Boolean(onboardingJson.data?.has_stripe_customer))
-        if (params.get('plan') === 'success' && planJson.data?.plan === 'pro') {
-          setMsg('Plano Pro ativo via Stripe.')
-        }
-      })
-      .catch(() => {})
+      apiJson<{
+        plan?: string
+        self_upgrade_allowed?: boolean
+        stripe_enabled?: boolean
+        stripe_pro_price_configured?: boolean
+      }>('/api/me/plan'),
+      apiJson<{ has_stripe_customer?: boolean }>('/api/me/onboarding'),
+    ]).then(([planRes, onboardingRes]) => {
+      if (planRes.status === 401) return
+      if (planRes.data?.plan) setPlan(planRes.data.plan)
+      setAllowed(Boolean(planRes.data?.self_upgrade_allowed))
+      setStripeEnabled(Boolean(planRes.data?.stripe_enabled))
+      setStripeProPrice(Boolean(planRes.data?.stripe_pro_price_configured))
+      setHasCustomer(Boolean(onboardingRes.data?.has_stripe_customer))
+      if (params.get('plan') === 'success' && planRes.data?.plan === 'pro') {
+        setMsg('Plano Pro ativo via Stripe.')
+      }
+    })
   }, [])
 
   async function openPortal() {
     setMsg(null)
-    const res = await fetch('/api/me/billing/portal', {
-      method: 'POST',
-      credentials: 'include',
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      setMsg(json.error ?? 'Portal indisponível')
+    const res = await apiJson<{ url: string }>('/api/me/billing/portal', { method: 'POST' })
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setMsg(res.error ?? 'Portal indisponível')
       return
     }
-    window.location.assign(json.data.url)
+    window.location.assign(res.data.url)
   }
 
   async function setTo(next: 'standard' | 'pro', checkout = false) {
     setMsg(null)
-    const res = await fetch('/api/me/plan', {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: next, checkout }),
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      setMsg(json.error ?? 'Erro')
-      return
-    }
-    if (json.data?.mode === 'stripe' && json.data.checkout_url) {
-      window.location.assign(json.data.checkout_url)
-      return
-    }
-    setPlan(json.data.plan)
-    setMsg(
-      next === 'pro'
-        ? 'Plano Pro ativo — WhatsApp Cloud liberado.'
-        : 'Voltou para Standard.',
+    const res = await apiJson<{ plan: string; mode?: string; checkout_url?: string }>(
+      '/api/me/plan',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: next, checkout }),
+      },
     )
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setMsg(res.error ?? 'Erro')
+      return
+    }
+    if (res.data.mode === 'stripe' && res.data.checkout_url) {
+      window.location.assign(res.data.checkout_url)
+      return
+    }
+    setPlan(res.data.plan)
+    setMsg(next === 'pro' ? 'Plano Pro ativo — WhatsApp Cloud liberado.' : 'Voltou para Standard.')
   }
 
   return (
@@ -384,21 +371,24 @@ function WhatsappBlock() {
   const [error, setError] = useState<string | null>(null)
 
   function reload() {
-    fetch('/api/me/whatsapp', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.data) {
-          setPlan(json.data.plan)
-          setConnected(Boolean(json.data.connected))
-          setUsage(json.data.usage)
-          setPacks(json.data.packs ?? [])
-          setEmbedded(json.data.embedded_signup ?? null)
-          if (json.data.embedded_signup && !json.data.embedded_signup.enabled) {
-            // hint available via setup_hint when user clicks
-          }
-        }
-      })
-      .catch(() => {})
+    apiJson<{
+      plan: string
+      connected: boolean
+      usage: typeof usage
+      packs?: typeof packs
+      embedded_signup?: typeof embedded
+    }>('/api/me/whatsapp').then((res) => {
+      if (res.status === 401) return
+      if (!res.ok || !res.data) {
+        setError('Não deu pra carregar o WhatsApp. Tente de novo.')
+        return
+      }
+      setPlan(res.data.plan)
+      setConnected(Boolean(res.data.connected))
+      setUsage(res.data.usage)
+      setPacks(res.data.packs ?? [])
+      setEmbedded(res.data.embedded_signup ?? null)
+    })
   }
 
   useEffect(() => {
@@ -412,9 +402,8 @@ function WhatsappBlock() {
     e.preventDefault()
     setError(null)
     setMsg(null)
-    const res = await fetch('/api/me/whatsapp', {
+    const res = await apiJson('/api/me/whatsapp', {
       method: 'POST',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         phone_number_id: phoneNumberId,
@@ -422,9 +411,9 @@ function WhatsappBlock() {
         display_phone: displayPhone || null,
       }),
     })
-    const json = await res.json()
+    if (res.status === 401) return
     if (!res.ok) {
-      setError(json.error ?? 'Erro')
+      setError(res.error ?? 'Erro')
       return
     }
     setMsg('WhatsApp Cloud conectado.')
@@ -433,7 +422,8 @@ function WhatsappBlock() {
   }
 
   async function disconnect() {
-    await fetch('/api/me/whatsapp', { method: 'DELETE', credentials: 'include' })
+    const res = await apiJson('/api/me/whatsapp', { method: 'DELETE' })
+    if (res.status === 401) return
     setConnected(false)
     reload()
   }
@@ -441,22 +431,24 @@ function WhatsappBlock() {
   async function buyPack(packId: string) {
     setError(null)
     setMsg(null)
-    const res = await fetch('/api/me/whatsapp/packs', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pack_id: packId }),
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      setError(json.error ?? 'Falha na compra')
+    const res = await apiJson<{ mode?: string; checkout_url?: string; credits_added?: number }>(
+      '/api/me/whatsapp/packs',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pack_id: packId }),
+      },
+    )
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setError(res.error ?? 'Falha na compra')
       return
     }
-    if (json.data?.mode === 'stripe' && json.data.checkout_url) {
-      window.location.assign(json.data.checkout_url)
+    if (res.data.mode === 'stripe' && res.data.checkout_url) {
+      window.location.assign(res.data.checkout_url)
       return
     }
-    setMsg(`Pack +${json.data.credits_added} créditos de marketing (demo).`)
+    setMsg(`Pack +${res.data.credits_added} créditos de marketing (demo).`)
     reload()
   }
 
@@ -488,22 +480,19 @@ function WhatsappBlock() {
             setError('Embedded Signup cancelado ou sem code.')
             return
           }
-          fetch('/api/me/whatsapp/embedded-signup', {
+          apiJson('/api/me/whatsapp/embedded-signup', {
             method: 'POST',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code }),
+          }).then((res) => {
+            if (res.status === 401) return
+            if (!res.ok) {
+              setError(res.error ?? 'Falha no Embedded Signup')
+              return
+            }
+            setMsg('WhatsApp conectado via Embedded Signup.')
+            reload()
           })
-            .then((r) => r.json())
-            .then((json) => {
-              if (json.error) {
-                setError(json.error)
-                return
-              }
-              setMsg('WhatsApp conectado via Embedded Signup.')
-              reload()
-            })
-            .catch((e) => setError(String(e)))
         },
         {
           config_id: embedded.config_id,
@@ -646,19 +635,18 @@ function GoalsBlock() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch('/api/me/goals', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => {
-        const d =
-          json.data?.daily_goal_revenue != null ? Number(json.data.daily_goal_revenue) : null
-        const w =
-          json.data?.weekly_goal_revenue != null ? Number(json.data.weekly_goal_revenue) : null
-        setSavedDaily(d)
-        setSavedWeekly(w)
-        if (d != null) setDaily(String(d))
-        if (w != null) setWeekly(String(w))
-      })
-      .catch(() => {})
+    apiJson<{ daily_goal_revenue?: number | null; weekly_goal_revenue?: number | null }>(
+      '/api/me/goals',
+    ).then((res) => {
+      if (res.status === 401) return
+      if (!res.ok || !res.data) return
+      const d = res.data.daily_goal_revenue != null ? Number(res.data.daily_goal_revenue) : null
+      const w = res.data.weekly_goal_revenue != null ? Number(res.data.weekly_goal_revenue) : null
+      setSavedDaily(d)
+      setSavedWeekly(w)
+      if (d != null) setDaily(String(d))
+      if (w != null) setWeekly(String(w))
+    })
   }, [])
 
   async function save(e: React.FormEvent) {
@@ -666,35 +654,30 @@ function GoalsBlock() {
     setError(null)
     setJustSaved(false)
     setSaving(true)
-    try {
-      const nextDaily = daily === '' ? null : Number(daily)
-      const nextWeekly = weekly === '' ? null : Number(weekly)
-      const res = await fetch('/api/me/goals', {
+    const nextDaily = daily === '' ? null : Number(daily)
+    const nextWeekly = weekly === '' ? null : Number(weekly)
+    const res = await apiJson<{ daily_goal_revenue?: number | null; weekly_goal_revenue?: number | null }>(
+      '/api/me/goals',
+      {
         method: 'PUT',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           daily_goal_revenue: nextDaily,
           weekly_goal_revenue: nextWeekly,
         }),
-      })
-      const json = await res.json()
-      if (!res.ok) {
-        setError(json.error ?? 'Erro ao salvar metas')
-        return
-      }
-      const d =
-        json.data?.daily_goal_revenue != null ? Number(json.data.daily_goal_revenue) : nextDaily
-      const w =
-        json.data?.weekly_goal_revenue != null ? Number(json.data.weekly_goal_revenue) : nextWeekly
-      setSavedDaily(d)
-      setSavedWeekly(w)
-      setJustSaved(true)
-    } catch (err) {
-      setError(String(err))
-    } finally {
-      setSaving(false)
+      },
+    )
+    setSaving(false)
+    if (res.status === 401) return
+    if (!res.ok) {
+      setError(res.error ?? 'Erro ao salvar metas')
+      return
     }
+    const d = res.data?.daily_goal_revenue != null ? Number(res.data.daily_goal_revenue) : nextDaily
+    const w = res.data?.weekly_goal_revenue != null ? Number(res.data.weekly_goal_revenue) : nextWeekly
+    setSavedDaily(d)
+    setSavedWeekly(w)
+    setJustSaved(true)
   }
 
   const hasSaved = savedDaily != null || savedWeekly != null
@@ -778,26 +761,29 @@ function TelegramBlock() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/me/telegram', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => setLinked(Boolean(json.data?.linked)))
-      .catch(() => {})
+    apiJson<{ linked?: boolean }>('/api/me/telegram').then((res) => {
+      if (res.status === 401) return
+      if (res.ok) setLinked(Boolean(res.data?.linked))
+    })
   }, [])
 
   async function generate() {
     setError(null)
-    const res = await fetch('/api/me/telegram', { method: 'POST', credentials: 'include' })
-    const json = await res.json()
-    if (!res.ok || json.error) {
-      setError(json.error ?? 'Erro')
+    const res = await apiJson<{ code: string; instructions: string }>('/api/me/telegram', {
+      method: 'POST',
+    })
+    if (res.status === 401) return
+    if (!res.ok || !res.data) {
+      setError(res.error ?? 'Erro')
       return
     }
-    setCode(json.data.code)
-    setInstructions(json.data.instructions)
+    setCode(res.data.code)
+    setInstructions(res.data.instructions)
   }
 
   async function unlink() {
-    await fetch('/api/me/telegram', { method: 'DELETE', credentials: 'include' })
+    const res = await apiJson('/api/me/telegram', { method: 'DELETE' })
+    if (res.status === 401) return
     setLinked(false)
     setCode(null)
     setInstructions(null)
