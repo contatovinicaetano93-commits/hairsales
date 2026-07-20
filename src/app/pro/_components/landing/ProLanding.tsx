@@ -457,6 +457,18 @@ export function ProLanding({ romTeamLoginUrl = null }: ProLandingProps) {
         <p className="mt-10 text-center text-xs font-medium text-muted">
           {brand.name} · Standard R$ 29,90 · Pro R$ 199,90
         </p>
+        <p className="mt-2 text-center text-xs font-medium text-muted">
+          <Link href="/pro/termos" className="underline-offset-2 hover:underline hover:text-foreground">
+            Termos de uso
+          </Link>
+          {' · '}
+          <Link
+            href="/pro/privacidade"
+            className="underline-offset-2 hover:underline hover:text-foreground"
+          >
+            Política de privacidade
+          </Link>
+        </p>
       </main>
 
       <ProInfoModal
