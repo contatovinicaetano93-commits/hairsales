@@ -86,18 +86,41 @@ export function ProLanding({ romTeamLoginUrl = null }: ProLandingProps) {
         return
       }
 
-      const res = await fetch('/api/pro/checkout/start', {
+      // Subscribe: tenta checkout (Stripe), ou registra direto se Stripe não está configurado
+      const checkoutRes = await fetch('/api/pro/checkout/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, plan: subscribePlan }),
       })
-      const json = await res.json()
-      if (!res.ok || json.error) {
-        setError(json.error ?? 'Falha ao iniciar pagamento')
+      const checkoutJson = await checkoutRes.json()
+
+      // Se Stripe não está configurado (503), registra direto em modo demo
+      if (checkoutRes.status === 503 && checkoutJson.error?.includes('Pagamento indisponível')) {
+        const registerRes = await fetch('/api/pro/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            display_name: email.split('@')[0],
+          }),
+          credentials: 'include',
+        })
+        const registerJson = await registerRes.json()
+        if (!registerRes.ok || registerJson.error) {
+          setError(registerJson.error ?? 'Falha ao criar conta')
+          return
+        }
+        window.location.assign('/pro/hoje')
         return
       }
-      if (json.data?.checkout_url) {
-        window.location.assign(json.data.checkout_url)
+
+      if (!checkoutRes.ok || checkoutJson.error) {
+        setError(checkoutJson.error ?? 'Falha ao iniciar pagamento')
+        return
+      }
+      if (checkoutJson.data?.checkout_url) {
+        window.location.assign(checkoutJson.data.checkout_url)
         return
       }
       setError('Não foi possível iniciar o pagamento. Tente de novo.')
