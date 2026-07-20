@@ -115,8 +115,8 @@ export function ProShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-border bg-card/70 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md lg:px-8 lg:pb-5 lg:pt-6">
-          <div className="mx-auto flex w-full max-w-lg items-start justify-between gap-3 lg:max-w-4xl">
+        <header className="border-b border-border bg-card/70 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md lg:pb-5 lg:pt-6">
+          <div className="mx-auto flex w-full max-w-lg items-start justify-between gap-3 px-4 lg:max-w-4xl lg:px-8">
             <div>
               <p className="text-[0.65rem] font-bold uppercase tracking-[0.28em] text-gold-strong lg:hidden">
                 {brand.name}

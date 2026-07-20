@@ -54,10 +54,35 @@ function splitSqlStatements(sql) {
     })
     .join('\n')
 
-  return withoutLineComments
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
+  const statements = []
+  let current = ''
+  let dollarTag = null
+  for (let i = 0; i < withoutLineComments.length; i += 1) {
+    const ch = withoutLineComments[i]
+    if (dollarTag === null) {
+      const tagMatch = withoutLineComments.slice(i).match(/^\$[A-Za-z0-9_]*\$/)
+      if (tagMatch) {
+        dollarTag = tagMatch[0]
+        current += dollarTag
+        i += dollarTag.length - 1
+        continue
+      }
+      if (ch === ';') {
+        statements.push(current)
+        current = ''
+        continue
+      }
+      current += ch
+    } else {
+      current += ch
+      if (withoutLineComments.startsWith(dollarTag, i - dollarTag.length + 1)) {
+        dollarTag = null
+      }
+    }
+  }
+  if (current.trim().length > 0) statements.push(current)
+
+  return statements.map((s) => s.trim()).filter((s) => s.length > 0)
 }
 
 const manifest = JSON.parse(readFileSync(join(cwd, 'db', 'migrations.json'), 'utf8'))
