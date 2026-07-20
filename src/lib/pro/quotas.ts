@@ -1,6 +1,48 @@
 import { getSql } from '@/lib/db'
 import { todayIso } from '@/lib/salon/format'
+import { Observability } from '@/lib/observability'
 import type { SubscriberPlan } from '@/lib/pro/subscribers'
+
+/**
+ * Teto de gasto de IA em nível de plataforma — as cotas por assinante
+ * protegem contra abuso individual, mas nada barra o custo agregado se
+ * muitos assinantes baterem cota no mesmo dia. `PLATFORM_AI_DAILY_UNIT_CAP`
+ * é configurável via env; sem ela, cai num padrão conservador.
+ */
+export function platformDailyUnitCap(): number {
+  const raw = Number(process.env.PLATFORM_AI_DAILY_UNIT_CAP)
+  return Number.isFinite(raw) && raw > 0 ? raw : 5000
+}
+
+let lastPlatformAlertDay: string | null = null
+
+export function resetPlatformAiAlertForTests() {
+  lastPlatformAlertDay = null
+}
+
+/** Best-effort — nunca lança, só avisa. Debounce em memória (1 alerta/dia/instância). */
+export async function checkPlatformAiSpend(day: string): Promise<void> {
+  if (lastPlatformAlertDay === day) return
+  try {
+    const sql = getSql()
+    const rows = (await sql`
+      select coalesce(sum(units_used), 0)::int as total
+      from subscriber_ai_usage
+      where day = ${day}
+    `) as { total: number }[]
+    const total = rows[0]?.total ?? 0
+    const cap = platformDailyUnitCap()
+    if (total >= cap) {
+      lastPlatformAlertDay = day
+      Observability.captureMessage(
+        `HairSales: consumo de IA da plataforma passou de ${cap} unidades hoje (${total}).`,
+        'warning',
+      )
+    }
+  } catch {
+    // não deixa o alerta de custo derrubar o fluxo de IA do assinante
+  }
+}
 
 /** Unidades de IA — alinhado ao plano Standard/Pro validado. */
 export const AI_UNIT_COST = {
@@ -155,6 +197,8 @@ export async function consumeAiUnits(
     }
     throw new QuotaExceededError('Não foi possível reservar a cota de IA agora. Tente novamente em instantes.')
   }
+
+  void checkPlatformAiSpend(day)
 
   return { units, status: await getQuotaStatus(subscriberId, plan) }
 }
