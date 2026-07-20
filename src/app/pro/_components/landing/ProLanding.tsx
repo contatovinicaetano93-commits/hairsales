@@ -406,6 +406,12 @@ export function ProLanding({ romTeamLoginUrl = null }: ProLandingProps) {
                   autoComplete="current-password"
                   className="rounded-2xl border border-border bg-surface px-4 py-3.5 text-sm font-medium outline-none focus:border-gold"
                 />
+                <Link
+                  href="/pro/esqueci-senha"
+                  className="self-end text-xs font-semibold text-gold-strong hover:underline"
+                >
+                  Esqueci minha senha
+                </Link>
               </label>
             )}
             {error && <p className="text-sm font-medium text-danger">{error}</p>}

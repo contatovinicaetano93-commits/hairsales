@@ -85,7 +85,9 @@ export function ProShell({ children }: { children: React.ReactNode }) {
     pathname === '/pro/login' ||
     pathname === '/pro/completar-cadastro' ||
     pathname === '/pro/termos' ||
-    pathname === '/pro/privacidade'
+    pathname === '/pro/privacidade' ||
+    pathname === '/pro/esqueci-senha' ||
+    pathname === '/pro/redefinir-senha'
   const pageTitle =
     Object.entries(PAGE_TITLE).find(([path]) => pathname === path || pathname.startsWith(`${path}/`))?.[1] ??
     brand.name

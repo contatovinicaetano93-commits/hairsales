@@ -111,6 +111,17 @@ export async function deleteSubscriberAccount(id: string): Promise<boolean> {
   return rows.length > 0
 }
 
+/** Usado por login/registro/reset — nunca loga a senha em claro. */
+export async function updateSubscriberPassword(id: string, newPassword: string): Promise<void> {
+  const sql = getSql()
+  const passwordHash = await hashPassword(newPassword)
+  await sql`
+    update subscribers
+    set password_hash = ${passwordHash}, updated_at = now()
+    where id = ${id}
+  `
+}
+
 export async function bumpSubscriberSessionVersion(id: string): Promise<SubscriberRow | null> {
   const sql = getSql()
   const rows = (await sql`

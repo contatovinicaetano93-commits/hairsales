@@ -8,6 +8,7 @@ import {
 import { checkProRateLimit } from '@/lib/pro/rate-limit'
 import { createSubscriber, findSubscriberByEmail } from '@/lib/pro/subscribers'
 import { isStripeConfigured } from '@/lib/pro/stripe'
+import { sendWelcomeEmail } from '@/lib/pro/email'
 
 function allowDemoRegister() {
   return (
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
       plan: 'standard',
       subscription_status: 'none',
     })
+    void sendWelcomeEmail(subscriber.email, subscriber.display_name)
     const res = ok({
       id: subscriber.id,
       display_name: subscriber.display_name,

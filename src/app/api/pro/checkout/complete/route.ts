@@ -12,6 +12,7 @@ import {
 } from '@/lib/pro/stripe'
 import { labelForDbPlan } from '@/lib/pro/plan-catalog'
 import { captureHairsalesException } from '@/lib/pro/observability'
+import { sendWelcomeEmail } from '@/lib/pro/email'
 import type { SubscriberRow } from '@/lib/pro/subscribers'
 
 export async function GET(req: NextRequest) {
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
         subscription_status: subscriber.subscription_status,
       }),
     )
+    void sendWelcomeEmail(subscriber.email, subscriber.display_name)
 
     const res = ok({
       id: subscriber.id,
