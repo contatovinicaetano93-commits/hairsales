@@ -21,7 +21,7 @@ function rulesAnswer(question: string, context: string): string {
     return `Com base nos seus dados de hoje:\n${context.slice(0, 600)}`
   }
   if (/(reativ|sumiu|voltar)/.test(q)) {
-    return `Olhe a lista de reativação nas Ações — são clientes da sua carteira sem visita recente. Priorize os que sumiram há mais dias.`
+    return `Olhe a lista de reativação nas Ações — são clientes sem visita recente. Priorize os que sumiram há mais dias.`
   }
   if (/(agenda|hoje|horario|horário)/.test(q)) {
     return `Sua agenda do dia está em Hoje. Se estiver vazia, atualize a conexão Avec ou confira se o nome na agenda bate com o assinante.`

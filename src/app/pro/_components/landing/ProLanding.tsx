@@ -100,9 +100,9 @@ export function ProLanding({ romTeamLoginUrl = null }: ProLandingProps) {
         window.location.assign(json.data.checkout_url)
         return
       }
-      setError('Checkout sem URL')
-    } catch (err) {
-      setError(String(err))
+      setError('Não foi possível iniciar o pagamento. Tente de novo.')
+    } catch {
+      setError('Algo deu errado. Tente de novo.')
     } finally {
       setLoading(false)
     }
@@ -342,7 +342,7 @@ export function ProLanding({ romTeamLoginUrl = null }: ProLandingProps) {
           <p className="mt-2 text-sm font-medium text-muted">
             {mode === 'login'
               ? 'Conta do profissional — entre com e-mail e senha.'
-              : `${planPrice}. Pague no Stripe e depois conclua nome e senha.`}
+              : `${planPrice}. Finalize o pagamento e depois crie sua senha.`}
           </p>
 
           {mode === 'subscribe' && (
@@ -438,7 +438,7 @@ export function ProLanding({ romTeamLoginUrl = null }: ProLandingProps) {
 
           {romTeamLoginUrl && (
             <p className="mt-6 text-xs font-medium text-muted">
-              Painel da unidade?{' '}
+              Faz parte de uma equipe ou salão com painel próprio?{' '}
               {romTeamLoginUrl.startsWith('/') ? (
                 <Link
                   href={romTeamLoginUrl}

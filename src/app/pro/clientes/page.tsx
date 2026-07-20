@@ -52,7 +52,7 @@ export default function ProClientesPage() {
     <div className="flex flex-col gap-6">
       <ProPageHeader
         title="Meus clientes"
-        subtitle="Só a sua carteira — nada do restante do salão."
+        subtitle="Só os seus clientes — nada do restante do salão."
       />
 
       <ProPanel>

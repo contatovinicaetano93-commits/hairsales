@@ -49,17 +49,12 @@ export async function PUT(req: NextRequest) {
 
     if (plan === 'pro' && useStripe && isStripeConfigured() && process.env.STRIPE_PRICE_PRO?.trim()) {
       const checkout = await createProSubscriptionCheckout(auth.session.subscriber)
-      if (!checkout) return err('Preço Pro não configurado (STRIPE_PRICE_PRO)', 503)
+      if (!checkout) return err('Não foi possível iniciar o upgrade agora. Tente de novo mais tarde.', 503)
       return ok({ mode: 'stripe', checkout_url: checkout.url, session_id: checkout.session_id })
     }
 
     if (!allowSelfUpgrade()) {
-      return err(
-        isStripeConfigured()
-          ? 'Use checkout: true com Stripe, ou habilite PRO_ALLOW_SELF_UPGRADE'
-          : 'Upgrade de plano indisponível neste ambiente',
-        403,
-      )
+      return err('Upgrade de plano indisponível no momento. Fale com o suporte.', 403)
     }
 
     if (plan !== 'standard' && plan !== 'pro') return err('plan deve ser standard ou pro', 400)

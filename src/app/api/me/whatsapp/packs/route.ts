@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!auth.ok) return err(auth.message, auth.status)
     const body = await req.json().catch(() => null)
     const packId = typeof body?.pack_id === 'string' ? body.pack_id : ''
-    if (!packId) return err('pack_id obrigatório', 400)
+    if (!packId) return err('Selecione um pacote de créditos', 400)
 
     const result = await purchaseMarketingPack(auth.session.subscriber, packId)
     const usage = await getWhatsappUsage(

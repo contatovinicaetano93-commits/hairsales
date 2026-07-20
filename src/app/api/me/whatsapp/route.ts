@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       typeof body?.display_phone === 'string' ? body.display_phone.trim() : null
 
     if (!phoneNumberId || !accessToken) {
-      return err('Informe phone_number_id e access_token do WhatsApp Cloud', 400)
+      return err('Preencha o ID do número e o token de acesso do WhatsApp', 400)
     }
 
     const row = await upsertSubscriberWhatsapp({

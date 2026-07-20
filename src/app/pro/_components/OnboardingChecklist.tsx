@@ -28,7 +28,7 @@ export function OnboardingChecklist({ compact = false }: { compact?: boolean }) 
     if (compact || !failed) return null
     return (
       <p className="text-xs font-medium text-muted">
-        Não deu pra carregar o setup.{' '}
+        Não deu pra carregar os primeiros passos.{' '}
         <button type="button" onClick={() => void load()} className="text-gold-strong underline">
           Tentar de novo
         </button>
@@ -48,7 +48,7 @@ export function OnboardingChecklist({ compact = false }: { compact?: boolean }) 
       }
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-serif text-lg font-bold">Setup</h3>
+        <h3 className="font-serif text-lg font-bold">Primeiros passos</h3>
         <span className="text-xs text-muted">{data.percent}%</span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">

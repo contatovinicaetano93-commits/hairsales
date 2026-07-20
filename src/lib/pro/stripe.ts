@@ -339,11 +339,7 @@ export async function createSignupCheckout(input: {
   if (!offer) throw new Error('Plano inválido')
   const priceId = stripePriceIdForPlan(offer.id)
   if (!isStripeConfigured() || !priceId) {
-    throw new Error(
-      offer.id === 'pro'
-        ? 'STRIPE_PRICE_PRO não configurado'
-        : 'STRIPE_PRICE_STANDARD não configurado',
-    )
+    throw new Error('Pagamento indisponível pra esse plano agora. Tente de novo mais tarde.')
   }
 
   const email = input.email.trim().toLowerCase()

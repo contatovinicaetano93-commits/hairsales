@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     if (isStripeConfigured() && !allowDemoRegister()) {
       return err(
-        'Assine Standard (R$ 29,90) ou Pro (R$ 199,90) na landing antes de criar a conta.',
+        'Assine Standard (R$ 29,90) ou Pro (R$ 199,90) na página inicial antes de criar a conta.',
         402,
       )
     }

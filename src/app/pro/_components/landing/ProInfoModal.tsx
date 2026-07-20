@@ -192,7 +192,7 @@ function ProductsBody({
           Compare os planos
         </p>
         <p className="mt-1 max-w-2xl text-sm font-medium leading-relaxed text-muted">
-          Standard para começar com App + Telegram. Pro adiciona WhatsApp Cloud e mais IA.
+          Standard para começar com App + Telegram. Pro adiciona WhatsApp e mais IA.
         </p>
       </div>
 

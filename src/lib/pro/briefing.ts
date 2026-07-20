@@ -23,15 +23,17 @@ export function buildRuleBriefing(hoje: Awaited<ReturnType<typeof buildProHoje>>
         : ''),
   ]
   if (hoje.actions_top.length === 0) {
-    lines.push('Sem ações urgentes na carteira — foque na agenda do dia.')
+    lines.push('Sem ações urgentes com seus clientes — foque na agenda do dia.')
   } else {
     lines.push('Prioridades:')
     for (const a of hoje.actions_top.slice(0, 3)) {
-      lines.push(`• [${a.kind === 'reactivation' ? 'Reativar' : 'Upsell'}] ${a.client_name ?? 'Cliente'}: ${a.detail}`)
+      lines.push(`• [${a.kind === 'reactivation' ? 'Reativar' : 'Retorno'}] ${a.client_name ?? 'Cliente'}: ${a.detail}`)
     }
   }
   if (hoje.leads_hot > 0) {
-    lines.push(`${hoje.leads_hot} lead(s) quente(s) na sua base.`)
+    lines.push(
+      `${hoje.leads_hot} ${hoje.leads_hot === 1 ? 'cliente em potencial' : 'clientes em potencial'} pra fechar.`,
+    )
   }
   return lines.join('\n')
 }

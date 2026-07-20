@@ -142,7 +142,7 @@ export function computeOnboardingStatus(input: OnboardingComputeInput): Onboardi
       href: '/pro/conectar',
       detail: agendaActive
         ? `${input.connection!.provider} · ${input.connection!.professional_name_matched}`
-        : 'Obrigatório para ver seus dados',
+        : 'Obrigatório pra ver sua agenda e seus clientes',
     },
     {
       id: 'goals',
@@ -172,21 +172,21 @@ export function computeOnboardingStatus(input: OnboardingComputeInput): Onboardi
       href: '/pro/conectar',
       detail:
         input.plan === 'pro'
-          ? 'Pro R$ 199,90 — WhatsApp Cloud liberado'
-          : 'Standard R$ 29,90 — upgrade para WhatsApp Cloud',
+          ? 'Pro R$ 199,90 — WhatsApp liberado'
+          : 'Standard R$ 29,90 — mude para o plano Pro pra liberar o WhatsApp',
     },
     {
       id: 'whatsapp',
-      title: 'WhatsApp Cloud',
+      title: 'WhatsApp',
       done: input.whatsapp_active,
       required: false,
       href: '/pro/conectar',
       detail: input.whatsapp_active
-        ? `Utility ${input.utility_sent}/${input.utility_included} · mkt ${input.marketing_remaining}`
+        ? `Lembretes enviados: ${input.utility_sent}/${input.utility_included} · reativação disponível: ${input.marketing_remaining}`
         : input.plan === 'pro'
           ? input.embedded_enabled
-            ? 'Conectar com Meta ou token manual'
-            : 'Cole phone_number_id + token'
+            ? 'Conectar com Meta ou colar os dados manualmente'
+            : 'Cole o ID do número e o token de acesso'
           : 'Incluso no Pro (R$ 199,90)',
     },
   ]

@@ -27,12 +27,12 @@ export const PRO_PLAN_OFFERS: Record<ProPublicPlanId, ProPlanOffer> = {
     label: 'Standard',
     amountCents: 2990,
     priceLabel: 'R$ 29,90/mês',
-    summary: 'App + Telegram + assistente com cota diária.',
+    summary: 'App + Telegram + assistente com uso diário de IA.',
     highlights: [
       'Hoje, Clientes e Ações',
       'Assistente no app e Telegram',
       '40 unidades de IA / dia',
-      'Sem WhatsApp Cloud',
+      'Sem WhatsApp',
     ],
   },
   pro: {
@@ -41,12 +41,12 @@ export const PRO_PLAN_OFFERS: Record<ProPublicPlanId, ProPlanOffer> = {
     label: 'Pro',
     amountCents: 19990,
     priceLabel: 'R$ 199,90/mês',
-    summary: 'Tudo do Standard + WhatsApp Cloud e mais IA.',
+    summary: 'Tudo do Standard + WhatsApp e mais IA.',
     highlights: [
       'Tudo do Standard',
-      'WhatsApp Cloud (API Meta)',
+      'WhatsApp oficial da Meta',
       '150 unidades de IA / dia',
-      'Packs de marketing avulsos',
+      'Créditos extras de mensagens',
     ],
   },
 }

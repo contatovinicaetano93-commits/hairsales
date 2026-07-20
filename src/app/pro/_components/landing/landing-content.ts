@@ -67,13 +67,13 @@ export const PLAN_COMPARISON: PlanComparisonColumn[] = [
     label: 'Pro',
     price: 'R$ 199,90',
     period: '/mês',
-    description: 'Tudo do Standard + WhatsApp Cloud e mais IA.',
+    description: 'Tudo do Standard + WhatsApp e mais IA.',
     featured: true,
     bullets: [
       'Tudo do Standard incluso',
-      'WhatsApp Cloud — canal oficial Meta',
+      'WhatsApp — canal oficial da Meta',
       'Assistente — 150 unidades de IA / dia',
-      'Packs de marketing — 50 · 100 · 250 msgs',
+      'Créditos extras de mensagens — 50 · 100 · 250',
     ],
   },
 ]
@@ -86,11 +86,11 @@ export const PRODUCT_TABS: ProductTab[] = [
     cards: [
       {
         title: 'App Hoje',
-        accent: 'KPIs do seu dia',
+        accent: 'Resumo do seu dia',
         points: [
           'Faturamento, ticket e agenda',
           'Meta diária e semanal',
-          'Ocupação e leads quentes',
+          'Ocupação e clientes em potencial',
         ],
       },
       {
@@ -108,7 +108,7 @@ export const PRODUCT_TABS: ProductTab[] = [
         points: [
           'Vínculo com código no app',
           'Briefing e alertas no celular',
-          'Sem WhatsApp Cloud',
+          'Sem WhatsApp',
         ],
       },
       {
@@ -116,7 +116,7 @@ export const PRODUCT_TABS: ProductTab[] = [
         accent: 'Reativação e retorno',
         points: [
           'Clientes sumidos há 45+ dias',
-          'Sugestões de upsell / retorno',
+          'Sugestões de retorno',
           'Lista clara para agir no dia',
         ],
       },
@@ -124,21 +124,21 @@ export const PRODUCT_TABS: ProductTab[] = [
     footer: {
       badge: 'R$ 29,90/mês',
       title: 'Pague e depois complete o cadastro',
-      body: 'Checkout Stripe → criar senha e conectar Avec ou Trinks.',
+      body: 'Pague, crie sua senha e conecte a Avec ou Trinks.',
     },
   },
   {
     id: 'pro',
     label: 'Pro · R$ 199,90',
-    description: 'Tudo do Standard + WhatsApp Cloud, mais cota de IA e packs de marketing.',
+    description: 'Tudo do Standard + WhatsApp, mais IA e créditos extras de mensagens.',
     cards: [
       {
-        title: 'WhatsApp Cloud',
+        title: 'WhatsApp',
         accent: 'Só no Pro',
         points: [
           'Token por assinante (Conectar)',
-          'Embedded Signup Meta (quando ativo)',
-          'Utility incluso + marketing sob demanda',
+          'Conectar automaticamente com a Meta (quando disponível)',
+          'Lembretes inclusos + mensagens de reativação sob demanda',
         ],
       },
       {
@@ -147,31 +147,31 @@ export const PRODUCT_TABS: ProductTab[] = [
         points: [
           'Até 4.000 unidades / mês',
           'Briefing e perguntas com folga',
-          'KPIs seguem mesmo se a cota zerar',
+          'Seus dados continuam disponíveis mesmo sem IA',
         ],
       },
       {
-        title: 'Packs marketing',
+        title: 'Créditos de mensagens',
         accent: '50 · 100 · 250 msgs',
         points: [
-          'Compra via Stripe Checkout',
-          'Créditos no seu WhatsApp Cloud',
-          'Portal do cliente para gerenciar',
+          'Compra rápida e segura',
+          'Créditos pro seu WhatsApp',
+          'Gerencie tudo numa área própria',
         ],
       },
       {
         title: 'Assinatura',
         accent: 'R$ 199,90/mês',
         points: [
-          'Checkout antes do cadastro',
-          'Upgrade a partir do Standard',
-          'Portal Stripe para faturas e cancelamento',
+          'Pagamento antes de criar a conta',
+          'Mude do Standard pro Pro quando quiser',
+          'Acompanhe faturas e cancele quando quiser',
         ],
       },
     ],
     footer: {
       badge: 'Pro',
-      title: 'WhatsApp Cloud incluso na mensalidade',
+      title: 'WhatsApp incluso na mensalidade',
       body: 'Standard continua com App + Telegram. Pro adiciona o canal oficial da Meta.',
     },
   },
@@ -184,9 +184,9 @@ export const PRODUCT_TABS: ProductTab[] = [
         title: 'Agenda',
         accent: 'Avec primeiro, depois Trinks',
         points: [
-          'Token criptografado',
-          'Match pelo nome profissional',
-          'Sync da sua agenda',
+          'Chave de acesso protegida',
+          'Localiza pelo seu nome na agenda',
+          'Sincroniza sua agenda automaticamente',
         ],
       },
       {
@@ -208,7 +208,7 @@ export const PRODUCT_TABS: ProductTab[] = [
         ],
       },
       {
-        title: 'Onboarding',
+        title: 'Primeiros passos',
         accent: 'Checklist guiado',
         points: [
           'Pagamento → conta → agenda',
@@ -239,12 +239,12 @@ export const COMO_FUNCIONA_STEPS = [
   {
     step: '03',
     title: 'Conecte a agenda',
-    body: 'Cole o token Avec (ou Trinks) e confirme o match do nome.',
+    body: 'Cole a chave de acesso da Avec (ou Trinks) e confirme seu nome.',
   },
   {
     step: '04',
     title: 'Use a assistente',
-    body: 'App e Telegram no Standard; WhatsApp Cloud no Pro.',
+    body: 'App e Telegram no Standard; WhatsApp no Pro.',
   },
 ]
 
@@ -255,15 +255,15 @@ export const DUVIDAS = [
   },
   {
     q: 'Qual a diferença entre Standard e Pro?',
-    a: 'Standard (R$ 29,90): App + Telegram + IA. Pro (R$ 199,90): tudo isso + WhatsApp Cloud, mais cota de IA e packs de marketing.',
+    a: 'Standard (R$ 29,90): App + Telegram + IA. Pro (R$ 199,90): tudo isso + WhatsApp, mais IA e créditos extras de mensagens.',
   },
   {
     q: 'Preciso pagar antes de criar a conta?',
-    a: 'Sim, no app do profissional. Você assina na landing, paga no Stripe e só então conclui nome e senha.',
+    a: 'Sim. Você assina no site, faz o pagamento e só então cria sua senha.',
   },
   {
-    q: 'Isso substitui o painel da unidade?',
-    a: 'Não. HairSales é o app do profissional. O painel da equipe da unidade continua separado no projeto ROM.',
+    q: 'Isso substitui o painel da equipe do salão?',
+    a: 'Não. HairSales é o app individual do profissional. O painel da equipe/salão é outro sistema, separado.',
   },
   {
     q: 'Quais agendas funcionam?',
@@ -273,22 +273,22 @@ export const DUVIDAS = [
 
 export const CONTATO = {
   title: 'Fale com a gente',
-  body: 'Dúvidas de onboarding, agenda ou plano — use o e-mail da sua conta ou o suporte do projeto.',
+  body: 'Dúvidas sobre como começar, sua agenda ou seu plano — use o e-mail da sua conta ou fale com o suporte.',
   points: [
     'Suporte de produto: pelo e-mail usado no cadastro',
-    'Painel da unidade (equipe): acesso separado no projeto ROM',
-    'Cobrança: Stripe Customer Portal na aba Conectar',
+    'Painel da equipe/salão: sistema separado — fale com quem administra sua unidade',
+    'Cobrança: gerencie na aba Conectar',
   ],
 }
 
 export const SOBRE = {
   title: 'HairSales',
-  body: 'HairSales é o app do profissional de beleza: agenda, clientes, metas e ações do dia — com assistente e canais (Telegram no Standard, WhatsApp Cloud no Pro).',
+  body: 'HairSales é o app do profissional de beleza: agenda, clientes, metas e ações do dia — com assistente e canais (Telegram no Standard, WhatsApp no Pro).',
   points: [
     'Produto: HairSales',
     'Standard: R$ 29,90/mês',
     'Pro: R$ 199,90/mês',
-    'Painel da equipe: acesso separado no projeto ROM',
+    'Painel da equipe/salão: sistema separado',
   ],
 }
 
@@ -298,7 +298,7 @@ export const TRUST_STRIP = {
   bullets: [
     'Agenda Avec e Trinks',
     'Telegram no Standard',
-    'WhatsApp Cloud no Pro',
+    'WhatsApp no Pro',
   ],
 } as const
 
@@ -319,7 +319,7 @@ export const HERO_CARDS = [
     id: 'pro' as const,
     title: 'Pro',
     subtitle: 'R$ 199,90/mês',
-    detail: 'WhatsApp Cloud + mais IA',
+    detail: 'WhatsApp + mais IA',
   },
   {
     id: 'como-funciona' as const,

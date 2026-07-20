@@ -17,9 +17,9 @@ import type { SubscriberRow } from '@/lib/pro/subscribers'
 
 export async function GET(req: NextRequest) {
   try {
-    if (!isStripeConfigured()) return err('Stripe não configurado', 503)
+    if (!isStripeConfigured()) return err('Pagamento indisponível no momento. Tente de novo mais tarde.', 503)
     const sessionId = req.nextUrl.searchParams.get('session_id')?.trim()
-    if (!sessionId) return err('session_id obrigatório', 400)
+    if (!sessionId) return err('Link de pagamento inválido ou expirado', 400)
     const preview = await getSignupCheckoutPreview(sessionId)
     return ok(preview)
   } catch (e) {
@@ -34,14 +34,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   let subscriber: SubscriberRow | null = null
   try {
-    if (!isStripeConfigured()) return err('Stripe não configurado', 503)
+    if (!isStripeConfigured()) return err('Pagamento indisponível no momento. Tente de novo mais tarde.', 503)
 
     const body = await req.json().catch(() => null)
     const sessionId = typeof body?.session_id === 'string' ? body.session_id.trim() : ''
     const displayName = typeof body?.display_name === 'string' ? body.display_name.trim() : ''
     const password = typeof body?.password === 'string' ? body.password : ''
 
-    if (!sessionId) return err('session_id obrigatório', 400)
+    if (!sessionId) return err('Link de pagamento inválido ou expirado', 400)
     if (displayName.length < 2) return err('Informe seu nome como no Avec/Trinks', 400)
     if (password.length < 6) return err('Senha precisa ter pelo menos 6 caracteres', 400)
 

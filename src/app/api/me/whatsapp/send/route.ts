@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const kind = typeof body?.kind === 'string' ? body.kind : ''
     const clientId = typeof body?.client_id === 'string' ? body.client_id : ''
 
-    if (!clientId) return err('client_id obrigatório', 400)
+    if (!clientId) return err('Cliente não informado', 400)
     if (kind !== 'reminder' && kind !== 'reactivation') {
       return err('kind deve ser reminder ou reactivation', 400)
     }
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }>
 
     const client = clients[0]
-    if (!client) return err('Cliente não encontrado na sua carteira', 404)
+    if (!client) return err('Cliente não encontrado na sua lista', 404)
     if (!client.phone) return err('Cliente sem telefone', 400)
 
     if (kind === 'reminder') {

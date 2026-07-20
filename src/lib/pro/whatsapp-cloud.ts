@@ -263,7 +263,7 @@ export async function sendServiceText(input: {
 }) {
   await assertProPlan(input.subscriber)
   const wa = await getSubscriberWhatsapp(input.subscriber.id)
-  if (!wa || wa.status !== 'active') throw new Error('WhatsApp Cloud não conectado')
+  if (!wa || wa.status !== 'active') throw new Error('WhatsApp não conectado')
 
   const token = decryptSecret(wa.access_token_encrypted)
   const to = normalizeWaPhone(input.toPhone)
@@ -303,7 +303,7 @@ export async function sendTemplateMessage(input: {
 }) {
   await assertProPlan(input.subscriber)
   const wa = await getSubscriberWhatsapp(input.subscriber.id)
-  if (!wa || wa.status !== 'active') throw new Error('WhatsApp Cloud não conectado')
+  if (!wa || wa.status !== 'active') throw new Error('WhatsApp não conectado')
 
   const token = decryptSecret(wa.access_token_encrypted)
   const to = normalizeWaPhone(input.toPhone)

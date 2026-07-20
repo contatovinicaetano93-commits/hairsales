@@ -131,7 +131,7 @@ export function isProAiDisabled(): boolean {
 }
 
 function dailyQuotaMessage(status: QuotaStatus): string {
-  return `Cota diária de IA esgotada (${status.daily_used}/${status.daily_limit}). Seus KPIs e agenda continuam disponíveis.`
+  return `Cota diária de IA esgotada (${status.daily_used}/${status.daily_limit}). Sua agenda e seus números continuam disponíveis.`
 }
 
 function monthlyQuotaMessage(status: QuotaStatus): string {

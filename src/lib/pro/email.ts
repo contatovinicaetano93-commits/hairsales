@@ -65,8 +65,8 @@ export async function sendWelcomeEmail(to: string, displayName: string): Promise
   const html = emailShell(
     `Bem-vindo(a) ao ${brand.name}, ${displayName.split(' ')[0]}!`,
     `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3a352c">
-      Sua conta foi criada. Agora é conectar sua agenda (Avec ou Trinks) pra começar a ver seus
-      dados, definir sua meta e falar com a assistente de IA.
+      Sua conta foi criada. Agora é conectar sua agenda (Avec ou Trinks) pra começar a acompanhar
+      seu dia a dia, definir sua meta e falar com a assistente de IA.
     </p>
     <a href="${loginUrl}" style="display:inline-block;background:#c9a13b;color:#1a1714;font-weight:700;font-size:14px;padding:12px 20px;border-radius:12px;text-decoration:none">
       Entrar no ${brand.name}

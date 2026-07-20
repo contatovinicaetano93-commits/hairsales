@@ -63,8 +63,8 @@ export default function ProHojePage() {
           <div className="px-5 py-6">
             <h2 className="font-serif text-2xl font-bold tracking-tight">Conecte sua agenda</h2>
             <p className="mt-2 text-sm font-medium text-muted">
-              Sem conexão, o app não mostra dados. Informe seu nome e o token da API — só o que for
-              seu entra aqui.
+              Sem conexão, o app fica vazio. Informe seu nome e a chave de acesso da sua agenda —
+              só o que for seu entra aqui.
             </p>
             <Link
               href="/pro/conectar"
@@ -170,7 +170,7 @@ export default function ProHojePage() {
 
       <ProPanel
         title="Ações prioritárias"
-        subtitle="Reativação e retorno da sua carteira"
+        subtitle="Reativação e retorno dos seus clientes"
         action={
           <Link
             href="/pro/acoes"
@@ -182,13 +182,13 @@ export default function ProHojePage() {
       >
         <ProTable columns={['Tipo', 'Cliente', 'Detalhe']}>
           {data.actions_top.length === 0 ? (
-            <ProEmptyRow colSpan={3}>Nenhuma ação urgente na sua carteira.</ProEmptyRow>
+            <ProEmptyRow colSpan={3}>Nenhuma ação urgente com seus clientes agora.</ProEmptyRow>
           ) : (
             data.actions_top.map((a) => (
               <tr key={`${a.kind}-${a.client_id}`}>
                 <td className="px-4 py-3">
                   <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-gold-strong">
-                    {a.kind === 'reactivation' ? 'Reativação' : 'Upsell'}
+                    {a.kind === 'reactivation' ? 'Reativação' : 'Retorno'}
                   </span>
                 </td>
                 <td className="px-4 py-3 font-semibold text-foreground">

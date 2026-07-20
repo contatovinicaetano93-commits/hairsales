@@ -102,8 +102,9 @@ export default function ProAssistentePage() {
 
       {quotas && (
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gold-strong">
-          IA hoje: {quotas.daily_used}/{quotas.daily_limit} · plano {quotas.plan}
-          {quotas.daily_remaining === 0 ? ' · cota do dia esgotada' : ''}
+          Perguntas hoje: {quotas.daily_used} de {quotas.daily_limit} · plano{' '}
+          {quotas.plan === 'pro' ? 'Pro' : 'Standard'}
+          {quotas.daily_remaining === 0 ? ' · você já usou todas as de hoje' : ''}
         </p>
       )}
 
@@ -111,7 +112,7 @@ export default function ProAssistentePage() {
         <div className="flex min-h-[280px] flex-col gap-3 px-4 py-4">
           {messages.length === 0 ? (
             <p className="text-sm font-medium text-muted">
-              Ex.: “Como está minha meta?” · “Quem reativar?” · “Quantos horários tenho hoje?”
+              Ex.: “Como está minha meta?” · “Quem eu devo reativar?” · “Quantos horários tenho hoje?”
             </p>
           ) : (
             messages.map((m, i) => (

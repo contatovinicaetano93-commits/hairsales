@@ -51,7 +51,7 @@ export default function ProPrivacidadePage() {
           <p className="mt-1 text-muted">
             Só com provedores estritamente necessários pra operar o serviço: Anthropic (respostas
             da assistente de IA), Stripe (cobrança de assinatura), e — apenas se você conectar —
-            Avec/Trinks (sincronização de agenda), Telegram e/ou WhatsApp Cloud API (mensagens que
+            Avec/Trinks (sincronização de agenda), Telegram e/ou WhatsApp (mensagens que
             você optar por enviar).
           </p>
         </section>
@@ -80,9 +80,9 @@ export default function ProPrivacidadePage() {
         <section>
           <h2 className="font-serif text-lg font-bold">6. Segurança</h2>
           <p className="mt-1 text-muted">
-            Senhas são armazenadas com hash (nunca em texto puro), a sessão usa cookie protegido
-            contra acesso por JavaScript, e tokens de integração (Avec/Trinks) são criptografados
-            no banco.
+            Sua senha é guardada de forma protegida — nem nós conseguimos vê-la. O acesso à sua
+            conta é protegido contra tentativas de invasão, e os dados de conexão com sua agenda
+            ficam criptografados.
           </p>
         </section>
 

@@ -56,7 +56,7 @@ export default function ProTermosPage() {
           <h2 className="font-serif text-lg font-bold">4. Integrações</h2>
           <p className="mt-1 text-muted">
             O app pode se conectar, a seu critério, com sua agenda (Avec ou Trinks), Telegram e
-            WhatsApp Cloud API. Essas integrações são opcionais e exigem sua autorização explícita
+            WhatsApp. Essas integrações são opcionais e exigem sua autorização explícita
             antes de qualquer sincronização de dados.
           </p>
         </section>

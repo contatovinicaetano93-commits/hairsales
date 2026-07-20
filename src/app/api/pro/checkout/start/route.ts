@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isStripeConfigured()) {
-      return err('Pagamento indisponível neste ambiente (Stripe não configurado)', 503)
+      return err('Pagamento indisponível no momento. Tente de novo mais tarde.', 503)
     }
 
     const body = await req.json().catch(() => null)
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     if (e instanceof Error) {
       const soft =
-        /e-mail|Plano|STRIPE_PRICE|já existe|inválido/i.test(e.message)
+        /e-mail|Plano|indisponível|já existe|inválido/i.test(e.message)
       if (soft) return err(e.message, 400)
     }
     captureHairsalesException(e, null, {

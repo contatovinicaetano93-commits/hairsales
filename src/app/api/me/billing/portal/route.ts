@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const auth = await requireProSession(req)
     if (!auth.ok) return err(auth.message, auth.status)
     assertCan(auth.session.subscriber, 'billing_portal')
-    if (!isStripeConfigured()) return err('Stripe não configurado', 503)
+    if (!isStripeConfigured()) return err('Pagamento indisponível no momento. Tente de novo mais tarde.', 503)
 
     const { url } = await createBillingPortalSession(auth.session.subscriber)
     return ok({ url })

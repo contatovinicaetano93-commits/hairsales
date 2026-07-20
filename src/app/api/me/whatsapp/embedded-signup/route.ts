@@ -35,13 +35,13 @@ export async function POST(req: NextRequest) {
     const displayPhone =
       typeof body?.display_phone === 'string' ? body.display_phone.trim() : null
 
-    if (!code) return err('code do Embedded Signup obrigatório', 400)
+    if (!code) return err('Código de conexão obrigatório', 400)
 
     const exchanged = await exchangeEmbeddedSignupCode(code)
     const phoneNumberId = phoneOverride || exchanged.phone_number_id
     if (!phoneNumberId) {
       return err(
-        'Não foi possível obter phone_number_id. Informe manualmente ou complete o onboarding na Meta.',
+        'Não foi possível obter o número automaticamente. Cole o ID do número manualmente ou finalize a configuração pela Meta.',
         422,
       )
     }

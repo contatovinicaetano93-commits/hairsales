@@ -62,7 +62,7 @@ export default function ProAcoesPage() {
       setToast(res.error ?? 'Falha no envio')
       return
     }
-    setToast(kind === 'reminder' ? 'Lembrete utility enviado.' : 'Reativação marketing enviada.')
+    setToast(kind === 'reminder' ? 'Lembrete enviado.' : 'Mensagem de reativação enviada.')
   }
 
   if (error) {
@@ -85,7 +85,7 @@ export default function ProAcoesPage() {
     <div className="flex flex-col gap-6">
       <ProPageHeader
         title="Ações"
-        subtitle="Reativação e retorno só da sua carteira — nada do salão inteiro."
+        subtitle="Reativação e retorno só dos seus clientes — nada do salão inteiro."
         action={
           <Link
             href="/pro/hoje"
@@ -98,7 +98,7 @@ export default function ProAcoesPage() {
 
       {plan === 'pro' && !waConnected && (
         <p className="rounded-xl border border-gold/25 bg-gold/10 px-3 py-2.5 text-sm font-medium text-gold-strong">
-          WhatsApp Cloud não conectado —{' '}
+          WhatsApp não conectado —{' '}
           <Link href="/pro/conectar" className="underline underline-offset-2">
             conectar
           </Link>
@@ -112,7 +112,7 @@ export default function ProAcoesPage() {
 
       <ProPanel
         title="Reativação"
-        subtitle={`${data.reactivation.length} cliente(s) sem visita há 45+ dias`}
+        subtitle={`${data.reactivation.length} ${data.reactivation.length === 1 ? 'cliente' : 'clientes'} sem visita há 45+ dias`}
       >
         <ProTable columns={['Cliente', 'Sumiu', 'Último serviço', 'Ação']}>
           {data.reactivation.length === 0 ? (
@@ -149,8 +149,8 @@ export default function ProAcoesPage() {
       </ProPanel>
 
       <ProPanel
-        title="Upsell / retorno"
-        subtitle={`${data.upsell.length} sugestão(ões) de retorno por cadência`}
+        title="Sugestões de retorno"
+        subtitle={`${data.upsell.length} ${data.upsell.length === 1 ? 'sugestão' : 'sugestões'} de retorno pros próximos dias`}
       >
         <ProTable columns={['Cliente', 'Serviço', 'Última vez', 'Ação']}>
           {data.upsell.length === 0 ? (

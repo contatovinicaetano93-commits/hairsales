@@ -77,11 +77,11 @@ export function entitlementMessage(capability: Capability): string {
     case 'agenda_sync':
       return 'Sincronização de agenda indisponível para esta assinatura.'
     case 'whatsapp_cloud':
-      return 'WhatsApp Cloud API está disponível apenas no plano Pro ativo.'
+      return 'WhatsApp está disponível apenas no plano Pro ativo.'
     case 'marketing_packs':
-      return 'Packs de marketing estão disponíveis apenas no plano Pro ativo.'
+      return 'Créditos extras de mensagens estão disponíveis apenas no plano Pro ativo.'
     case 'billing_portal':
-      return 'Portal de cobrança indisponível sem cliente Stripe.'
+      return 'Gerenciamento de cobrança indisponível no momento.'
     default: {
       const exhaustive: never = capability
       throw new Error(`Capacidade inválida: ${exhaustive}`)

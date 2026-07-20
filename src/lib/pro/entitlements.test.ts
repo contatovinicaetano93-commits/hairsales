@@ -101,7 +101,7 @@ describe('entitlements', () => {
     expect(result).toEqual({
       ok: false,
       capability: 'marketing_packs',
-      message: 'Packs de marketing estão disponíveis apenas no plano Pro ativo.',
+      message: 'Créditos extras de mensagens estão disponíveis apenas no plano Pro ativo.',
     })
     expect(() =>
       assertCan(subscriber({ plan: 'standard', subscription_status: 'active' }), 'whatsapp_cloud'),

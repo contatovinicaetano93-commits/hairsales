@@ -167,20 +167,24 @@ export default function ProConectarPage() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs uppercase tracking-wide text-muted">Token da API</span>
+              <span className="text-xs uppercase tracking-wide text-muted">
+                Chave de acesso da sua agenda
+              </span>
               <input
                 type="password"
                 value={apiToken}
                 onChange={(e) => setApiToken(e.target.value)}
                 required
-                placeholder="Token Avec (ou mock em dev)"
+                placeholder="Cole aqui a chave gerada na sua agenda"
                 className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-gold"
                 autoComplete="off"
               />
-              <span className="text-xs text-muted">
-                Em desenvolvimento com mock: use o token{' '}
-                <code className="text-gold-strong">mock</code>.
-              </span>
+              {process.env.NODE_ENV !== 'production' && (
+                <span className="text-xs text-muted">
+                  Ambiente de teste: use o token{' '}
+                  <code className="text-gold-strong">mock</code>.
+                </span>
+              )}
             </label>
 
             <label className="flex flex-col gap-1.5">
@@ -206,7 +210,7 @@ export default function ProConectarPage() {
               disabled={loading}
               className="rounded-xl bg-gold px-4 py-3 text-sm font-semibold disabled:opacity-60"
             >
-              {loading ? 'Validando nome na API…' : 'Conectar meus dados'}
+              {loading ? 'Verificando seu nome na agenda…' : 'Conectar meus dados'}
             </button>
           </form>
         </ConnectCard>
@@ -368,7 +372,7 @@ function PlanBlock() {
       return
     }
     setPlan(res.data.plan)
-    setMsg(next === 'pro' ? 'Plano Pro ativo — WhatsApp Cloud liberado.' : 'Voltou para Standard.')
+    setMsg(next === 'pro' ? 'Plano Pro ativo — WhatsApp liberado.' : 'Voltou para Standard.')
   }
 
   return (
@@ -377,7 +381,7 @@ function PlanBlock() {
       summary={
         plan === 'standard'
           ? 'Standard · R$ 29,90 · App + Telegram'
-          : 'Pro · R$ 199,90 · WhatsApp Cloud incluso'
+          : 'Pro · R$ 199,90 · WhatsApp incluso'
       }
       badge={plan === 'standard' ? 'standard' : 'pro'}
     >
@@ -397,7 +401,7 @@ function PlanBlock() {
             onClick={() => setTo('pro', false)}
             className="rounded-xl bg-gold/15 px-3 py-2 text-sm font-medium text-gold-strong"
           >
-            Ativar Pro (demo)
+            Ativar Pro
           </button>
         )}
         {plan === 'pro' && allowed && (
@@ -406,7 +410,7 @@ function PlanBlock() {
             onClick={() => setTo('standard', false)}
             className="rounded-xl border border-border px-3 py-2 text-sm"
           >
-            Voltar Standard (demo)
+            Voltar Standard
           </button>
         )}
         {stripeEnabled && hasCustomer && (
@@ -499,7 +503,7 @@ function WhatsappBlock() {
       setError(res.error ?? 'Erro')
       return
     }
-    setMsg('WhatsApp Cloud conectado.')
+    setMsg('WhatsApp conectado.')
     setAccessToken('')
     reload()
   }
@@ -531,7 +535,7 @@ function WhatsappBlock() {
       window.location.assign(res.data.checkout_url)
       return
     }
-    setMsg(`Pack +${res.data.credits_added} créditos de marketing (demo).`)
+    setMsg(`Pack +${res.data.credits_added} créditos de marketing.`)
     reload()
   }
 
@@ -540,7 +544,7 @@ function WhatsappBlock() {
     if (!embedded?.enabled || !embedded.app_id || !embedded.config_id) {
       setError(
         embedded?.setup_hint ||
-          'Embedded Signup não configurado (META_APP_ID / META_EMBEDDED_SIGNUP_CONFIG_ID / META_APP_SECRET).',
+          'Não foi possível iniciar a conexão automática com o WhatsApp agora. Tente colar os dados manualmente, ou fale com o suporte.',
       )
       return
     }
@@ -560,7 +564,7 @@ function WhatsappBlock() {
         (response) => {
           const code = response.authResponse?.code
           if (!code) {
-            setError('Embedded Signup cancelado ou sem code.')
+            setError('Conexão com o WhatsApp cancelada. Tente de novo.')
             return
           }
           apiJson('/api/me/whatsapp/embedded-signup', {
@@ -570,10 +574,10 @@ function WhatsappBlock() {
           }).then((res) => {
             if (res.status === 401) return
             if (!res.ok) {
-              setError(res.error ?? 'Falha no Embedded Signup')
+              setError(res.error ?? 'Não foi possível conectar o WhatsApp.')
               return
             }
-            setMsg('WhatsApp conectado via Embedded Signup.')
+            setMsg('WhatsApp conectado.')
             reload()
           })
         },
@@ -601,22 +605,29 @@ function WhatsappBlock() {
 
   return (
     <ConnectCard
-      title="WhatsApp Cloud"
+      title="WhatsApp"
       summary={
         connected
-          ? 'Cloud API conectada'
+          ? 'WhatsApp conectado'
           : plan === 'pro'
-            ? 'Número do assinante na Cloud API oficial'
+            ? 'Seu número de WhatsApp conectado'
             : 'Disponível no plano Pro'
       }
       badge={connected ? 'ativo' : plan === 'pro' ? 'pro' : 'standard'}
     >
       <p className="text-sm text-muted">
-        Standard usa Telegram. Em dev, token <code className="text-gold-strong">mock</code>.
+        No plano Standard, os avisos vão pelo Telegram.
+        {process.env.NODE_ENV !== 'production' && (
+          <>
+            {' '}
+            Ambiente de teste: use o token <code className="text-gold-strong">mock</code>.
+          </>
+        )}
       </p>
       {usage && plan === 'pro' && (
         <p className="mt-2 text-xs text-muted">
-          Utility: {usage.utility_sent}/{usage.utility_included} · Marketing restante:{' '}
+          Lembretes enviados: {usage.utility_sent}/{usage.utility_included} · Mensagens de
+          reativação restantes:{' '}
           {usage.marketing_remaining ?? 0}
           {usage.marketing_pack_credits != null
             ? ` (packs: ${usage.marketing_pack_credits})`
@@ -644,7 +655,7 @@ function WhatsappBlock() {
 
       {connected ? (
         <div className="mt-4 flex flex-col gap-2">
-          <p className="text-sm text-success">Cloud API conectada.</p>
+          <p className="text-sm text-success">WhatsApp conectado.</p>
           <button
             type="button"
             onClick={disconnect}
@@ -661,17 +672,17 @@ function WhatsappBlock() {
               onClick={launchEmbeddedSignup}
               className="rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold"
             >
-              Conectar com Meta (Embedded Signup)
+              Conectar com Meta
             </button>
           )}
           <form onSubmit={connect} className="flex flex-col gap-3">
-            <p className="text-xs text-muted">Ou cole as credenciais manualmente:</p>
+            <p className="text-xs text-muted">Ou cole os dados de acesso manualmente:</p>
             <input
               value={phoneNumberId}
               onChange={(e) => setPhoneNumberId(e.target.value)}
               required
-              placeholder="Phone number ID"
-              aria-label="Phone number ID do WhatsApp Cloud"
+              placeholder="ID do número de telefone"
+              aria-label="ID do número de telefone do WhatsApp"
               className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
             />
             <input
@@ -679,8 +690,8 @@ function WhatsappBlock() {
               value={accessToken}
               onChange={(e) => setAccessToken(e.target.value)}
               required
-              placeholder="Access token (ou mock)"
-              aria-label="Access token do WhatsApp Cloud"
+              placeholder="Token de acesso"
+              aria-label="Token de acesso do WhatsApp"
               className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
               autoComplete="off"
             />
@@ -695,7 +706,7 @@ function WhatsappBlock() {
               type="submit"
               className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm font-medium text-gold-strong"
             >
-              Conectar WhatsApp Cloud
+              Conectar WhatsApp
             </button>
           </form>
         </div>
