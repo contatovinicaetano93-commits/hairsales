@@ -23,6 +23,9 @@ async function sendEmail(to: string, subject: string, html: string): Promise<Sen
   const from = process.env.PRO_EMAIL_FROM?.trim() || `${getProBrand().name} <onboarding@resend.dev>`
 
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -30,7 +33,11 @@ async function sendEmail(to: string, subject: string, html: string): Promise<Sen
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ from, to, subject, html }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeout)
+
     const json = (await res.json().catch(() => ({}))) as { id?: string; message?: string }
     if (!res.ok) return { ok: false, error: json.message ?? `Resend HTTP ${res.status}` }
     return { ok: true, id: json.id }

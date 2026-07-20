@@ -23,6 +23,7 @@ const PRO_MIGRATION_IDS = [
   '030_pro_rate_limits',
   '031_pro_webhook_events',
   '032_pro_services_index',
+  '033_pro_reminders_index',
 ]
 
 function panelOfThisRepo(): RomPanelId {

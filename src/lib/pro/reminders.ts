@@ -47,51 +47,53 @@ export async function runProAppointmentReminders(hoursAhead = 24): Promise<{
   let skipped = 0
   const errors: string[] = []
 
-  for (const row of rows) {
-    try {
-      const subscriber = await findSubscriberById(row.subscriber_id)
-      if (!subscriber || !can(subscriber, 'whatsapp_cloud')) {
-        skipped++
-        continue
-      }
-      const wa = await getSubscriberWhatsapp(subscriber.id)
-      if (!wa || wa.status !== 'active') {
-        skipped++
-        continue
-      }
-      if (!row.phone || !row.client_id) {
-        skipped++
-        continue
-      }
+  await Promise.allSettled(
+    rows.map(async (row) => {
+      try {
+        const subscriber = await findSubscriberById(row.subscriber_id)
+        if (!subscriber || !can(subscriber, 'whatsapp_cloud')) {
+          skipped++
+          return
+        }
+        const wa = await getSubscriberWhatsapp(subscriber.id)
+        if (!wa || wa.status !== 'active') {
+          skipped++
+          return
+        }
+        if (!row.phone || !row.client_id) {
+          skipped++
+          return
+        }
 
-      const whenLabel = new Date(row.scheduled_at).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+        const whenLabel = new Date(row.scheduled_at).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
 
-      await sendAppointmentReminder({
-        subscriber,
-        clientId: row.client_id,
-        toPhone: row.phone,
-        clientName: row.client_name ?? 'Cliente',
-        serviceName: row.service_name ?? 'atendimento',
-        whenLabel,
-      })
+        await sendAppointmentReminder({
+          subscriber,
+          clientId: row.client_id,
+          toPhone: row.phone,
+          clientName: row.client_name ?? 'Cliente',
+          serviceName: row.service_name ?? 'atendimento',
+          whenLabel,
+        })
 
-      await sql`
-        update subscriber_appointments
-        set reminder_sent_at = now(), updated_at = now()
-        where id = ${row.appointment_id}
-      `
-      sent++
-    } catch (e) {
-      errors.push(
-        `${row.appointment_id}: ${e instanceof Error ? e.message : String(e)}`,
-      )
-    }
-  }
+        await sql`
+          update subscriber_appointments
+          set reminder_sent_at = now(), updated_at = now()
+          where id = ${row.appointment_id}
+        `
+        sent++
+      } catch (e) {
+        errors.push(
+          `${row.appointment_id}: ${e instanceof Error ? e.message : String(e)}`,
+        )
+      }
+    }),
+  )
 
   return { scanned: rows.length, sent, skipped, errors }
 }
