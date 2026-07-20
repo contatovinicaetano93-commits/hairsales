@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
-import { computeOnboardingStatus, type OnboardingStep } from './onboarding'
+import { describe, expect, it, vi } from 'vitest'
+import { buildOnboardingAiTip, computeOnboardingStatus, type OnboardingStep } from './onboarding'
+
+const askAIMock = vi.fn()
+vi.mock('@/lib/ai/client', () => ({
+  askAI: (...args: unknown[]) => askAIMock(...args),
+}))
 
 function baseInput(overrides: Partial<Parameters<typeof computeOnboardingStatus>[0]> = {}) {
   return {
@@ -70,5 +75,48 @@ describe('computeOnboardingStatus', () => {
     const pro = computeOnboardingStatus(baseInput({ plan: 'pro', whatsapp_active: true }))
     expect(pro.steps.find((s) => s.id === 'plan_pro')?.done).toBe(true)
     expect(pro.steps.find((s) => s.id === 'whatsapp')?.done).toBe(true)
+  })
+
+  it('ai_tip é null por padrão quando não informado', () => {
+    const status = computeOnboardingStatus(baseInput())
+    expect(status.ai_tip).toBeNull()
+  })
+})
+
+describe('buildOnboardingAiTip', () => {
+  it('retorna null quando não há passo obrigatório pendente', async () => {
+    const status = computeOnboardingStatus(
+      baseInput({
+        connection: { status: 'active', provider: 'avec', professional_name_matched: 'Dani' },
+      }),
+    )
+    const tip = await buildOnboardingAiTip(status.steps)
+    expect(tip).toBeNull()
+    expect(askAIMock).not.toHaveBeenCalled()
+  })
+
+  it('retorna a dica da IA quando askAI responde com sucesso', async () => {
+    askAIMock.mockResolvedValueOnce('Conecte sua agenda primeiro — sem isso a Hoje fica vazia.')
+    const status = computeOnboardingStatus(baseInput())
+    const tip = await buildOnboardingAiTip(status.steps)
+    expect(tip).toBe('Conecte sua agenda primeiro — sem isso a Hoje fica vazia.')
+    expect(askAIMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('cai no fallback estático Pro (sem branding Vitrini/ROM) quando askAI falha', async () => {
+    askAIMock.mockRejectedValueOnce(new Error('boom'))
+    const status = computeOnboardingStatus(baseInput())
+    const tip = await buildOnboardingAiTip(status.steps)
+    expect(tip).toBe('Conecte sua agenda pra começar.')
+    expect(tip).not.toMatch(/Vitrini|ROM/i)
+  })
+
+  it('usa o fallback estático passado a askAI (não o fallback default do client)', async () => {
+    askAIMock.mockImplementationOnce(
+      async (_system: string, _msg: string, fallback: () => string) => fallback(),
+    )
+    const status = computeOnboardingStatus(baseInput())
+    const tip = await buildOnboardingAiTip(status.steps)
+    expect(tip).toBe('Conecte sua agenda pra começar.')
   })
 })

@@ -3,6 +3,45 @@ import { getSubscriberWhatsapp, getWhatsappUsage } from '@/lib/pro/whatsapp-clou
 import { getQuotaStatus } from '@/lib/pro/quotas'
 import { getEmbeddedSignupConfig } from '@/lib/pro/whatsapp-embedded'
 import { isStripeConfigured } from '@/lib/pro/stripe'
+import { askAI } from '@/lib/ai/client'
+
+const ONBOARDING_TIP_SYSTEM_PROMPT = `Você orienta profissionais de beleza autônomos no setup do HairSales (app "Pro").
+Dado o(s) passo(s) pendente(s) mais importante(s), escreva UMA frase curta (máx. 140 caracteres), encorajadora e prática, em português, dizendo o próximo passo e o motivo. Sem saudação, sem emoji, sem markdown.`
+
+function proOnboardingFallbackTip(): string {
+  return 'Conecte sua agenda pra começar.'
+}
+
+/** Dá um teto de tempo para a chamada de IA não travar o payload de onboarding. */
+function withTimeout<T>(promise: Promise<T>, ms: number, onTimeout: () => T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(onTimeout()), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      () => {
+        clearTimeout(timer)
+        resolve(onTimeout())
+      },
+    )
+  })
+}
+
+/** Gera uma dica curta de IA para o próximo passo do onboarding. Nunca lança — sempre cai no fallback estático. */
+export async function buildOnboardingAiTip(steps: OnboardingStep[]): Promise<string | null> {
+  const pendingRequired = steps.filter((s) => s.required && !s.done)
+  if (pendingRequired.length === 0) return null
+
+  const context = pendingRequired.map((s) => `${s.title}: ${s.detail}`).join('\n')
+
+  return withTimeout(
+    askAI(ONBOARDING_TIP_SYSTEM_PROMPT, context, proOnboardingFallbackTip),
+    2500,
+    proOnboardingFallbackTip,
+  )
+}
 
 export type OnboardingStepId =
   | 'account'
@@ -32,6 +71,7 @@ export interface OnboardingStatus {
   embedded_signup_enabled: boolean
   ai_daily_remaining: number
   has_stripe_customer: boolean
+  ai_tip: string | null
 }
 
 export interface OnboardingComputeInput {
@@ -53,6 +93,7 @@ export interface OnboardingComputeInput {
   embedded_enabled: boolean
   stripe_enabled: boolean
   ai_daily_remaining: number
+  ai_tip?: string | null
 }
 
 /** Pure — usado por testes e por `buildOnboardingStatus`. */
@@ -141,6 +182,7 @@ export function computeOnboardingStatus(input: OnboardingComputeInput): Onboardi
     embedded_signup_enabled: input.embedded_enabled,
     ai_daily_remaining: input.ai_daily_remaining,
     has_stripe_customer: Boolean(input.stripe_customer_id),
+    ai_tip: input.ai_tip ?? null,
   }
 }
 
@@ -154,7 +196,7 @@ export async function buildOnboardingStatus(subscriber: SubscriberRow): Promise<
 
   const embedded = getEmbeddedSignupConfig()
 
-  return computeOnboardingStatus({
+  const status = computeOnboardingStatus({
     email: subscriber.email,
     plan: subscriber.plan,
     daily_goal_revenue: subscriber.daily_goal_revenue,
@@ -176,4 +218,10 @@ export async function buildOnboardingStatus(subscriber: SubscriberRow): Promise<
     stripe_enabled: isStripeConfigured(),
     ai_daily_remaining: quotas.daily_remaining,
   })
+
+  if (!status.ready_for_day) {
+    status.ai_tip = await buildOnboardingAiTip(status.steps)
+  }
+
+  return status
 }
