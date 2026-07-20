@@ -83,6 +83,7 @@ export default function ProClientesPage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar nome ou telefone"
+            aria-label="Buscar cliente por nome ou telefone"
             className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium outline-none focus:border-gold"
           />
           {error && <p className="text-sm font-medium text-danger">{error}</p>}

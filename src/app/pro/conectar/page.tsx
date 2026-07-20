@@ -588,6 +588,7 @@ function WhatsappBlock() {
               onChange={(e) => setPhoneNumberId(e.target.value)}
               required
               placeholder="Phone number ID"
+              aria-label="Phone number ID do WhatsApp Cloud"
               className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
             />
             <input
@@ -596,6 +597,7 @@ function WhatsappBlock() {
               onChange={(e) => setAccessToken(e.target.value)}
               required
               placeholder="Access token (ou mock)"
+              aria-label="Access token do WhatsApp Cloud"
               className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
               autoComplete="off"
             />
@@ -603,6 +605,7 @@ function WhatsappBlock() {
               value={displayPhone}
               onChange={(e) => setDisplayPhone(e.target.value)}
               placeholder="Número exibido (opcional)"
+              aria-label="Número de WhatsApp exibido para os clientes"
               className="rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-gold"
             />
             <button

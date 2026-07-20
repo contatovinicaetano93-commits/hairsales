@@ -140,6 +140,7 @@ export default function ProAssistentePage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Pergunte à assistente…"
+          aria-label="Mensagem para a assistente"
           className="flex-1 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-medium outline-none focus:border-gold"
         />
         <button
