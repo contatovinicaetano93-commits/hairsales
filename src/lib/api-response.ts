@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { EntitlementError } from '@/lib/pro/entitlements'
+import { Observability } from '@/lib/observability'
 
 export function ok<T>(data: T, meta?: Record<string, unknown>, status = 200) {
   return NextResponse.json({ data, meta: meta ?? null }, { status })
@@ -18,7 +19,9 @@ export function handleError(e: unknown) {
     return err(e.message, 403)
   }
   if (e instanceof Error) {
-    return err(e.message, 500)
+    Observability.captureException(e)
+    return err('Erro interno. Tente novamente em instantes.', 500)
   }
-  return err('Erro desconhecido', 500)
+  Observability.captureException(new Error(String(e)))
+  return err('Erro interno. Tente novamente em instantes.', 500)
 }

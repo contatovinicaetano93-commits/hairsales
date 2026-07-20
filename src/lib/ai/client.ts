@@ -25,9 +25,13 @@ export function getAiModel() {
   return process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6'
 }
 
-export async function askAI(systemPrompt: string, userMessage: string): Promise<string> {
+export async function askAI(
+  systemPrompt: string,
+  userMessage: string,
+  fallback: () => string = fallbackReply,
+): Promise<string> {
   if (!isAiConfigured()) {
-    return fallbackReply()
+    return fallback()
   }
 
   const res = await getClient().messages.create({

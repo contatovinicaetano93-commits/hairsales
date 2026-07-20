@@ -93,6 +93,7 @@ export async function askSubscriberAssistant(
       const ai = await askAI(
         assistantSystemPrompt(subscriber.display_name),
         `DADOS DO PROFISSIONAL:\n${context}\n\nPERGUNTA:\n${question}`,
+        () => 'Assistente indisponível no momento. Tente novamente em instantes.',
       )
       if (ai.trim()) {
         await logAssistantMessage(subscriber.id, question, ai.trim(), units)

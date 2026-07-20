@@ -87,7 +87,11 @@ export async function generateMorningBriefing(subscriber: SubscriberRow): Promis
         `Leads: ${hoje.leads_hot}`,
         `Reativações: ${hoje.reactivation_count}`,
       ].join('\n')
-      const ai = await askAI(briefingPrompt(subscriber.display_name), ctx)
+      const ai = await askAI(
+        briefingPrompt(subscriber.display_name),
+        ctx,
+        () => 'Briefing indisponível no momento — confira o resumo por regras acima.',
+      )
       if (ai.trim()) {
         return { briefing: ai.trim(), source: 'ai', units, already_done: false }
       }
