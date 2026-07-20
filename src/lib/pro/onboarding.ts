@@ -29,18 +29,42 @@ function withTimeout<T>(promise: Promise<T>, ms: number, onTimeout: () => T): Pr
   })
 }
 
+const AI_TIP_CACHE_TTL_MS = 30 * 60 * 1000
+// Cache em memória (por instância) — /pro/hoje e /pro/conectar buscam o
+// onboarding a cada carregamento de página; sem isso, cada carregamento com
+// setup incompleto dispararia uma chamada de IA nova, sem contar na cota.
+const aiTipCache = new Map<string, { tip: string | null; expiresAt: number; signature: string }>()
+
 /** Gera uma dica curta de IA para o próximo passo do onboarding. Nunca lança — sempre cai no fallback estático. */
-export async function buildOnboardingAiTip(steps: OnboardingStep[]): Promise<string | null> {
+export async function buildOnboardingAiTip(
+  steps: OnboardingStep[],
+  cacheKey?: string,
+): Promise<string | null> {
   const pendingRequired = steps.filter((s) => s.required && !s.done)
   if (pendingRequired.length === 0) return null
 
+  const signature = pendingRequired.map((s) => s.id).join(',')
+
+  if (cacheKey) {
+    const cached = aiTipCache.get(cacheKey)
+    if (cached && cached.signature === signature && cached.expiresAt > Date.now()) {
+      return cached.tip
+    }
+  }
+
   const context = pendingRequired.map((s) => `${s.title}: ${s.detail}`).join('\n')
 
-  return withTimeout(
+  const tip = await withTimeout(
     askAI(ONBOARDING_TIP_SYSTEM_PROMPT, context, proOnboardingFallbackTip),
     2500,
     proOnboardingFallbackTip,
   )
+
+  if (cacheKey) {
+    aiTipCache.set(cacheKey, { tip, signature, expiresAt: Date.now() + AI_TIP_CACHE_TTL_MS })
+  }
+
+  return tip
 }
 
 export type OnboardingStepId =
@@ -220,7 +244,7 @@ export async function buildOnboardingStatus(subscriber: SubscriberRow): Promise<
   })
 
   if (!status.ready_for_day) {
-    status.ai_tip = await buildOnboardingAiTip(status.steps)
+    status.ai_tip = await buildOnboardingAiTip(status.steps, subscriber.id)
   }
 
   return status

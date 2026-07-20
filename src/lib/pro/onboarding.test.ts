@@ -119,4 +119,31 @@ describe('buildOnboardingAiTip', () => {
     const tip = await buildOnboardingAiTip(status.steps)
     expect(tip).toBe('Conecte sua agenda pra começar.')
   })
+
+  it('cacheia por subscriber (não chama askAI de novo pros mesmos passos pendentes)', async () => {
+    askAIMock.mockResolvedValueOnce('Dica gerada uma vez.')
+    const status = computeOnboardingStatus(baseInput())
+    const callsBefore = askAIMock.mock.calls.length
+
+    const first = await buildOnboardingAiTip(status.steps, 'subscriber-cache-1')
+    const second = await buildOnboardingAiTip(status.steps, 'subscriber-cache-1')
+
+    expect(first).toBe('Dica gerada uma vez.')
+    expect(second).toBe('Dica gerada uma vez.')
+    expect(askAIMock.mock.calls.length - callsBefore).toBe(1)
+  })
+
+  it('não cacheia entre assinantes diferentes', async () => {
+    askAIMock.mockResolvedValueOnce('Dica do assinante A.')
+    askAIMock.mockResolvedValueOnce('Dica do assinante B.')
+    const status = computeOnboardingStatus(baseInput())
+    const callsBefore = askAIMock.mock.calls.length
+
+    const a = await buildOnboardingAiTip(status.steps, 'subscriber-cache-a')
+    const b = await buildOnboardingAiTip(status.steps, 'subscriber-cache-b')
+
+    expect(a).toBe('Dica do assinante A.')
+    expect(b).toBe('Dica do assinante B.')
+    expect(askAIMock.mock.calls.length - callsBefore).toBe(2)
+  })
 })
