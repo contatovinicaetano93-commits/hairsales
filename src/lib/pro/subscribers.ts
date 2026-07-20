@@ -122,6 +122,22 @@ export async function updateSubscriberPassword(id: string, newPassword: string):
   `
 }
 
+/** Ativação manual (Pix/transferência) enquanto o Stripe não está configurado — ver /api/pro/admin/manual-activate. */
+export async function setSubscriberPlanAndStatus(
+  id: string,
+  plan: SubscriberPlan,
+  status: SubscriptionStatus,
+): Promise<SubscriberRow | null> {
+  const sql = getSql()
+  const rows = (await sql`
+    update subscribers
+    set plan = ${plan}, subscription_status = ${status}, updated_at = now()
+    where id = ${id}
+    returning *
+  `) as SubscriberRow[]
+  return rows[0] ?? null
+}
+
 export async function bumpSubscriberSessionVersion(id: string): Promise<SubscriberRow | null> {
   const sql = getSql()
   const rows = (await sql`
