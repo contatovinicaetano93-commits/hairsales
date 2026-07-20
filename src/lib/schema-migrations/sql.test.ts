@@ -21,6 +21,7 @@ const PRO_MIGRATION_IDS = [
   '028_pro_session_version',
   '029_pro_billing_events_pending',
   '030_pro_rate_limits',
+  '031_pro_webhook_events',
 ]
 
 function panelOfThisRepo(): RomPanelId {

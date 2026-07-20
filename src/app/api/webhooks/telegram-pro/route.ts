@@ -12,8 +12,10 @@ import { generateMorningBriefing } from '@/lib/pro/briefing'
 import { checkCan } from '@/lib/pro/entitlements'
 import { buildProHoje } from '@/lib/pro/hoje'
 import { getProBrand } from '@/lib/pro/brand'
+import { claimWebhookEvent, markWebhookEvent } from '@/lib/pro/webhook-events'
 
 interface TelegramUpdate {
+  update_id?: number
   message?: {
     chat: { id: number }
     text?: string
@@ -30,20 +32,7 @@ async function reply(chatId: number, text: string) {
   await sendTelegramMessage(chatId, text, token)
 }
 
-export async function POST(req: NextRequest) {
-  const secret = getTelegramProWebhookSecret()
-  if (secret) {
-    const header = req.headers.get('x-telegram-bot-api-secret-token')
-    if (header !== secret) return err('Não autorizado', 401)
-  } else if (isProduction()) {
-    return err('TELEGRAM_PRO_WEBHOOK_SECRET não configurado', 401)
-  }
-
-  const update = (await req.json().catch(() => null)) as TelegramUpdate | null
-  const chatId = update?.message?.chat.id
-  const text = update?.message?.text?.trim()
-  if (!chatId || !text) return ok({ ignored: true })
-
+async function handleTelegramMessage(chatId: number, text: string) {
   const brand = getProBrand()
   const start = text.match(/^\/start(?:\s+([a-f0-9]{6}))?/i)
   if (start) {
@@ -130,4 +119,45 @@ export async function POST(req: NextRequest) {
   const result = await askSubscriberAssistant(subscriber, text)
   await reply(chatId, result.answer)
   return ok({ replied: true, mode: 'assistant', source: result.source })
+}
+
+export async function POST(req: NextRequest) {
+  const secret = getTelegramProWebhookSecret()
+  if (secret) {
+    const header = req.headers.get('x-telegram-bot-api-secret-token')
+    if (header !== secret) return err('Não autorizado', 401)
+  } else if (isProduction()) {
+    return err('TELEGRAM_PRO_WEBHOOK_SECRET não configurado', 401)
+  }
+
+  const update = (await req.json().catch(() => null)) as TelegramUpdate | null
+  const chatId = update?.message?.chat.id
+  const text = update?.message?.text?.trim()
+  if (!chatId || !text) return ok({ ignored: true })
+
+  // Telegram retries webhook delivery on slow responses; `update_id` is unique
+  // per bot, so it's the dedup key that keeps a retry from double-replying.
+  const updateId = update?.update_id
+  if (updateId !== undefined) {
+    const eventId = String(updateId)
+    const claim = await claimWebhookEvent('telegram', eventId, {
+      payloadSummary: { chat_id: chatId },
+    })
+    if (!claim.claimed) {
+      return ok({ received: true, duplicate: true })
+    }
+
+    try {
+      const response = await handleTelegramMessage(chatId, text)
+      await markWebhookEvent('telegram', eventId, { status: 'processed' })
+      return response
+    } catch (e) {
+      await markWebhookEvent('telegram', eventId, { status: 'error' }).catch((markError) => {
+        console.error('[telegram-pro webhook] failed to update event ledger', markError)
+      })
+      throw e
+    }
+  }
+
+  return handleTelegramMessage(chatId, text)
 }

@@ -11,6 +11,7 @@ import { isProduction } from '@/lib/env'
 import { can } from '@/lib/pro/entitlements'
 import { getWhatsAppProAppSecret, getWhatsAppProVerifyToken } from '@/lib/pro/secrets'
 import { verifyMetaWebhookSignature } from '@/lib/pro/whatsapp-signature'
+import { claimWebhookEvent, markWebhookEvent } from '@/lib/pro/webhook-events'
 
 /**
  * Webhook Cloud API do número do assinante Pro.
@@ -48,6 +49,8 @@ export async function POST(req: NextRequest) {
   const body = parseWebhookBody(rawBody)
   if (!body) return ok({ ignored: true })
 
+  let eventId: string | null = null
+
   try {
     const entry = body.entry?.[0]
     const change = entry?.changes?.[0]
@@ -56,6 +59,19 @@ export async function POST(req: NextRequest) {
     const message = value?.messages?.[0]
     if (!phoneNumberId || !message) return ok({ ignored: true })
 
+    // Meta retries webhook delivery on slow responses; each message carries a
+    // stable id, so it's the dedup key that keeps a retry from double-inserting
+    // a client row or sending the suggested reply twice.
+    eventId = typeof message.id === 'string' ? message.id : null
+    if (eventId) {
+      const claim = await claimWebhookEvent('whatsapp', eventId, {
+        payloadSummary: { phone_number_id: phoneNumberId },
+      })
+      if (!claim.claimed) {
+        return ok({ received: true, duplicate: true })
+      }
+    }
+
     const from = String(message.from ?? '')
     const text =
       message.text?.body ||
@@ -63,13 +79,20 @@ export async function POST(req: NextRequest) {
       message.interactive?.button_reply?.title ||
       ''
 
-    if (!from || !text) return ok({ ignored: true })
+    if (!from || !text) {
+      if (eventId) await markWebhookEvent('whatsapp', eventId, { status: 'ignored' })
+      return ok({ ignored: true })
+    }
 
     const subscriberId = await findSubscriberIdByPhoneNumberId(phoneNumberId)
-    if (!subscriberId) return ok({ ignored: true, reason: 'unknown_number' })
+    if (!subscriberId) {
+      if (eventId) await markWebhookEvent('whatsapp', eventId, { status: 'ignored' })
+      return ok({ ignored: true, reason: 'unknown_number' })
+    }
 
     const subscriber = await findSubscriberById(subscriberId)
     if (!subscriber || !can(subscriber, 'whatsapp_cloud')) {
+      if (eventId) await markWebhookEvent('whatsapp', eventId, { status: 'ignored' })
       return ok({ ignored: true, reason: 'not_entitled' })
     }
 
@@ -106,9 +129,15 @@ export async function POST(req: NextRequest) {
       clientId,
     }).catch(() => {})
 
+    if (eventId) await markWebhookEvent('whatsapp', eventId, { status: 'processed' })
     return ok({ replied: true, source: result.source })
   } catch (e) {
     console.error('[whatsapp-pro webhook]', e)
+    if (eventId) {
+      await markWebhookEvent('whatsapp', eventId, { status: 'error' }).catch((markError) => {
+        console.error('[whatsapp-pro webhook] failed to update event ledger', markError)
+      })
+    }
     return ok({ replied: false, error: e instanceof Error ? e.message : String(e) })
   }
 }
