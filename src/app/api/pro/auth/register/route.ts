@@ -23,7 +23,7 @@ function allowDemoRegister() {
  */
 export async function POST(req: NextRequest) {
   try {
-    const rateLimit = checkProRateLimit(req, {
+    const rateLimit = await checkProRateLimit(req, {
       route: 'pro-auth-register',
       limit: 5,
       windowMs: 60_000,

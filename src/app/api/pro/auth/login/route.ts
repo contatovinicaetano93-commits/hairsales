@@ -10,7 +10,7 @@ import { authenticateSubscriber } from '@/lib/pro/subscribers'
 
 export async function POST(req: NextRequest) {
   try {
-    const rateLimit = checkProRateLimit(req, {
+    const rateLimit = await checkProRateLimit(req, {
       route: 'pro-auth-login',
       limit: 10,
       windowMs: 60_000,

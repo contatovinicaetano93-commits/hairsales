@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import { getSql } from '@/lib/db'
 
 interface RateLimitOptions {
   route: string
@@ -6,12 +7,11 @@ interface RateLimitOptions {
   windowMs: number
 }
 
-type RateLimitResult =
-  | { allowed: true }
-  | { allowed: false; retryAfterSeconds: number }
+type RateLimitResult = { allowed: true } | { allowed: false; retryAfterSeconds: number }
 
-const attempts = new Map<string, number[]>()
-let lastCleanup = 0
+// Fallback em memória — usado só se o Postgres estiver indisponível, pra não
+// derrubar login/registro/checkout por causa do rate limit em si.
+const memoryAttempts = new Map<string, number[]>()
 
 function clientIp(req: Request | NextRequest) {
   const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -23,40 +23,62 @@ function clientIp(req: Request | NextRequest) {
   )
 }
 
-function cleanup(now: number, windowMs: number) {
-  if (now - lastCleanup < windowMs) return
-  lastCleanup = now
-  for (const [key, hits] of attempts) {
-    const active = hits.filter((hit) => hit > now - windowMs)
-    if (active.length === 0) attempts.delete(key)
-    else attempts.set(key, active)
-  }
-}
-
-// In-memory limits are ephemeral on serverless; good enough until Redis-backed limits land.
-export function checkProRateLimit(
-  req: Request | NextRequest,
-  options: RateLimitOptions,
-): RateLimitResult {
-  const now = Date.now()
-  cleanup(now, options.windowMs)
-
-  const key = `${options.route}:${clientIp(req)}`
-  const cutoff = now - options.windowMs
-  const hits = (attempts.get(key) ?? []).filter((hit) => hit > cutoff)
-
-  if (hits.length >= options.limit) {
-    attempts.set(key, hits)
-    const retryAfterSeconds = Math.max(1, Math.ceil((hits[0]! + options.windowMs - now) / 1000))
+function evaluate(hits: number[], now: number, options: RateLimitOptions): RateLimitResult {
+  if (hits.length > options.limit) {
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((hits[0]! + options.windowMs - now) / 1000),
+    )
     return { allowed: false, retryAfterSeconds }
   }
-
-  hits.push(now)
-  attempts.set(key, hits)
   return { allowed: true }
 }
 
+function memoryFallback(key: string, now: number, options: RateLimitOptions): RateLimitResult {
+  const cutoff = now - options.windowMs
+  const hits = (memoryAttempts.get(key) ?? []).filter((hit) => hit > cutoff)
+  hits.push(now)
+  memoryAttempts.set(key, hits)
+  return evaluate(hits, now, options)
+}
+
+// Contador persistido no Neon (mesmo banco do Pro) — funciona entre
+// instâncias serverless, ao contrário de um Map em memória. Cada chamada
+// registra o hit atual e descarta hits fora da janela numa única query
+// atômica (upsert).
+export async function checkProRateLimit(
+  req: Request | NextRequest,
+  options: RateLimitOptions,
+): Promise<RateLimitResult> {
+  const now = Date.now()
+  const key = `${options.route}:${clientIp(req)}`
+  const cutoff = now - options.windowMs
+
+  try {
+    const sql = getSql()
+    const rows = await sql.query(
+      `insert into pro_rate_limit_hits (key, hits, updated_at)
+       values ($1, jsonb_build_array($2::bigint), now())
+       on conflict (key) do update
+       set hits = (
+             select coalesce(jsonb_agg(h), '[]'::jsonb)
+             from jsonb_array_elements_text(
+               pro_rate_limit_hits.hits || jsonb_build_array($2::bigint)
+             ) as h
+             where h::bigint > $3::bigint
+           ),
+           updated_at = now()
+       returning hits`,
+      [key, now, cutoff],
+    )
+    const hits = ((rows[0]?.hits ?? []) as (string | number)[]).map(Number)
+    return evaluate(hits, now, options)
+  } catch {
+    // Neon indisponível: degrada pro fallback em memória em vez de derrubar a rota.
+    return memoryFallback(key, now, options)
+  }
+}
+
 export function resetProRateLimitsForTests() {
-  attempts.clear()
-  lastCleanup = 0
+  memoryAttempts.clear()
 }

@@ -29,6 +29,7 @@
     { "id": "026_pro_subscription_status", "file": "delta-pro-subscription-status.sql", "panels": ["hairsales"] },
     { "id": "027_pro_billing_events", "file": "delta-pro-billing-events.sql", "panels": ["hairsales"] },
     { "id": "028_pro_session_version", "file": "delta-pro-session-version.sql", "panels": ["hairsales"] },
-    { "id": "029_pro_billing_events_pending", "file": "delta-pro-billing-events-pending.sql", "panels": ["hairsales"] }
+    { "id": "029_pro_billing_events_pending", "file": "delta-pro-billing-events-pending.sql", "panels": ["hairsales"] },
+    { "id": "030_pro_rate_limits", "file": "delta-pro-rate-limits.sql", "panels": ["hairsales"] }
   ]
 }

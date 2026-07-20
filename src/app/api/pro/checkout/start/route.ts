@@ -7,7 +7,7 @@ import { captureHairsalesException } from '@/lib/pro/observability'
 
 export async function POST(req: NextRequest) {
   try {
-    const rateLimit = checkProRateLimit(req, {
+    const rateLimit = await checkProRateLimit(req, {
       route: 'pro-checkout-start',
       limit: 10,
       windowMs: 60_000,
