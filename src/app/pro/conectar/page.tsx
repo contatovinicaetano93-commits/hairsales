@@ -215,8 +215,91 @@ export default function ProConectarPage() {
         <GoalsBlock />
         <TelegramBlock />
         <WhatsappBlock />
+        <DeleteAccountBlock />
       </div>
     </div>
+  )
+}
+
+function DeleteAccountBlock() {
+  const router = useRouter()
+  const [confirming, setConfirming] = useState(false)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    const res = await apiJson('/api/me/account', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+    setLoading(false)
+    if (res.status === 401 && !confirming) return
+    if (!res.ok) {
+      setError(res.error ?? 'Não foi possível excluir a conta')
+      return
+    }
+    router.push('/pro/login')
+  }
+
+  return (
+    <ConnectCard title="Excluir conta" summary="Apaga seus dados permanentemente — sem volta">
+      <p className="mb-4 text-sm text-muted">
+        Exclui sua conta, clientes cadastrados, histórico da assistente e vínculos de Telegram/WhatsApp.
+        Registros fiscais de cobrança são mantidos anonimizados, como exige a lei.
+      </p>
+      {!confirming ? (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm font-semibold text-danger"
+        >
+          Quero excluir minha conta
+        </button>
+      ) : (
+        <form onSubmit={submit} className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs uppercase tracking-wide text-muted">
+              Confirme sua senha pra excluir
+            </span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              aria-label="Senha atual para confirmar exclusão de conta"
+              className="rounded-xl border border-border bg-surface px-4 py-3 outline-none focus:border-danger"
+            />
+          </label>
+          {error && <p className="text-sm text-danger">{error}</p>}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="submit"
+              disabled={loading || !password}
+              className="rounded-xl bg-danger px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {loading ? 'Excluindo…' : 'Excluir permanentemente'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirming(false)
+                setPassword('')
+                setError(null)
+              }}
+              className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+    </ConnectCard>
   )
 }
 

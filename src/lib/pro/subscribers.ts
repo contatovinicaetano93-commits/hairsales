@@ -95,6 +95,22 @@ export async function authenticateSubscriber(
   return ok ? sub : null
 }
 
+/**
+ * Exclusão de conta (LGPD, direito ao esquecimento — art. 18, VI). Apaga o
+ * assinante e, via `on delete cascade`, seus clientes/serviços, histórico de
+ * assistente/briefing, vínculos Telegram/WhatsApp e créditos. Registros de
+ * cobrança (`subscriber_billing_events`, `subscriber_pending_signups`) usam
+ * `on delete set null` de propósito — mantidos anonimizados para obrigação
+ * legal/fiscal (LGPD art. 16), sem PII vinculada.
+ */
+export async function deleteSubscriberAccount(id: string): Promise<boolean> {
+  const sql = getSql()
+  const rows = (await sql`
+    delete from subscribers where id = ${id} returning id
+  `) as { id: string }[]
+  return rows.length > 0
+}
+
 export async function bumpSubscriberSessionVersion(id: string): Promise<SubscriberRow | null> {
   const sql = getSql()
   const rows = (await sql`
